@@ -1,0 +1,473 @@
+/*
+ * ECAL
+ *
+ * Copyright 2020 Matthias Ladkau. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the MIT
+ * License, If a copy of the MIT License was not distributed with this
+ * file, You can obtain one at https://opensource.org/licenses/MIT.
+ */
+
+package interpreter
+
+import (
+	"fmt"
+	"strconv"
+
+	"devt.de/krotik/ecal/parser"
+	"devt.de/krotik/ecal/scope"
+	"devt.de/krotik/ecal/util"
+)
+
+/*
+inbuildFuncMap contains the mapping of inbuild functions.
+*/
+var inbuildFuncMap = map[string]util.ECALFunction{
+	"range":   &rangeFunc{&inbuildBaseFunc{}},
+	"new":     &newFunc{&inbuildBaseFunc{}},
+	"len":     &lenFunc{&inbuildBaseFunc{}},
+	"del":     &delFunc{&inbuildBaseFunc{}},
+	"add":     &addFunc{&inbuildBaseFunc{}},
+	"concat":  &concatFunc{&inbuildBaseFunc{}},
+	"dumpenv": &dumpenvFunc{&inbuildBaseFunc{}},
+}
+
+/*
+inbuildBaseFunc is the base structure for inbuild functions providing some
+utility functions.
+*/
+type inbuildBaseFunc struct {
+}
+
+/*
+AssertNumParam converts a general interface{} parameter into a number.
+*/
+func (ibf *inbuildBaseFunc) AssertNumParam(index int, val interface{}) (float64, error) {
+	var err error
+
+	resNum, ok := val.(float64)
+
+	if !ok {
+
+		resNum, err = strconv.ParseFloat(fmt.Sprint(val), 64)
+		if err != nil {
+			err = fmt.Errorf("Parameter %v should be a number", index)
+		}
+	}
+
+	return resNum, err
+}
+
+/*
+AssertMapParam converts a general interface{} parameter into a map.
+*/
+func (ibf *inbuildBaseFunc) AssertMapParam(index int, val interface{}) (map[interface{}]interface{}, error) {
+
+	valMap, ok := val.(map[interface{}]interface{})
+
+	if ok {
+		return valMap, nil
+	}
+
+	return nil, fmt.Errorf("Parameter %v should be a map", index)
+}
+
+/*
+AssertListParam converts a general interface{} parameter into a list.
+*/
+func (ibf *inbuildBaseFunc) AssertListParam(index int, val interface{}) ([]interface{}, error) {
+
+	valList, ok := val.([]interface{})
+
+	if ok {
+		return valList, nil
+	}
+
+	return nil, fmt.Errorf("Parameter %v should be a list", index)
+}
+
+// Range
+// =====
+
+/*
+rangeFunc is an interator function which returns a range of numbers.
+*/
+type rangeFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *rangeFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	var currVal, to float64
+	var err error
+
+	lenargs := len(args)
+	from := 0.
+	step := 1.
+
+	if lenargs == 0 {
+		err = fmt.Errorf("Need at least an end range as first parameter")
+	}
+
+	if err == nil {
+
+		if stepVal, ok := is[instanceID+"step"]; ok {
+
+			step = stepVal.(float64)
+			from = is[instanceID+"from"].(float64)
+			to = is[instanceID+"to"].(float64)
+			currVal = is[instanceID+"currVal"].(float64)
+
+			is[instanceID+"currVal"] = currVal + step
+
+			// Check for end of iteration
+
+			if (from < to && currVal > to) || (from > to && currVal < to) || from == to {
+				err = util.ErrEndOfIteration
+			}
+
+		} else {
+
+			if lenargs == 1 {
+				to, err = rf.AssertNumParam(1, args[0])
+			} else {
+				from, err = rf.AssertNumParam(1, args[0])
+
+				if err == nil {
+					to, err = rf.AssertNumParam(2, args[1])
+				}
+
+				if err == nil && lenargs > 2 {
+					step, err = rf.AssertNumParam(3, args[2])
+				}
+			}
+
+			if err == nil {
+				is[instanceID+"from"] = from
+				is[instanceID+"to"] = to
+				is[instanceID+"step"] = step
+				is[instanceID+"currVal"] = from
+
+				currVal = from
+			}
+		}
+	}
+
+	if err == nil {
+		err = util.ErrIsIterator // Identify as iterator
+	}
+
+	return currVal, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *rangeFunc) DocString() (string, error) {
+	return "Range function which can be used to iterate over number ranges. Parameters are start, end and step.", nil
+}
+
+// New
+// ===
+
+/*
+newFunc instantiates a new object.
+*/
+type newFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *newFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	var res interface{}
+
+	err := fmt.Errorf("Need a map as first parameter")
+
+	if len(args) > 0 {
+		var argMap map[interface{}]interface{}
+		if argMap, err = rf.AssertMapParam(1, args[0]); err == nil {
+			obj := make(map[interface{}]interface{})
+			res = obj
+
+			_, err = rf.addSuperClasses(vs, is, obj, argMap)
+
+			if initObj, ok := obj["init"]; ok {
+				if initFunc, ok := initObj.(*function); ok {
+
+					initvs := scope.NewScope(fmt.Sprintf("newfunc: %v", instanceID))
+					initis := make(map[string]interface{})
+
+					_, err = initFunc.Run(instanceID, initvs, initis, args[1:])
+				}
+			}
+		}
+	}
+
+	return res, err
+}
+
+/*
+addSuperClasses adds super class functions to a given object.
+*/
+func (rf *newFunc) addSuperClasses(vs parser.Scope, is map[string]interface{},
+	obj map[interface{}]interface{}, template map[interface{}]interface{}) (interface{}, error) {
+
+	var err error
+
+	var initFunc interface{}
+	var initSuperList []interface{}
+
+	// First loop into the base classes (i.e. top-most classes)
+
+	if super, ok := template["super"]; ok {
+		if superList, ok := super.([]interface{}); ok {
+			for _, superObj := range superList {
+				var superInit interface{}
+
+				if superTemplate, ok := superObj.(map[interface{}]interface{}); ok {
+					superInit, err = rf.addSuperClasses(vs, is, obj, superTemplate)
+					initSuperList = append(initSuperList, superInit) // Build up the list of super functions
+				}
+			}
+		} else {
+			err = fmt.Errorf("Property _super must be a list of super classes")
+		}
+	}
+
+	// Copy all properties from template to obj
+
+	for k, v := range template {
+
+		// Save previous init function
+
+		if funcVal, ok := v.(*function); ok {
+			newFunction := &function{funcVal.name, nil, obj, funcVal.declaration}
+			if k == "init" {
+				newFunction.super = initSuperList
+				initFunc = newFunction
+			}
+			obj[k] = newFunction
+		} else {
+			obj[k] = v
+		}
+	}
+
+	return initFunc, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *newFunc) DocString() (string, error) {
+	return "New creates a new object instance.", nil
+}
+
+// Len
+// ===
+
+/*
+lenFunc returns the size of a list or map.
+*/
+type lenFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *lenFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	var res float64
+
+	err := fmt.Errorf("Need a list or a map as first parameter")
+
+	if len(args) > 0 {
+		argList, ok1 := args[0].([]interface{})
+		argMap, ok2 := args[0].(map[interface{}]interface{})
+
+		if ok1 {
+			res = float64(len(argList))
+			err = nil
+		} else if ok2 {
+			res = float64(len(argMap))
+			err = nil
+		}
+	}
+
+	return res, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *lenFunc) DocString() (string, error) {
+	return "Len returns the size of a list or map.", nil
+}
+
+// Del
+// ===
+
+/*
+delFunc removes an element from a list or map.
+*/
+type delFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *delFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	var res interface{}
+
+	err := fmt.Errorf("Need a list or a map as first parameter and an index or key as second parameter")
+
+	if len(args) == 2 {
+
+		if argList, ok1 := args[0].([]interface{}); ok1 {
+			var index float64
+
+			index, err = rf.AssertNumParam(2, args[1])
+			if err == nil {
+				res = append(argList[:int(index)], argList[int(index+1):]...)
+			}
+		}
+
+		if argMap, ok2 := args[0].(map[interface{}]interface{}); ok2 {
+			key := fmt.Sprint(args[1])
+			delete(argMap, key)
+			res = argMap
+			err = nil
+		}
+	}
+
+	return res, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *delFunc) DocString() (string, error) {
+	return "Del removes an item from a list or map.", nil
+}
+
+// Add
+// ===
+
+/*
+addFunc adds an element to a list.
+*/
+type addFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *addFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	var res interface{}
+
+	err := fmt.Errorf("Need a list as first parameter and a value as second parameter")
+
+	if len(args) > 1 {
+		var argList []interface{}
+
+		if argList, err = rf.AssertListParam(1, args[0]); err == nil {
+			if len(args) == 3 {
+				var index float64
+
+				if index, err = rf.AssertNumParam(3, args[2]); err == nil {
+					argList = append(argList, 0)
+					copy(argList[int(index+1):], argList[int(index):])
+					argList[int(index)] = args[1]
+					res = argList
+				}
+			} else {
+				res = append(argList, args[1])
+			}
+		}
+	}
+
+	return res, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *addFunc) DocString() (string, error) {
+	return "Add adds an item to a list. The item is added at the optionally given index or at the end if no index is specified.", nil
+}
+
+// Concat
+// ======
+
+/*
+concatFunc joins one or more lists together.
+*/
+type concatFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *concatFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	var res interface{}
+
+	err := fmt.Errorf("Need at least two lists as parameters")
+
+	if len(args) > 1 {
+		var argList []interface{}
+
+		resList := make([]interface{}, 0)
+		err = nil
+
+		for _, a := range args {
+			if err == nil {
+				if argList, err = rf.AssertListParam(1, a); err == nil {
+					resList = append(resList, argList...)
+				}
+			}
+		}
+
+		if err == nil {
+			res = resList
+		}
+	}
+
+	return res, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *concatFunc) DocString() (string, error) {
+	return "Concat joins one or more lists together. The result is a new list.", nil
+}
+
+// dumpenv
+// =======
+
+/*
+dumpenvFunc returns the current variable environment as a string.
+*/
+type dumpenvFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *dumpenvFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	return vs.String(), nil
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *dumpenvFunc) DocString() (string, error) {
+	return "Dumpenv returns the current variable environment as a string.", nil
+}

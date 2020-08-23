@@ -1,0 +1,73 @@
+/*
+ * ECAL
+ *
+ * Copyright 2020 Matthias Ladkau. All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the MIT
+ * License, If a copy of the MIT License was not distributed with this
+ * file, You can obtain one at https://opensource.org/licenses/MIT.
+ */
+
+package parser
+
+/*
+RuntimeProvider provides runtime components for a parse tree.
+*/
+type RuntimeProvider interface {
+
+	/*
+	   Runtime returns a runtime component for a given ASTNode.
+	*/
+	Runtime(node *ASTNode) Runtime
+}
+
+/*
+Runtime provides the runtime for an ASTNode.
+*/
+type Runtime interface {
+
+	/*
+	   Validate this runtime component and all its child components.
+	*/
+	Validate() error
+
+	/*
+		Eval evaluate this runtime component. It gets passed the current variable
+		scope and the instance state.
+
+		The instance state is created per execution instance and can be used
+		for generator functions to store their current state.
+	*/
+	Eval(Scope, map[string]interface{}) (interface{}, error)
+}
+
+/*
+Scope models an environment which stores data.
+*/
+type Scope interface {
+
+	/*
+	   NewChild creates a new child scope.
+	*/
+	NewChild(name string) Scope
+
+	/*
+	   Parent returns the parent scope or nil.
+	*/
+	Parent() Scope
+
+	/*
+	   SetValue sets a new value for a variable.
+	*/
+	SetValue(varName string, varValue interface{}) error
+
+	/*
+	   GetValue gets the current value of a variable.
+	*/
+	GetValue(varName string) (interface{}, bool, error)
+
+	/*
+	   String returns a string representation of this scope.
+	*/
+	String() string
+}

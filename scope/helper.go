@@ -44,8 +44,8 @@ func EvalToString(v interface{}) string {
 /*
 ToObject converts a Scope into an object.
 */
-func ToObject(vs parser.Scope) map[string]interface{} {
-	res := make(map[string]interface{})
+func ToObject(vs parser.Scope) map[interface{}]interface{} {
+	res := make(map[interface{}]interface{})
 	for k, v := range vs.(*varsScope).storage {
 		res[k] = v
 	}
@@ -55,10 +55,10 @@ func ToObject(vs parser.Scope) map[string]interface{} {
 /*
 ToScope converts a given object into a Scope.
 */
-func ToScope(name string, o map[string]interface{}) parser.Scope {
+func ToScope(name string, o map[interface{}]interface{}) parser.Scope {
 	vs := NewScope(name)
 	for k, v := range o {
-		vs.SetValue(k, v)
+		vs.SetValue(fmt.Sprint(k), v)
 	}
 	return vs
 }

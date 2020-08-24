@@ -12,6 +12,13 @@ package main
 
 import "fmt"
 
+/*
+Ideas:
+- auto reload code (watch)
+- cron job support (trigger periodic events)
+- create executable binary (pack into single binary)
+*/
+
 func main() {
 	fmt.Println("ECAL")
 }

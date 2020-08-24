@@ -15,6 +15,7 @@ import (
 
 	"devt.de/krotik/common/errorutil"
 	"devt.de/krotik/ecal/parser"
+	"devt.de/krotik/ecal/scope"
 	"devt.de/krotik/ecal/util"
 )
 
@@ -93,6 +94,66 @@ Eval evaluate this runtime component.
 */
 func (rt *voidRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
 	return rt.baseRuntime.Eval(vs, is)
+}
+
+// Import Runtime
+// ==============
+
+/*
+importRuntime handles import statements.
+*/
+type importRuntime struct {
+	*baseRuntime
+}
+
+/*
+importRuntimeInst returns a new runtime component instance.
+*/
+func importRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Runtime {
+	return &importRuntime{newBaseRuntime(erp, node)}
+}
+
+/*
+Validate this node and all its child nodes.
+*/
+func (rt *importRuntime) Validate() error {
+	return rt.baseRuntime.Validate()
+}
+
+/*
+Eval evaluate this runtime component.
+*/
+func (rt *importRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	_, err := rt.baseRuntime.Eval(vs, is)
+
+	if rt.erp.ImportLocator == nil {
+		err = rt.erp.NewRuntimeError(util.ErrRuntimeError, "No import locator was specified", rt.node)
+	}
+
+	if err == nil {
+
+		var importPath interface{}
+		if importPath, err = rt.node.Children[0].Runtime.Eval(vs, is); err == nil {
+
+			var codeText string
+			if codeText, err = rt.erp.ImportLocator.Resolve(fmt.Sprint(importPath)); err == nil {
+				var ast *parser.ASTNode
+
+				if ast, err = parser.ParseWithRuntime(fmt.Sprint(importPath), codeText, rt.erp); err == nil {
+					if err = ast.Runtime.Validate(); err == nil {
+
+						ivs := scope.NewScope(scope.GlobalScope)
+						if _, err = ast.Runtime.Eval(ivs, make(map[string]interface{})); err == nil {
+							irt := rt.node.Children[1].Runtime.(*identifierRuntime)
+							irt.Set(vs, is, scope.ToObject(ivs))
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil, err
 }
 
 // Not Implemented Runtime

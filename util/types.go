@@ -19,6 +19,17 @@ type Processor interface {
 }
 
 /*
+ECALImportLocator is used to resolve imports.
+*/
+type ECALImportLocator interface {
+
+	/*
+		Resolve a given import path and parse the imported file into an AST.
+	*/
+	Resolve(path string) (string, error)
+}
+
+/*
 ECALFunction models a callable function in ECAL.
 */
 type ECALFunction interface {

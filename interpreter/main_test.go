@@ -19,6 +19,7 @@ import (
 	"devt.de/krotik/common/datautil"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
+	"devt.de/krotik/ecal/util"
 )
 
 // Main function for all tests in this package
@@ -51,8 +52,11 @@ var usedNodes = map[string]bool{
 func UnitTestEval(input string, vs parser.Scope) (interface{}, error) {
 	return UnitTestEvalAndAST(input, vs, "")
 }
-
 func UnitTestEvalAndAST(input string, vs parser.Scope, expectedAST string) (interface{}, error) {
+	return UnitTestEvalAndASTAndImport(input, vs, "", nil)
+}
+
+func UnitTestEvalAndASTAndImport(input string, vs parser.Scope, expectedAST string, importLocator util.ECALImportLocator) (interface{}, error) {
 	var traverseAST func(n *parser.ASTNode)
 
 	traverseAST = func(n *parser.ASTNode) {
@@ -68,7 +72,8 @@ func UnitTestEvalAndAST(input string, vs parser.Scope, expectedAST string) (inte
 
 	// Parse the input
 
-	ast, err := parser.ParseWithRuntime("ECALEvalTest", input, NewECALRuntimeProvider("ECALTestRuntime"))
+	ast, err := parser.ParseWithRuntime("ECALEvalTest", input,
+		NewECALRuntimeProvider("ECALTestRuntime", importLocator))
 	if err != nil {
 		return nil, err
 	}

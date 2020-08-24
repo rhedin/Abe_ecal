@@ -9,7 +9,6 @@
  */
 
 // TODO:
-// Import resolve
 // Event function: event
 // Context supporting final
 // Event handling
@@ -74,11 +73,12 @@ var providerMap = map[string]ecalRuntimeNew{
 	// Assignment statement
 
 	parser.NodeASSIGN: assignmentRuntimeInst,
+
+	// Import statement
+
+	parser.NodeIMPORT: importRuntimeInst,
+
 	/*
-
-		// Import statement
-
-		parser.NodeIMPORT
 
 		// Sink definition
 
@@ -129,14 +129,15 @@ var providerMap = map[string]ecalRuntimeNew{
 ECALRuntimeProvider is the factory object producing runtime objects for ECAL ASTs.
 */
 type ECALRuntimeProvider struct {
-	Name string // Name to identify the input
+	Name          string                 // Name to identify the input
+	ImportLocator util.ECALImportLocator // Locator object for imports
 }
 
 /*
 NewECALRuntimeProvider returns a new instance of a ECAL runtime provider.
 */
-func NewECALRuntimeProvider(name string) *ECALRuntimeProvider {
-	return &ECALRuntimeProvider{name}
+func NewECALRuntimeProvider(name string, importLocator util.ECALImportLocator) *ECALRuntimeProvider {
+	return &ECALRuntimeProvider{name, importLocator}
 }
 
 /*

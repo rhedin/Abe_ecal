@@ -44,7 +44,19 @@ NewScopeWithParent creates a new variable scope with a parent. This can be
 used to create scope structures without children links.
 */
 func NewScopeWithParent(name string, parent parser.Scope) parser.Scope {
-	return &varsScope{name, parent, nil, make(map[string]interface{}), sync.RWMutex{}}
+	res := &varsScope{name, nil, nil, make(map[string]interface{}), sync.RWMutex{}}
+	SetParentOfScope(res, parent)
+	return res
+}
+
+/*
+SetParentOfScope sets the parent of a given scope. This assumes that the given scope
+is a varsScope.
+*/
+func SetParentOfScope(scope parser.Scope, parent parser.Scope) {
+	if vs, ok := scope.(*varsScope); ok {
+		vs.parent = parent
+	}
 }
 
 /*

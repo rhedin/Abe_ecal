@@ -20,7 +20,15 @@ After an event is injected the Processor first checks if anything triggers on th
 
 After the first triggering check passed, the event is handed over to a task which runs in the thread pool. The task uses the rule index to determine all triggering rules. After filtering rules which are out of scope or which are suppressed by other rules, the remaining rules are sorted by their priority and then their action is executed.
 
-A rule action can inject new events into the processor which starts the processing cycle again.
+A rule action can inject new events into the processor which starts the processing cycle again. The processor supports two modes of execution for rule sequences (rules triggered by an event in order of priority):
+
+1. Do not fail on errors: all rules in a trigger sequence for a specific event
+are executed.
+
+2. Fail on first error: the first rule which returns an error will stop
+the trigger sequence. Events which have been added by the failing rule are still processed.
+
+Failing on the first error can be useful in scenarios where authorization is required. High priority rules can block lower priority rules from being executed.
 
 
 Monitor
@@ -115,6 +123,24 @@ rootm.SetFinishHandler(func(p Processor) { // Handler for end of event cascade
 
 proc.AddEvent(e, rootm)
 ```
+
+- The event is processed as follows:
+
+	- The event is injected into the procesor with or without a parent monitor.
+
+		- Quick (not complete!) check if the event triggers any rules. This is to avoid unnecessary computation.
+			- Check that the event kind is not too general (e.g. the rule is for a.b.c event is for a.b)
+			- Check if 	at least one rule matches the kind. At least on rule should either be triggering on all kinds or triggering on the specific kind of the event.
+
+		- Create a new root monitor if no parent monitor has been given.
+
+		- Add a task to the thread pool of the processor (containing the event, parent/root monitor and processor).
+
+	- Thread pool of the processor takes the next task according to the highest priority.
+
+		- Determine the triggering rules (matching via kind, state and scope without suppressed rules).
+
+		- Execute the action of each triggering rule according to their priority.
 
 - The processor can run as long as needed and can be finished when the application should be terminated.
 

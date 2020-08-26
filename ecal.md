@@ -29,6 +29,10 @@ foobar.doSomething()
 
 Event Sinks
 --
+TODO:
+
+- How ECAL provides concurrency support
+
 Sinks are should have unique names which identify them and the following attributes:
 
 Attribute | Description

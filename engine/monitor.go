@@ -202,9 +202,10 @@ Skip finishes this monitor without activation.
 func (mb *monitorBase) Skip(e *Event) {
 	errorutil.AssertTrue(!mb.finished, "Cannot skip a finished monitor")
 	errorutil.AssertTrue(!mb.activated, "Cannot skip an active monitor")
+
 	mb.event = e
 	mb.activated = true
-	mb.finished = true
+	mb.Finish()
 }
 
 /*

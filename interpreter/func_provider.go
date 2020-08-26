@@ -13,7 +13,9 @@ package interpreter
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
+	"devt.de/krotik/ecal/engine"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
 	"devt.de/krotik/ecal/util"
@@ -23,13 +25,16 @@ import (
 inbuildFuncMap contains the mapping of inbuild functions.
 */
 var inbuildFuncMap = map[string]util.ECALFunction{
-	"range":   &rangeFunc{&inbuildBaseFunc{}},
-	"new":     &newFunc{&inbuildBaseFunc{}},
-	"len":     &lenFunc{&inbuildBaseFunc{}},
-	"del":     &delFunc{&inbuildBaseFunc{}},
-	"add":     &addFunc{&inbuildBaseFunc{}},
-	"concat":  &concatFunc{&inbuildBaseFunc{}},
-	"dumpenv": &dumpenvFunc{&inbuildBaseFunc{}},
+	"range":           &rangeFunc{&inbuildBaseFunc{}},
+	"new":             &newFunc{&inbuildBaseFunc{}},
+	"len":             &lenFunc{&inbuildBaseFunc{}},
+	"del":             &delFunc{&inbuildBaseFunc{}},
+	"add":             &addFunc{&inbuildBaseFunc{}},
+	"concat":          &concatFunc{&inbuildBaseFunc{}},
+	"dumpenv":         &dumpenvFunc{&inbuildBaseFunc{}},
+	"sinkError":       &sinkerror{&inbuildBaseFunc{}},
+	"addEvent":        &addevent{&inbuildBaseFunc{}},
+	"addEventAndWait": &addeventandwait{&addevent{&inbuildBaseFunc{}}},
 }
 
 /*
@@ -470,4 +475,182 @@ DocString returns a descriptive string.
 */
 func (rf *dumpenvFunc) DocString() (string, error) {
 	return "Dumpenv returns the current variable environment as a string.", nil
+}
+
+// sinkerror
+// =========
+
+/*
+sinkerror returns a sink error object which indicates that the sink execution failed.
+This error can be used to break trigger sequences of sinks if
+FailOnFirstErrorInTriggerSequence is set.
+*/
+type sinkerror struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *sinkerror) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	var msg string
+
+	if len(args) > 0 {
+		msg = fmt.Sprint(args...)
+	}
+
+	return nil, &sinkError{msg}
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *sinkerror) DocString() (string, error) {
+	return "Sinkerror returns a sink error object which indicates that the sink execution failed.", nil
+}
+
+// addEvent
+// ========
+
+/*
+addevent adds an event to trigger sinks. This function will return immediately
+and not wait for the event cascade to finish. Use this function for event cascades.
+*/
+type addevent struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *addevent) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	return rf.addEvent(func(proc engine.Processor, event *engine.Event, scope *engine.RuleScope) (interface{}, error) {
+		var monitor engine.Monitor
+
+		parentMonitor, ok := is["monitor"]
+
+		if scope != nil || !ok {
+			monitor = proc.NewRootMonitor(nil, scope)
+		} else {
+			monitor = parentMonitor.(engine.Monitor).NewChildMonitor(0)
+		}
+
+		_, err := proc.AddEvent(event, monitor)
+		return nil, err
+	}, is, args)
+}
+
+func (rf *addevent) addEvent(addFunc func(engine.Processor, *engine.Event, *engine.RuleScope) (interface{}, error),
+	is map[string]interface{}, args []interface{}) (interface{}, error) {
+
+	var res interface{}
+	var stateMap map[interface{}]interface{}
+
+	erp := is["erp"].(*ECALRuntimeProvider)
+	proc := erp.Processor
+
+	if proc.Stopped() {
+		proc.Start()
+	}
+
+	err := fmt.Errorf("Need at least three parameters: name, kind and state")
+
+	if len(args) > 2 {
+
+		if stateMap, err = rf.AssertMapParam(3, args[2]); err == nil {
+			var scope *engine.RuleScope
+
+			event := engine.NewEvent(
+				fmt.Sprint(args[0]),
+				strings.Split(fmt.Sprint(args[1]), "."),
+				stateMap,
+			)
+
+			if len(args) > 3 {
+				var scopeMap = map[interface{}]interface{}{}
+
+				// Add optional scope - if not specified it is { "": true }
+
+				if scopeMap, err = rf.AssertMapParam(4, args[3]); err == nil {
+					var scopeData = map[string]bool{}
+
+					for k, v := range scopeMap {
+						b, _ := strconv.ParseBool(fmt.Sprint(v))
+						scopeData[fmt.Sprint(k)] = b
+					}
+
+					scope = engine.NewRuleScope(scopeData)
+				}
+			}
+
+			if err == nil {
+				res, err = addFunc(proc, event, scope)
+			}
+		}
+	}
+
+	return res, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *addevent) DocString() (string, error) {
+	return "AddEvent adds an event to trigger sinks. This function will return " +
+		"immediately and not wait for the event cascade to finish.", nil
+}
+
+// addEventAndWait
+// ===============
+
+/*
+addeventandwait adds an event to trigger sinks. This function will return once
+the event cascade has finished and return all errors.
+*/
+type addeventandwait struct {
+	*addevent
+}
+
+/*
+Run executes this function.
+*/
+func (rf *addeventandwait) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	return rf.addEvent(func(proc engine.Processor, event *engine.Event, scope *engine.RuleScope) (interface{}, error) {
+		var res []interface{}
+		rm := proc.NewRootMonitor(nil, scope)
+		m, err := proc.AddEventAndWait(event, rm)
+
+		if m != nil {
+			allErrors := m.(*engine.RootMonitor).AllErrors()
+
+			for _, e := range allErrors {
+
+				errors := map[interface{}]interface{}{}
+				for k, v := range e.ErrorMap {
+					errors[k] = v.Error()
+				}
+
+				item := map[interface{}]interface{}{
+					"event": map[interface{}]interface{}{
+						"name":  e.Event.Name(),
+						"kind":  strings.Join(e.Event.Kind(), "."),
+						"state": e.Event.State(),
+					},
+					"errors": errors,
+				}
+
+				res = append(res, item)
+			}
+		}
+
+		return res, err
+	}, is, args)
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *addeventandwait) DocString() (string, error) {
+	return "AddEventAndWait adds an event to trigger sinks. This function will " +
+		"return once the event cascade has finished.", nil
 }

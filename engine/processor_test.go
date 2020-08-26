@@ -687,6 +687,10 @@ func TestProcessorSimpleErrorHandling(t *testing.T) {
 		recordedErrors = len(rm.AllErrors()[0].ErrorMap)
 	})
 
+	// First test will always execute all rules and collect all errors
+
+	proc.SetFailOnFirstErrorInTriggerSequence(false)
+
 	proc.Start()
 
 	// Push a root event
@@ -739,4 +743,105 @@ InitialEvent -> event2 -> event3 -> TestRule3 : testerror2]` {
 		t.Error("Unexpected errors:", errs)
 		return
 	}
+
+	// Second test will fail on the first failed rule in an event trigger sequence
+
+	proc.SetFailOnFirstErrorInTriggerSequence(true)
+
+	proc.Start()
+
+	mon, err = proc.AddEvent(&Event{
+		"InitialEvent",
+		[]string{"core", "main", "event1"},
+		map[interface{}]interface{}{"name": "foo", "test": "123"},
+	}, nil)
+	rmon, ok = mon.(*RootMonitor)
+	if !ok {
+		t.Error("Root monitor expected:", mon, err)
+		return
+	}
+	proc.Finish()
+
+	errs = rmon.AllErrors()
+
+	if len(errs) != 2 {
+		t.Error("Unexpected number of errors:", len(errs))
+		return
+	}
+
+	if fmt.Sprint(errs) != `[Taskerror:
+InitialEvent -> TestRule1 : testerror Taskerror:
+InitialEvent -> event2 -> event3 -> TestRule3 : testerror2]` {
+		t.Error("Unexpected errors:", errs)
+		return
+	}
+
+	if recordedErrors != 1 {
+		t.Error("Unexpected number of recorded errors:", recordedErrors)
+		return
+	}
+
+	// Now test AddEventAndWait
+
+	proc.SetFailOnFirstErrorInTriggerSequence(false)
+	proc.Start()
+
+	mon, err = proc.AddEventAndWait(&Event{
+		"InitialEvent1",
+		[]string{"core", "main", "event5"},
+		map[interface{}]interface{}{"name": "foo", "test": "123"},
+	}, nil)
+
+	if mon != nil {
+		t.Error("Nothing should have triggered")
+		return
+	}
+
+	// Push a root event
+
+	mon, err = proc.AddEventAndWait(&Event{
+		"InitialEvent",
+		[]string{"core", "main", "event1"},
+		map[interface{}]interface{}{"name": "foo", "test": "123"},
+	}, nil)
+
+	rmon, ok = mon.(*RootMonitor)
+	if !ok {
+		t.Error("Root monitor expected:", mon, err)
+		return
+	}
+
+	if fmt.Sprint(mon) != "Monitor 10 (parent: <nil> priority: 0 activated: true finished: true)" {
+		t.Error("Unexpected result:", mon)
+		return
+	}
+
+	if proc.Stopped() {
+		t.Error("Processor should not be stopped at this point")
+		return
+	}
+
+	errs = rmon.AllErrors()
+
+	if len(errs) != 3 {
+		t.Error("Unexpected number of errors:", len(errs))
+		return
+	}
+
+	if recordedErrors != 3 {
+		t.Error("Unexpected number of recorded errors:", recordedErrors)
+		return
+	}
+
+	if fmt.Sprint(errs) != `[Taskerrors:
+InitialEvent -> TestRule1 : testerror
+InitialEvent -> TestRule1Copy : testerror
+InitialEvent -> TestRule3 : testerror2 Taskerror:
+InitialEvent -> event2 -> event3 -> TestRule3 : testerror2 Taskerror:
+InitialEvent -> event2 -> event3 -> TestRule3 : testerror2]` {
+		t.Error("Unexpected errors:", errs)
+		return
+	}
+
+	proc.Finish()
 }

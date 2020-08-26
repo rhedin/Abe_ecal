@@ -16,6 +16,11 @@
 package interpreter
 
 import (
+	"os"
+	"path/filepath"
+
+	"devt.de/krotik/ecal/config"
+	"devt.de/krotik/ecal/engine"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/util"
 )
@@ -78,17 +83,15 @@ var providerMap = map[string]ecalRuntimeNew{
 
 	parser.NodeIMPORT: importRuntimeInst,
 
-	/*
+	// Sink definition
 
-		// Sink definition
+	parser.NodeSINK:       sinkRuntimeInst,
+	parser.NodeKINDMATCH:  kindMatchRuntimeInst,
+	parser.NodeSCOPEMATCH: scopeMatchRuntimeInst,
+	parser.NodeSTATEMATCH: stateMatchRuntimeInst,
+	parser.NodePRIORITY:   priorityRuntimeInst,
+	parser.NodeSUPPRESSES: suppressesRuntimeInst,
 
-		parser.NodeSINK
-		parser.NodeKINDMATCH
-		parser.NodeSCOPEMATCH
-		parser.NodeSTATEMATCH
-		parser.NodePRIORITY
-		parser.NodeSUPPRESSES
-	*/
 	// Function definition
 
 	parser.NodeFUNC:   funcRuntimeInst,
@@ -131,13 +134,37 @@ ECALRuntimeProvider is the factory object producing runtime objects for ECAL AST
 type ECALRuntimeProvider struct {
 	Name          string                 // Name to identify the input
 	ImportLocator util.ECALImportLocator // Locator object for imports
+	Logger        util.Logger            // Logger object for log messages
+	Processor     engine.Processor       // Processor of the ECA engine
 }
 
 /*
 NewECALRuntimeProvider returns a new instance of a ECAL runtime provider.
 */
-func NewECALRuntimeProvider(name string, importLocator util.ECALImportLocator) *ECALRuntimeProvider {
-	return &ECALRuntimeProvider{name, importLocator}
+func NewECALRuntimeProvider(name string, importLocator util.ECALImportLocator, logger util.Logger) *ECALRuntimeProvider {
+
+	if importLocator == nil {
+
+		// By default imports are located in the current directory
+
+		importLocator = &util.FileImportLocator{filepath.Dir(os.Args[0])}
+	}
+
+	if logger == nil {
+
+		// By default we just have a memory logger
+
+		logger = util.NewMemoryLogger(100)
+	}
+
+	proc := engine.NewProcessor(config.Int(config.WorkerCount))
+
+	// By default ECAL should stop the triggering sequence of sinks after the
+	// first sink that returns a sinkerror.
+
+	proc.SetFailOnFirstErrorInTriggerSequence(true)
+
+	return &ECALRuntimeProvider{name, importLocator, logger, proc}
 }
 
 /*

@@ -21,7 +21,7 @@ import (
 func TestGeneralErrorCases(t *testing.T) {
 
 	n, _ := parser.Parse("a", "a")
-	inv := &invalidRuntime{newBaseRuntime(NewECALRuntimeProvider("a", nil), n)}
+	inv := &invalidRuntime{newBaseRuntime(NewECALRuntimeProvider("a", nil, nil), n)}
 
 	if err := inv.Validate().Error(); err != "ECAL error in a: Invalid construct (Unknown node: identifier) (Line:1 Pos:1)" {
 		t.Error("Unexpected result:", err)
@@ -63,6 +63,42 @@ statements
     foobar (map[interface {}]interface {}) : {"b":123}
 }` {
 		t.Error("Unexpected result: ", vsRes, res, err)
+		return
+	}
+}
+
+func TestLogging(t *testing.T) {
+
+	vs := scope.NewScope(scope.GlobalScope)
+
+	_, err := UnitTestEvalAndAST(
+		`
+log("Hello")
+debug("foo")
+error("bar")
+`, vs,
+		`
+statements
+  identifier: log
+    funccall
+      string: 'Hello'
+  identifier: debug
+    funccall
+      string: 'foo'
+  identifier: error
+    funccall
+      string: 'bar'
+`[1:])
+
+	if err != nil {
+		t.Error("Unexpected result: ", err)
+		return
+	}
+
+	if testlogger.String() != `Hello
+debug: foo
+error: bar` {
+		t.Error("Unexpected result: ", testlogger.String())
 		return
 	}
 }

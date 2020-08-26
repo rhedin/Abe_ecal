@@ -197,7 +197,7 @@ a := 10
 
 for a > 0 {
 
-	log("Info: ", "-> ", a)
+	testlog("Info: ", "-> ", a)
 	a := a - 1
 }
 `, vs,
@@ -212,7 +212,7 @@ statements
         identifier: a
         number: 0
     statements
-      identifier: log
+      identifier: testlog
         funccall
           string: 'Info: '
           string: '-> '
@@ -232,7 +232,7 @@ statements
 	if vs.String() != `
 GlobalScope {
     a (float64) : 0
-    log (*interpreter.TestLogger) : TestLogger
+    testlog (*interpreter.TestLogger) : TestLogger
     block: loop (Line:4 Pos:1) {
     }
 }`[1:] {
@@ -261,7 +261,7 @@ Info: -> 1`[1:] {
 	_, err = UnitTestEvalAndAST(
 		`
 	   for a in range(2, 10, 1) {
-           log("Info", "->", a)
+           testlog("Info", "->", a)
 	   }
 	   `, vs,
 		`
@@ -274,7 +274,7 @@ loop
         number: 10
         number: 1
   statements
-    identifier: log
+    identifier: testlog
       funccall
         string: 'Info'
         string: '->'
@@ -288,7 +288,7 @@ loop
 
 	if vs.String() != `
 GlobalScope {
-    log (*interpreter.TestLogger) : TestLogger
+    testlog (*interpreter.TestLogger) : TestLogger
     block: loop (Line:2 Pos:5) {
         a (float64) : 10
     }
@@ -317,7 +317,7 @@ Info->10`[1:] {
 	_, err = UnitTestEvalAndAST(
 		`
 for a in range(10, 3, -3) {
-  log("Info", "->", a)
+  testlog("Info", "->", a)
 }
 	   `, vs,
 		`
@@ -331,7 +331,7 @@ loop
         minus
           number: 3
   statements
-    identifier: log
+    identifier: testlog
       funccall
         string: 'Info'
         string: '->'
@@ -345,7 +345,7 @@ loop
 
 	if vs.String() != `
 GlobalScope {
-    log (*interpreter.TestLogger) : TestLogger
+    testlog (*interpreter.TestLogger) : TestLogger
     block: loop (Line:2 Pos:1) {
         a (float64) : 4
     }
@@ -371,7 +371,7 @@ Info->4`[1:] {
 		`
 for a in range(10, 3, -3) {
   for b in range(1, 3, 1) {
-    log("Info", "->", a, b)
+    testlog("Info", "->", a, b)
   }
 }
 	   `, vs,
@@ -395,7 +395,7 @@ loop
             number: 3
             number: 1
       statements
-        identifier: log
+        identifier: testlog
           funccall
             string: 'Info'
             string: '->'
@@ -410,7 +410,7 @@ loop
 
 	if vs.String() != `
 GlobalScope {
-    log (*interpreter.TestLogger) : TestLogger
+    testlog (*interpreter.TestLogger) : TestLogger
     block: loop (Line:2 Pos:1) {
         a (float64) : 4
         block: loop (Line:3 Pos:3) {
@@ -444,7 +444,7 @@ Info->4 3`[1:] {
 	_, err = UnitTestEvalAndAST(
 		`
 for a in range(1, 10, 1) {
-  log("Info", "->", a)
+  testlog("Info", "->", a)
   if a == 3 {
     break
   }
@@ -459,7 +459,7 @@ loop
         number: 10
         number: 1
   statements
-    identifier: log
+    identifier: testlog
       funccall
         string: 'Info'
         string: '->'
@@ -480,7 +480,7 @@ loop
 
 	if vs.String() != `
 GlobalScope {
-    log (*interpreter.TestLogger) : TestLogger
+    testlog (*interpreter.TestLogger) : TestLogger
     block: loop (Line:2 Pos:1) {
         a (float64) : 3
         block: if (Line:4 Pos:3) {
@@ -510,7 +510,7 @@ for a in range(1, 10, 1) {
   if a > 3 and a < 6  {
     continue
   }
-  log("Info", "->", a)
+  testlog("Info", "->", a)
 }`, vs,
 		`
 loop
@@ -533,7 +533,7 @@ loop
             number: 6
       statements
         continue
-    identifier: log
+    identifier: testlog
       funccall
         string: 'Info'
         string: '->'
@@ -547,7 +547,7 @@ loop
 
 	if vs.String() != `
 GlobalScope {
-    log (*interpreter.TestLogger) : TestLogger
+    testlog (*interpreter.TestLogger) : TestLogger
     block: loop (Line:2 Pos:1) {
         a (float64) : 10
         block: if (Line:3 Pos:3) {
@@ -580,7 +580,7 @@ Info->10`[1:] {
 		`
 for a in [1,2] {
   for b in [1,2,3,"Hans", 4] {
-    log("Info", "->", a, "-", b)
+    testlog("Info", "->", a, "-", b)
   }
 }
 	   `, vs,
@@ -602,7 +602,7 @@ loop
           string: 'Hans'
           number: 4
       statements
-        identifier: log
+        identifier: testlog
           funccall
             string: 'Info'
             string: '->'
@@ -618,7 +618,7 @@ loop
 
 	if vs.String() != `
 GlobalScope {
-    log (*interpreter.TestLogger) : TestLogger
+    testlog (*interpreter.TestLogger) : TestLogger
     block: loop (Line:2 Pos:1) {
         a (float64) : 2
         block: loop (Line:3 Pos:3) {
@@ -652,12 +652,12 @@ Info->2-4`[1:] {
 		`
 l := [1,2,3,4]
 for a in range(0, 3, 1) {
-  log("Info", "-a>", a, "-", l[a])
+  testlog("Info", "-a>", a, "-", l[a])
 }
 for a in range(0, 3, 1) {
-  log("Info", "-b>", a, "-", l[-a])
+  testlog("Info", "-b>", a, "-", l[-a])
 }
-log("Info", "xxx>", l[-1])
+testlog("Info", "xxx>", l[-1])
 	   `, vs,
 		`
 statements
@@ -677,7 +677,7 @@ statements
           number: 3
           number: 1
     statements
-      identifier: log
+      identifier: testlog
         funccall
           string: 'Info'
           string: '-a>'
@@ -695,7 +695,7 @@ statements
           number: 3
           number: 1
     statements
-      identifier: log
+      identifier: testlog
         funccall
           string: 'Info'
           string: '-b>'
@@ -705,7 +705,7 @@ statements
             compaccess
               minus
                 identifier: a
-  identifier: log
+  identifier: testlog
     funccall
       string: 'Info'
       string: 'xxx>'
@@ -723,7 +723,7 @@ statements
 	if vs.String() != `
 GlobalScope {
     l ([]interface {}) : [1,2,3,4]
-    log (*interpreter.TestLogger) : TestLogger
+    testlog (*interpreter.TestLogger) : TestLogger
     block: loop (Line:3 Pos:1) {
         a (float64) : 3
     }
@@ -758,7 +758,7 @@ Infoxxx>4`[1:] {
 		`
 x := { "c": 0, "a":2, "b":4}
 for [a, b] in x {
-  log("Info", "->", a, "-", b)
+  testlog("Info", "->", a, "-", b)
 }
 	   `, vs,
 		`
@@ -782,7 +782,7 @@ statements
         identifier: b
       identifier: x
     statements
-      identifier: log
+      identifier: testlog
         funccall
           string: 'Info'
           string: '->'

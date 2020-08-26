@@ -175,6 +175,9 @@ func (f *function) Run(instanceID string, vs parser.Scope, is map[string]interfa
 	}
 
 	if err == nil {
+
+		scope.SetParentOfScope(fvs, vs)
+
 		res, err = body.Runtime.Eval(fvs, make(map[string]interface{}))
 
 		// Check for return value (delivered as error object)

@@ -125,23 +125,31 @@ resolveFunction execute function calls and return the result.
 func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is map[string]interface{},
 	node *parser.ASTNode, result interface{}, err error) (interface{}, error) {
 
+	is["erp"] = rt.erp // All functions have access to the ECAL Runtime Provider
+
 	for _, funccall := range node.Children {
 
 		if funccall.Name == parser.NodeFUNCCALL {
+			var funcObj util.ECALFunction
 
-			funcObj, ok := result.(util.ECALFunction)
+			ok := astring == "log" || astring == "error" || astring == "debug"
 
 			if !ok {
 
-				// Check for inbuild function
-
-				funcObj, ok = inbuildFuncMap[astring]
+				funcObj, ok = result.(util.ECALFunction)
 
 				if !ok {
 
 					// Check for stdlib function
 
 					funcObj, ok = stdlib.GetStdlibFunc(astring)
+
+					if !ok {
+
+						// Check for inbuild function
+
+						funcObj, ok = inbuildFuncMap[astring]
+					}
 				}
 			}
 
@@ -161,22 +169,31 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 
 				if err == nil {
 
-					// Execute the function and
+					if astring == "log" {
+						rt.erp.Logger.LogInfo(args...)
+					} else if astring == "error" {
+						rt.erp.Logger.LogError(args...)
+					} else if astring == "debug" {
+						rt.erp.Logger.LogDebug(args...)
+					} else {
 
-					result, err = funcObj.Run(rt.instanceID, vs, is, args)
+						// Execute the function and
 
-					if _, ok := err.(*util.RuntimeError); err != nil && !ok {
+						result, err = funcObj.Run(rt.instanceID, vs, is, args)
 
-						// Convert into a proper runtime error if necessary
+						if _, ok := err.(*util.RuntimeError); err != nil && !ok {
 
-						rerr := rt.erp.NewRuntimeError(util.ErrRuntimeError,
-							err.Error(), node).(*util.RuntimeError)
+							// Convert into a proper runtime error if necessary
 
-						if err == util.ErrIsIterator || err == util.ErrEndOfIteration || err == util.ErrContinueIteration {
-							rerr.Type = err
+							rerr := rt.erp.NewRuntimeError(util.ErrRuntimeError,
+								err.Error(), node).(*util.RuntimeError)
+
+							if err == util.ErrIsIterator || err == util.ErrEndOfIteration || err == util.ErrContinueIteration {
+								rerr.Type = err
+							}
+
+							err = rerr
 						}
-
-						err = rerr
 					}
 				}
 

@@ -37,21 +37,21 @@ func NewMemoryLogger(size int) *MemoryLogger {
 /*
 LogError adds a new error log message.
 */
-func (ml *MemoryLogger) LogError(p *Processor, m ...interface{}) {
+func (ml *MemoryLogger) LogError(m ...interface{}) {
 	ml.RingBuffer.Add(fmt.Sprintf("error: %v", fmt.Sprint(m...)))
 }
 
 /*
 LogInfo adds a new info log message.
 */
-func (ml *MemoryLogger) LogInfo(p *Processor, m ...interface{}) {
-	ml.RingBuffer.Add(fmt.Sprintf("info: %v", fmt.Sprint(m...)))
+func (ml *MemoryLogger) LogInfo(m ...interface{}) {
+	ml.RingBuffer.Add(fmt.Sprintf("%v", fmt.Sprint(m...)))
 }
 
 /*
 LogDebug adds a new debug log message.
 */
-func (ml *MemoryLogger) LogDebug(p *Processor, m ...interface{}) {
+func (ml *MemoryLogger) LogDebug(m ...interface{}) {
 	ml.RingBuffer.Add(fmt.Sprintf("debug: %v", fmt.Sprint(m...)))
 }
 
@@ -105,22 +105,22 @@ func NewStdOutLogger() *StdOutLogger {
 /*
 LogError adds a new error log message.
 */
-func (sl *StdOutLogger) LogError(p *Processor, m ...interface{}) {
+func (sl *StdOutLogger) LogError(m ...interface{}) {
 	sl.stdlog(fmt.Sprintf("error: %v", fmt.Sprint(m...)))
 }
 
 /*
 LogInfo adds a new info log message.
 */
-func (sl *StdOutLogger) LogInfo(p *Processor, m ...interface{}) {
-	sl.stdlog(fmt.Sprintf("error: %v", fmt.Sprint(m...)))
+func (sl *StdOutLogger) LogInfo(m ...interface{}) {
+	sl.stdlog(fmt.Sprintf("%v", fmt.Sprint(m...)))
 }
 
 /*
 LogDebug adds a new debug log message.
 */
-func (sl *StdOutLogger) LogDebug(p *Processor, m ...interface{}) {
-	sl.stdlog(fmt.Sprintf("error: %v", fmt.Sprint(m...)))
+func (sl *StdOutLogger) LogDebug(m ...interface{}) {
+	sl.stdlog(fmt.Sprintf("debug: %v", fmt.Sprint(m...)))
 }
 
 /*
@@ -139,17 +139,17 @@ func NewNullLogger() *NullLogger {
 /*
 LogError adds a new error log message.
 */
-func (nl *NullLogger) LogError(p *Processor, m ...interface{}) {
+func (nl *NullLogger) LogError(m ...interface{}) {
 }
 
 /*
 LogInfo adds a new info log message.
 */
-func (nl *NullLogger) LogInfo(p *Processor, m ...interface{}) {
+func (nl *NullLogger) LogInfo(m ...interface{}) {
 }
 
 /*
 LogDebug adds a new debug log message.
 */
-func (nl *NullLogger) LogDebug(p *Processor, m ...interface{}) {
+func (nl *NullLogger) LogDebug(m ...interface{}) {
 }

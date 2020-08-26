@@ -180,6 +180,29 @@ statements
 	}
 }
 
+func TestFunctionScoping(t *testing.T) {
+
+	vs := scope.NewScope(scope.GlobalScope)
+
+	res, err := UnitTestEval(`
+c := 1
+foo := func (a, b=1) {
+  return a + b + c
+}
+
+result1 := foo(3, 2)
+`, vs)
+
+	if vsRes := vs.String(); err != nil || res != nil || vsRes != `GlobalScope {
+    c (float64) : 1
+    foo (*interpreter.function) : ecal.function:  (Line 3, Pos 8)
+    result1 (float64) : 6
+}` {
+		t.Error("Unexpected result: ", vsRes, res, err)
+		return
+	}
+}
+
 func TestObjectInstantiation(t *testing.T) {
 
 	vs := scope.NewScope(scope.GlobalScope)

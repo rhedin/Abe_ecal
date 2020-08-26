@@ -84,6 +84,20 @@ type Processor interface {
 	SetRootMonitorErrorObserver(func(rm *RootMonitor))
 
 	/*
+		SetFailOnFirstErrorInTriggerSequence sets the behavior when rules return errors.
+		If set to false (default) then all rules in a trigger sequence for a specific event
+		are executed. If set to true then the first rule which returns an error will stop
+		the trigger sequence. Events which have been added by the failing rule are still processed.
+	*/
+	SetFailOnFirstErrorInTriggerSequence(bool)
+
+	/*
+	   AddEventAndWait adds a new event to the processor and waits for the resulting event cascade
+	   to finish. If a monitor is passed then it must be a RootMonitor.
+	*/
+	AddEventAndWait(event *Event, monitor *RootMonitor) (Monitor, error)
+
+	/*
 	   AddEvent adds a new event to the processor. Returns the monitor if the event
 	   triggered a rule and nil if the event was skipped.
 	*/
@@ -119,6 +133,7 @@ type eventProcessor struct {
 	id                  uint64                // Processor ID
 	pool                *pools.ThreadPool     // Thread pool of this processor
 	workerCount         int                   // Number of threads for this processor
+	failOnFirstError    bool                  // Stop rule execution on first error in an event trigger sequence
 	ruleIndex           RuleIndex             // Container for loaded rules
 	triggeringCache     map[string]bool       // Cache which remembers which events are triggering
 	triggeringCacheLock sync.Mutex            // Lock for triggeringg cache
@@ -132,7 +147,7 @@ NewProcessor creates a new event processor with a given number of workers.
 func NewProcessor(workerCount int) Processor {
 	ep := flowutil.NewEventPump()
 	return &eventProcessor{newProcID(), pools.NewThreadPoolWithQueue(NewTaskQueue(ep)),
-		workerCount, NewRuleIndex(), nil, sync.Mutex{}, ep, nil}
+		workerCount, false, NewRuleIndex(), nil, sync.Mutex{}, ep, nil}
 }
 
 /*
@@ -253,6 +268,16 @@ func (p *eventProcessor) SetRootMonitorErrorObserver(rmErrorObserver func(rm *Ro
 }
 
 /*
+SetFailOnFirstErrorInTriggerSequence sets the behavior when rules return errors.
+If set to false (default) then all rules in a trigger sequence for a specific event
+are executed. If set to true then the first rule which returns an error will stop
+the trigger sequence. Events which have been added by the failing rule are still processed.
+*/
+func (p *eventProcessor) SetFailOnFirstErrorInTriggerSequence(v bool) {
+	p.failOnFirstError = v
+}
+
+/*
 Notify the root monitor error observer that an error occurred.
 */
 func (p *eventProcessor) notifyRootMonitorErrors(rm *RootMonitor) {
@@ -262,10 +287,50 @@ func (p *eventProcessor) notifyRootMonitorErrors(rm *RootMonitor) {
 }
 
 /*
+AddEventAndWait adds a new event to the processor and waits for the resulting event cascade
+to finish. If a monitor is passed then it must be a RootMonitor.
+*/
+func (p *eventProcessor) AddEventAndWait(event *Event, monitor *RootMonitor) (Monitor, error) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	if monitor == nil {
+		monitor = p.NewRootMonitor(nil, nil)
+	}
+
+	p.messageQueue.AddObserver(MessageRootMonitorFinished, monitor,
+		func(event string, eventSource interface{}) {
+
+			// Everything has finished
+
+			wg.Done()
+
+			p.messageQueue.RemoveObservers(event, eventSource)
+		})
+
+	resMonitor, err := p.AddEvent(event, monitor)
+
+	if resMonitor == nil {
+
+		// Event was not added
+
+		p.messageQueue.RemoveObservers(MessageRootMonitorFinished, monitor)
+
+	} else {
+
+		// Event was added now wait for it to finish
+
+		wg.Wait()
+	}
+
+	return resMonitor, err
+}
+
+/*
 AddEvent adds a new event to the processor. Returns the monitor if the event
 triggered a rule and nil if the event was skipped.
 */
-func (p *eventProcessor) AddEvent(event *Event, parentMonitor Monitor) (Monitor, error) {
+func (p *eventProcessor) AddEvent(event *Event, eventMonitor Monitor) (Monitor, error) {
 
 	// Check that the thread pool is running
 
@@ -281,8 +346,8 @@ func (p *eventProcessor) AddEvent(event *Event, parentMonitor Monitor) (Monitor,
 
 		EventTracer.record(event, "eventProcessor.AddEvent", "Event was skipped")
 
-		if parentMonitor != nil {
-			parentMonitor.Skip(event)
+		if eventMonitor != nil {
+			eventMonitor.Skip(event)
 		}
 
 		return nil, nil
@@ -290,11 +355,11 @@ func (p *eventProcessor) AddEvent(event *Event, parentMonitor Monitor) (Monitor,
 
 	// Check if we need to construct a new root monitor
 
-	if parentMonitor == nil {
-		parentMonitor = p.NewRootMonitor(nil, nil)
+	if eventMonitor == nil {
+		eventMonitor = p.NewRootMonitor(nil, nil)
 	}
 
-	if rootMonitor, ok := parentMonitor.(*RootMonitor); ok {
+	if rootMonitor, ok := eventMonitor.(*RootMonitor); ok {
 		p.messageQueue.AddObserver(MessageRootMonitorFinished, rootMonitor,
 			func(event string, eventSource interface{}) {
 
@@ -308,15 +373,15 @@ func (p *eventProcessor) AddEvent(event *Event, parentMonitor Monitor) (Monitor,
 			})
 	}
 
-	parentMonitor.Activate(event)
+	eventMonitor.Activate(event)
 
 	EventTracer.record(event, "eventProcessor.AddEvent", "Adding task to thread pool")
 
 	// Kick off event processing (see Processor.processEvent)
 
-	p.pool.AddTask(&Task{p, parentMonitor, event})
+	p.pool.AddTask(&Task{p, eventMonitor, event})
 
-	return parentMonitor, nil
+	return eventMonitor, nil
 }
 
 /*
@@ -396,6 +461,9 @@ func (p *eventProcessor) ProcessEvent(event *Event, parent Monitor) map[string]e
 	for _, rule := range rulesExecuting {
 		if err := rule.Action(p, parent, event); err != nil {
 			errors[rule.Name] = err
+		}
+		if p.failOnFirstError && len(errors) > 0 {
+			break
 		}
 	}
 

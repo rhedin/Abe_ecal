@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"devt.de/krotik/common/datautil"
+	"devt.de/krotik/ecal/engine"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
 	"devt.de/krotik/ecal/util"
@@ -49,11 +50,19 @@ var usedNodes = map[string]bool{
 	parser.NodeEOF: true,
 }
 
+// Last used logger
+//
+var testlogger *util.MemoryLogger
+
+// Last used processor
+//
+var testprocessor engine.Processor
+
 func UnitTestEval(input string, vs parser.Scope) (interface{}, error) {
 	return UnitTestEvalAndAST(input, vs, "")
 }
 func UnitTestEvalAndAST(input string, vs parser.Scope, expectedAST string) (interface{}, error) {
-	return UnitTestEvalAndASTAndImport(input, vs, "", nil)
+	return UnitTestEvalAndASTAndImport(input, vs, expectedAST, nil)
 }
 
 func UnitTestEvalAndASTAndImport(input string, vs parser.Scope, expectedAST string, importLocator util.ECALImportLocator) (interface{}, error) {
@@ -72,8 +81,12 @@ func UnitTestEvalAndASTAndImport(input string, vs parser.Scope, expectedAST stri
 
 	// Parse the input
 
-	ast, err := parser.ParseWithRuntime("ECALEvalTest", input,
-		NewECALRuntimeProvider("ECALTestRuntime", importLocator))
+	erp := NewECALRuntimeProvider("ECALTestRuntime", importLocator, nil)
+
+	testlogger = erp.Logger.(*util.MemoryLogger)
+	testprocessor = erp.Processor
+
+	ast, err := parser.ParseWithRuntime("ECALEvalTest", input, erp)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +115,7 @@ addLogFunction adds a simple log function to a given Scope.
 */
 func addLogFunction(vs parser.Scope) *datautil.RingBuffer {
 	buf := datautil.NewRingBuffer(20)
-	vs.SetValue("log", &TestLogger{buf})
+	vs.SetValue("testlog", &TestLogger{buf})
 	return buf
 }
 

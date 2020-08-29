@@ -46,6 +46,7 @@ var (
 	ErrNotAList         = errors.New("Operand is not a list")
 	ErrNotAMap          = errors.New("Operand is not a map")
 	ErrNotAListOrMap    = errors.New("Operand is not a list nor a map")
+	ErrSink             = errors.New("Error in sink")
 
 	// ErrReturn is not an error. It is used to return when executing a function
 	ErrReturn = errors.New("*** return ***")

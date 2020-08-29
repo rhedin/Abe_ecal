@@ -494,12 +494,24 @@ Run executes this function.
 */
 func (rf *sinkerror) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
 	var msg string
+	var detail interface{}
 
 	if len(args) > 0 {
-		msg = fmt.Sprint(args...)
+		msg = fmt.Sprint(args[0])
+		if len(args) > 1 {
+			detail = args[1]
+		}
 	}
 
-	return nil, &sinkError{msg}
+	erp := is["erp"].(*ECALRuntimeProvider)
+	node := is["astnode"].(*parser.ASTNode)
+
+	return nil, &SinkRuntimeError{
+		erp.NewRuntimeError(util.ErrSink, msg, node).(*util.RuntimeError),
+		nil,
+		detail,
+	}
+
 }
 
 /*
@@ -627,7 +639,16 @@ func (rf *addeventandwait) Run(instanceID string, vs parser.Scope, is map[string
 
 				errors := map[interface{}]interface{}{}
 				for k, v := range e.ErrorMap {
-					errors[k] = v.Error()
+					se := v.(*SinkRuntimeError)
+
+					// Note: The variable scope of the sink (se.environment)
+					// was also captured - for now it is not exposed to the
+					// language environment
+
+					errors[k] = map[interface{}]interface{}{
+						"message": se.Error(),
+						"detail":  se.detail,
+					}
 				}
 
 				item := map[interface{}]interface{}{

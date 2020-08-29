@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"strings"
 
+	"devt.de/krotik/common/stringutil"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
 	"devt.de/krotik/ecal/stdlib"
@@ -125,7 +126,8 @@ resolveFunction execute function calls and return the result.
 func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is map[string]interface{},
 	node *parser.ASTNode, result interface{}, err error) (interface{}, error) {
 
-	is["erp"] = rt.erp // All functions have access to the ECAL Runtime Provider
+	is["erp"] = rt.erp      // All functions have access to the ECAL Runtime Provider
+	is["astnode"] = rt.node // ... and the AST node
 
 	for _, funccall := range node.Children {
 
@@ -169,19 +171,34 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 
 				if err == nil {
 
-					if astring == "log" {
-						rt.erp.Logger.LogInfo(args...)
-					} else if astring == "error" {
-						rt.erp.Logger.LogError(args...)
-					} else if astring == "debug" {
-						rt.erp.Logger.LogDebug(args...)
+					if astring == "log" || astring == "error" || astring == "debug" {
+
+						// Convert non-string structures
+
+						for i, a := range args {
+							if _, ok := args[i].(string); !ok {
+								args[i] = stringutil.ConvertToPrettyString(a)
+							}
+						}
+
+						if astring == "log" {
+							rt.erp.Logger.LogInfo(args...)
+						} else if astring == "error" {
+							rt.erp.Logger.LogError(args...)
+						} else if astring == "debug" {
+							rt.erp.Logger.LogDebug(args...)
+						}
+
 					} else {
 
 						// Execute the function and
 
 						result, err = funcObj.Run(rt.instanceID, vs, is, args)
 
-						if _, ok := err.(*util.RuntimeError); err != nil && !ok {
+						_, ok1 := err.(*util.RuntimeError)
+						_, ok2 := err.(*SinkRuntimeError)
+
+						if err != nil && !ok1 && !ok2 {
 
 							// Convert into a proper runtime error if necessary
 

@@ -12,6 +12,7 @@
 // Event function: event
 // Context supporting final
 // Event handling
+// Inline escaping in strings "bla {1+1} bla"
 
 package interpreter
 

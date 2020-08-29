@@ -84,13 +84,15 @@ GlobalScope {
 		return
 	}
 
+	// Test case 1 - Multiple rules, scope match, priorities and waiting for finish (no errors)
+
 	_, err = UnitTestEval(
 		`
 sink rule1
     kindmatch [ "web.page.index" ],
 	scopematch [ "request.read" ],
 	{
-        log("rule1 > Handling request: ", event.kind)
+        log("rule1 - Handling request: ", event.kind)
         addEvent("Rule1Event1", "not_existing", event.state)
         addEvent("Rule1Event2", "web.log", event.state)
 	}
@@ -99,13 +101,16 @@ sink rule2
     kindmatch [ "web.page.*" ],
     priority 1,  # Ensure this rule is always executed after rule1
 	{
-        log("rule2 > Tracking user:", event.state.user)
+        log("rule2 - Tracking user:", event.state.user)
+        if event.state.user == "bar" {
+            sinkError("User bar was here", [123])
+        }
 	}
 
 sink rule3
     kindmatch [ "web.log" ],
 	{
-        log("rule3 > Logging user:", event.state.user)
+        log("rule3 - Logging user:", event.state.user)
 	}
 
 res := addEventAndWait("request", "web.page.index", {
@@ -113,7 +118,15 @@ res := addEventAndWait("request", "web.page.index", {
 }, {
 	"request.read" : true
 })
-log("ErrorResult:", res, len(res) == 0)
+
+log("ErrorResult:", res, " ", len(res) == 0)
+
+res := addEventAndWait("request", "web.page.index", {
+	"user" : "bar"
+}, {
+	"request.read" : false
+})
+log("ErrorResult:", res[0].errors, " ", res == null)
 `, vs)
 
 	if err != nil {
@@ -122,10 +135,54 @@ log("ErrorResult:", res, len(res) == 0)
 	}
 
 	if testlogger.String() != `
-rule1 > Handling request: web.page.index
-rule2 > Tracking user:foo
-rule3 > Logging user:foo
-ErrorResult:[] true`[1:] {
+rule1 - Handling request: web.page.index
+rule2 - Tracking user:foo
+rule3 - Logging user:foo
+ErrorResult:null true
+rule2 - Tracking user:bar
+ErrorResult:{
+  "rule2": {
+    "detail": [
+      123
+    ],
+    "message": "ECAL error in ECALTestRuntime: Error in sink (User bar was here) (Line:17 Pos:13)"
+  }
+} false`[1:] {
+		t.Error("Unexpected result:", testlogger.String())
+		return
+	}
+
+	// Test case 2 - unexpected error
+
+	_, err = UnitTestEval(
+		`
+sink rule1
+    kindmatch [ "test" ],
+    {
+        log("rule1 - ", event.kind)
+        noexitingfunctioncall()
+    }
+
+err := addEventAndWait("someevent", "test", {})
+
+if err != null {
+    error(err[0].errors)
+}
+`, vs)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if testlogger.String() != `
+rule1 - test
+error: {
+  "rule1": {
+    "detail": null,
+    "message": "ECAL error in ECALTestRuntime: Unknown construct (Unknown function: noexitingfunctioncall) (Line:6 Pos:9)"
+  }
+}`[1:] {
 		t.Error("Unexpected result:", testlogger.String())
 		return
 	}

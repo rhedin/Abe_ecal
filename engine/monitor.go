@@ -17,8 +17,8 @@ import (
 	"sync"
 
 	"devt.de/krotik/common/errorutil"
-	"devt.de/krotik/common/flowutil"
 	"devt.de/krotik/common/sortutil"
+	"devt.de/krotik/ecal/engine/pubsub"
 )
 
 /*
@@ -299,7 +299,7 @@ type RootMonitor struct {
 	priorities   *sortutil.IntHeap       // List of handled priorities
 	ruleScope    *RuleScope              // Rule scope definitions
 	unfinished   int                     // Counter of all unfinished trackers
-	messageQueue *flowutil.EventPump     // Message passing queue of the processor
+	messageQueue *pubsub.EventPump       // Message passing queue of the processor
 	errors       map[uint64]*monitorBase // Monitors which got errors
 	finished     func(Processor)         // Finish handler (can be used externally)
 }
@@ -308,7 +308,7 @@ type RootMonitor struct {
 NewRootMonitor creates a new root monitor.
 */
 func newRootMonitor(context map[string]interface{}, scope *RuleScope,
-	messageQueue *flowutil.EventPump) *RootMonitor {
+	messageQueue *pubsub.EventPump) *RootMonitor {
 
 	ret := &RootMonitor{newMonitorBase(0, nil, context), &sync.Mutex{},
 		make(map[int]int), &sortutil.IntHeap{}, scope, 1, messageQueue,

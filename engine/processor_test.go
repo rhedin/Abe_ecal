@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"devt.de/krotik/common/errorutil"
-	"devt.de/krotik/common/pools"
+	"devt.de/krotik/ecal/engine/pool"
 )
 
 func TestProcessorSimpleCascade(t *testing.T) {
@@ -440,14 +440,14 @@ func TestProcessorScopeHandling(t *testing.T) {
 	proc.AddRule(rule1)
 	proc.AddRule(rule2)
 
-	if proc.Status() != pools.StatusStopped || !proc.Stopped() {
+	if proc.Status() != pool.StatusStopped || !proc.Stopped() {
 		t.Error("Unexpected status:", proc.Status(), proc.Stopped())
 		return
 	}
 
 	proc.Start()
 
-	if proc.Status() != pools.StatusRunning || proc.Stopped() {
+	if proc.Status() != pool.StatusRunning || proc.Stopped() {
 		t.Error("Unexpected status:", proc.Status(), proc.Stopped())
 		return
 	}

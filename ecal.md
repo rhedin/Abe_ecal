@@ -1,6 +1,6 @@
 ECAL - Event Condition Action Language
 --
-ECAL is a language to create a rule based system which reacts to events provided that a defined condition holds:
+ECAL is a language to create a rule based system which reacts to events. Events are handled by actions which are guarded by conditions:
 
 Event -> Condition -> Action
 
@@ -29,21 +29,8 @@ foobar.doSomething()
 
 Event Sinks
 --
-TODO:
+Event sinks are the core constructs of ECAL which provide concurrency and the means to respond to events of an external system. Sinks provide ECAL with an interface to an [event condition action engine](engine.md) which coordinates the parallel execution of code. Sinks cannot be scoped into modules or objects and are usually declared at the top level. The have the following form:
 
-- How ECAL provides concurrency support
-
-Sinks are should have unique names which identify them and the following attributes:
-
-Attribute | Description
--|-
-kindmatch  | Matching condition for event kind e.g. db.op.TableInsert. A list of strings in dot notation which describes event kinds. May contain `*` characters as wildcards.
-scopematch | Matching condition for event cascade scope e.g. db.dbRead db.dbWrite. A list of strings in dot notation which describe the scopes which are required for this sink to trigger.
-statematch | Match on event state: A simple map of required key / value states in the event state. `NULL` values can be used as wildcards (i.e. match is only on key).
-priority | Priority of the sink. Sinks of higher priority are executed first. The higher the number the lower the priority - 0 is the highest priority.
-suppresses | A list of sink names which should be suppressed if this sink is executed.
-
-Example:
 ```
 sink "mysink"
     kindmatch [ foo.bar.* ],
@@ -56,11 +43,19 @@ sink "mysink"
     }
 ```
 
-Events which match
-...
+Sinks are should have unique names which identify them and the following attributes:
 
-Events which don't match
-...
+Attribute | Description
+-|-
+kindmatch  | Matching condition for event kind e.g. db.op.TableInsert. A list of strings in dot notation which describes event kinds. May contain `*` characters as wildcards.
+scopematch | Matching condition for event cascade scope e.g. db.dbRead db.dbWrite. A list of strings in dot notation which describe the scopes which are required for this sink to trigger.
+statematch | Match on event state: A simple map of required key / value states in the event state. `NULL` values can be used as wildcards (i.e. match is only on key).
+priority | Priority of the sink. Sinks of higher priority are executed first. The higher the number the lower the priority - 0 is the highest priority.
+suppresses | A list of sink names which should be suppressed if this sink is executed.
+
+
+
+
 
 Functions
 --

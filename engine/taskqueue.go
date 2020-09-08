@@ -18,10 +18,10 @@ import (
 	"sync"
 
 	"devt.de/krotik/common/errorutil"
-	"devt.de/krotik/common/flowutil"
-	"devt.de/krotik/common/pools"
 	"devt.de/krotik/common/sortutil"
 	"devt.de/krotik/common/stringutil"
+	"devt.de/krotik/ecal/engine/pool"
+	"devt.de/krotik/ecal/engine/pubsub"
 )
 
 /*
@@ -80,7 +80,6 @@ func (t *Task) Run() error {
 
 	if len(errors) > 0 {
 		EventTracer.record(t.e, "Task.Run", fmt.Sprint("Task had errors:", errors))
-
 		return &TaskError{errors, t.e, t.m}
 	}
 
@@ -108,13 +107,13 @@ TaskQueue models the queue of tasks for a processor.
 type TaskQueue struct {
 	lock         *sync.Mutex                        // Lock for queue
 	queues       map[uint64]*sortutil.PriorityQueue // Map from root monitor id to priority queue
-	messageQueue *flowutil.EventPump                // Queue for message passing between components
+	messageQueue *pubsub.EventPump                  // Queue for message passing between components
 }
 
 /*
 NewTaskQueue creates a new TaskQueue object.
 */
-func NewTaskQueue(ep *flowutil.EventPump) *TaskQueue {
+func NewTaskQueue(ep *pubsub.EventPump) *TaskQueue {
 	return &TaskQueue{&sync.Mutex{}, make(map[uint64]*sortutil.PriorityQueue), ep}
 }
 
@@ -131,7 +130,7 @@ func (tq *TaskQueue) Clear() {
 /*
 Pop returns the next task from the queue.
 */
-func (tq *TaskQueue) Pop() pools.Task {
+func (tq *TaskQueue) Pop() pool.Task {
 	tq.lock.Lock()
 	defer tq.lock.Unlock()
 
@@ -181,7 +180,7 @@ func (tq *TaskQueue) Pop() pools.Task {
 /*
 Push adds another task to the queue.
 */
-func (tq *TaskQueue) Push(t pools.Task) {
+func (tq *TaskQueue) Push(t pool.Task) {
 	tq.lock.Lock()
 	defer tq.lock.Unlock()
 

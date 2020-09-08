@@ -14,8 +14,8 @@ import (
 	"fmt"
 	"sync"
 
-	"devt.de/krotik/common/flowutil"
-	"devt.de/krotik/common/pools"
+	"devt.de/krotik/ecal/engine/pool"
+	"devt.de/krotik/ecal/engine/pubsub"
 )
 
 /*
@@ -131,13 +131,13 @@ Process -> Triggering -> Matching -> Fire Rule
 */
 type eventProcessor struct {
 	id                  uint64                // Processor ID
-	pool                *pools.ThreadPool     // Thread pool of this processor
+	pool                *pool.ThreadPool      // Thread pool of this processor
 	workerCount         int                   // Number of threads for this processor
 	failOnFirstError    bool                  // Stop rule execution on first error in an event trigger sequence
 	ruleIndex           RuleIndex             // Container for loaded rules
 	triggeringCache     map[string]bool       // Cache which remembers which events are triggering
 	triggeringCacheLock sync.Mutex            // Lock for triggeringg cache
-	messageQueue        *flowutil.EventPump   // Queue for message passing between components
+	messageQueue        *pubsub.EventPump     // Queue for message passing between components
 	rmErrorObserver     func(rm *RootMonitor) // Error observer for root monitors
 }
 
@@ -145,8 +145,8 @@ type eventProcessor struct {
 NewProcessor creates a new event processor with a given number of workers.
 */
 func NewProcessor(workerCount int) Processor {
-	ep := flowutil.NewEventPump()
-	return &eventProcessor{newProcID(), pools.NewThreadPoolWithQueue(NewTaskQueue(ep)),
+	ep := pubsub.NewEventPump()
+	return &eventProcessor{newProcID(), pool.NewThreadPoolWithQueue(NewTaskQueue(ep)),
 		workerCount, false, NewRuleIndex(), nil, sync.Mutex{}, ep, nil}
 }
 
@@ -171,7 +171,7 @@ func (p *eventProcessor) Reset() error {
 
 	// Check that the thread pool is stopped
 
-	if p.pool.Status() != pools.StatusStopped {
+	if p.pool.Status() != pool.StatusStopped {
 		return fmt.Errorf("Cannot reset processor if it has not stopped")
 	}
 
@@ -195,7 +195,7 @@ func (p *eventProcessor) AddRule(rule *Rule) error {
 
 	// Check that the thread pool is stopped
 
-	if p.pool.Status() != pools.StatusStopped {
+	if p.pool.Status() != pool.StatusStopped {
 		return fmt.Errorf("Cannot add rule if the processor has not stopped")
 	}
 
@@ -233,7 +233,7 @@ func (p *eventProcessor) Finish() {
 Stopped returns if the processor is stopped.
 */
 func (p *eventProcessor) Stopped() bool {
-	return p.pool.Status() == pools.StatusStopped
+	return p.pool.Status() == pool.StatusStopped
 }
 
 /*
@@ -334,7 +334,7 @@ func (p *eventProcessor) AddEvent(event *Event, eventMonitor Monitor) (Monitor, 
 
 	// Check that the thread pool is running
 
-	if p.pool.Status() == pools.StatusStopped {
+	if p.pool.Status() == pool.StatusStopped {
 		return nil, fmt.Errorf("Cannot add event if the processor is not running")
 	}
 
@@ -377,7 +377,7 @@ func (p *eventProcessor) AddEvent(event *Event, eventMonitor Monitor) (Monitor, 
 
 	EventTracer.record(event, "eventProcessor.AddEvent", "Adding task to thread pool")
 
-	// Kick off event processing (see Processor.processEvent)
+	// Kick off event processing (see Processor.ProcessEvent)
 
 	p.pool.AddTask(&Task{p, eventMonitor, event})
 

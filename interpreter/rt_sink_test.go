@@ -126,7 +126,7 @@ res := addEventAndWait("request", "web.page.index", {
 }, {
 	"request.read" : false
 })
-log("ErrorResult:", res[0].errors, " ", res == null)
+log("ErrorResult:", res, " ", res == null)
 `, vs)
 
 	if err != nil {
@@ -140,14 +140,25 @@ rule2 - Tracking user:foo
 rule3 - Logging user:foo
 ErrorResult:null true
 rule2 - Tracking user:bar
-ErrorResult:{
-  "rule2": {
-    "detail": [
-      123
-    ],
-    "message": "ECAL error in ECALTestRuntime: Error in sink (User bar was here) (Line:17 Pos:13)"
+ErrorResult:[
+  {
+    "errors": {
+      "rule2": {
+        "detail": [
+          123
+        ],
+        "message": "ECAL error in ECALTestRuntime: Error in sink (User bar was here) (Line:17 Pos:13)"
+      }
+    },
+    "event": {
+      "kind": "web.page.index",
+      "name": "request",
+      "state": {
+        "user": "bar"
+      }
+    }
   }
-} false`[1:] {
+] false`[1:] {
 		t.Error("Unexpected result:", testlogger.String())
 		return
 	}
@@ -186,4 +197,98 @@ error: {
 		t.Error("Unexpected result:", testlogger.String())
 		return
 	}
+
+	// Test case 3 - rule suppression
+
+	_, err = UnitTestEval(
+		`
+sink rule1
+    kindmatch [ "test.event" ],
+    suppresses [ "rule3" ],
+	{
+        log("rule1 - Handling request: ", event.kind)
+	}
+
+sink rule2
+    kindmatch [ "test.*" ],
+    priority 1,  # Ensure this rule is always executed after rule1
+	{
+        log("rule2 - Handling request: ", event.kind)
+	}
+
+sink rule3
+    kindmatch [ "test.*" ],
+    priority 1,  # Ensure this rule is always executed after rule1
+	{
+        log("rule3 - Handling request: ", event.kind)
+	}
+
+err := addEventAndWait("myevent", "test.event", {})
+
+if len(err) > 0 {
+    error(err[0].errors)
+}
+`, vs)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if testlogger.String() != `
+rule1 - Handling request: test.event
+rule2 - Handling request: test.event`[1:] {
+		t.Error("Unexpected result:", testlogger.String())
+		return
+	}
+
+	// Test case 4 - state match
+
+	_, err = UnitTestEval(
+		`
+sink rule1
+    kindmatch [ "test.event" ],
+    statematch { "a" : null },
+	{
+        log("rule1 - Handling request: ", event.kind)
+	}
+
+sink rule2
+    kindmatch [ "test.*" ],
+    priority 1,
+    statematch { "b" : 1 },
+	{
+        log("rule2 - Handling request: ", event.kind)
+	}
+
+sink rule3
+    kindmatch [ "test.*" ],
+    priority 2,
+    statematch { "c" : 2 },
+	{
+        log("rule3 - Handling request: ", event.kind)
+	}
+
+err := addEventAndWait("myevent", "test.event", {
+	"a" : "foo",
+	"b" : 1,
+})
+
+if len(err) > 0 {
+    error(err[0].errors)
+}
+`, vs)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if testlogger.String() != `
+rule1 - Handling request: test.event
+rule2 - Handling request: test.event`[1:] {
+		t.Error("Unexpected result:", testlogger.String())
+		return
+	}
+
 }

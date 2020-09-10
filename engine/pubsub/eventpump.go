@@ -71,37 +71,6 @@ func (ep *EventPump) AddObserver(event string, eventSource interface{}, callback
 /*
 PostEvent posts an event to this event pump from a given event source.
 */
-func (ep *EventPump) PostEvent2(event string, eventSource interface{}) {
-	if event == "" || eventSource == nil {
-		panic("Posting an event requires the event and its source")
-	}
-
-	ep.eventsObserversLock.Lock()
-	defer ep.eventsObserversLock.Unlock()
-
-	postEvent := func(event string, eventSource interface{}) {
-
-		if sources, ok := ep.eventsObservers[event]; ok {
-			for source, callbacks := range sources {
-				if source == eventSource || source == nil {
-					for _, callback := range callbacks {
-						ep.eventsObserversLock.Unlock()
-						callback(event, eventSource)
-						ep.eventsObserversLock.Lock()
-					}
-				}
-			}
-		}
-
-	}
-
-	postEvent(event, eventSource)
-	postEvent("", eventSource)
-}
-
-/*
-PostEvent posts an event to this event pump from a given event source.
-*/
 func (ep *EventPump) PostEvent(event string, eventSource interface{}) {
 	if event == "" || eventSource == nil {
 		panic("Posting an event requires the event and its source")

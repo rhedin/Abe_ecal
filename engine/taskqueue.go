@@ -79,9 +79,14 @@ func (t *Task) Run() error {
 	errors := t.p.ProcessEvent(t.e, t.m)
 
 	if len(errors) > 0 {
+
+		// Monitor is not declared finished until the errors have been handled
+
 		EventTracer.record(t.e, "Task.Run", fmt.Sprint("Task had errors:", errors))
 		return &TaskError{errors, t.e, t.m}
 	}
+
+	t.m.Finish()
 
 	return nil
 }
@@ -98,6 +103,7 @@ HandleError handles an error which occurred during the run method.
 */
 func (t *Task) HandleError(e error) {
 	t.m.SetErrors(e.(*TaskError))
+	t.m.Finish()
 	t.p.(*eventProcessor).notifyRootMonitorErrors(t.m.RootMonitor())
 }
 

@@ -467,8 +467,6 @@ func (p *eventProcessor) ProcessEvent(event *Event, parent Monitor) map[string]e
 		}
 	}
 
-	parent.Finish()
-
 	return errors
 }
 

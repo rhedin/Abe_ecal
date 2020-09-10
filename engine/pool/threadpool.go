@@ -315,6 +315,12 @@ func (tp *ThreadPool) SetWorkerCount(count int, wait bool) {
 			}
 		}
 	}
+
+	// If a count was set wait until at least one worker is idle
+
+	for count > 0 && len(tp.workerIdleMap) == 0 {
+		time.Sleep(5 * time.Nanosecond)
+	}
 }
 
 /*

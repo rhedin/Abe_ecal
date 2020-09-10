@@ -231,7 +231,6 @@ func (mb *monitorBase) Errors() *TaskError {
 SetErrors adds an error object to this monitor.
 */
 func (mb *monitorBase) SetErrors(e *TaskError) {
-	errorutil.AssertTrue(mb.finished, "Cannot set errors on an unfinished monitor")
 	mb.Err = e
 	mb.rootMonitor.descendantFailed(mb)
 }

@@ -27,7 +27,7 @@ func TestEventProcessing(t *testing.T) {
 My cool rule
 */
 sink rule1
-    kindmatch [ "core.*" ],
+    kindmatch [ "core.*", "foo.*" ],
 	scopematch [ "data.write" ],
 	statematch { "val" : NULL },
 	priority 10,
@@ -44,6 +44,7 @@ My cool rule
   kindmatch
     list
       string: 'core.*'
+      string: 'foo.*'
   scopematch
     list
       string: 'data.write'
@@ -79,7 +80,7 @@ GlobalScope {
 	}
 
 	if res := fmt.Sprint(testprocessor.Rules()["rule1"]); res !=
-		`Rule:rule1 [My cool rule] (Priority:10 Kind:[core.*] Scope:[data.write] StateMatch:{"val":null} Suppress:[rule2])` {
+		`Rule:rule1 [My cool rule] (Priority:10 Kind:[core.* foo.*] Scope:[data.write] StateMatch:{"val":null} Suppress:[rule2])` {
 		t.Error("Unexpected result:", res)
 		return
 	}
@@ -247,7 +248,7 @@ rule2 - Handling request: test.event`[1:] {
 	_, err = UnitTestEval(
 		`
 sink rule1
-    kindmatch [ "test.event" ],
+    kindmatch [ "test.event", "foo.*" ],
     statematch { "a" : null },
 	{
         log("rule1 - Handling request: ", event.kind)
@@ -290,5 +291,4 @@ rule2 - Handling request: test.event`[1:] {
 		t.Error("Unexpected result:", testlogger.String())
 		return
 	}
-
 }

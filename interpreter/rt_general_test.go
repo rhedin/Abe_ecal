@@ -37,7 +37,7 @@ func TestGeneralErrorCases(t *testing.T) {
 func TestImporting(t *testing.T) {
 
 	vs := scope.NewScope(scope.GlobalScope)
-	il := &util.MemoryImportLocator{make(map[string]string)}
+	il := &util.MemoryImportLocator{Files: make(map[string]string)}
 
 	il.Files["foo/bar"] = `
 b := 123

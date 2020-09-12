@@ -29,33 +29,70 @@ foobar.doSomething()
 
 Event Sinks
 --
-Event sinks are the core constructs of ECAL which provide concurrency and the means to respond to events of an external system. Sinks provide ECAL with an interface to an [event condition action engine](engine.md) which coordinates the parallel execution of code. Sinks cannot be scoped into modules or objects and are usually declared at the top level. The have the following form:
-
+Event sinks are the core constructs of ECAL which provide concurrency and the means to respond to events of an external system. Sinks provide ECAL with an interface to an [event condition action engine](engine.md) which coordinates the parallel execution of code. Sinks cannot be scoped into modules or objects and are usually declared at the top level. They have the following form:
 ```
-sink "mysink"
-    kindmatch [ foo.bar.* ],
+sink mysink
+    kindmatch [ "foo.bar.*" ],
     scopematch [ "data.read", "data.write" ],
-    statematch { a : 1, b : NULL },
+    statematch { "a" : 1, "b" : NULL },
     priority 0,
     suppresses [ "myothersink" ]
     {
       <ECAL Code>
     }
 ```
-
-Sinks are should have unique names which identify them and the following attributes:
+Sinks must have unique names and may have the following attributes:
 
 Attribute | Description
 -|-
-kindmatch  | Matching condition for event kind e.g. db.op.TableInsert. A list of strings in dot notation which describes event kinds. May contain `*` characters as wildcards.
-scopematch | Matching condition for event cascade scope e.g. db.dbRead db.dbWrite. A list of strings in dot notation which describe the scopes which are required for this sink to trigger.
+kindmatch  | Matching condition for event kind. A list of strings in dot notation which describes event kinds which should trigger this event. May contain `*` characters as wildcards.
+scopematch | Matching condition for event cascade scope. A list of strings in dot notation which describe the scopes which are required for this sink to trigger.
 statematch | Match on event state: A simple map of required key / value states in the event state. `NULL` values can be used as wildcards (i.e. match is only on key).
 priority | Priority of the sink. Sinks of higher priority are executed first. The higher the number the lower the priority - 0 is the highest priority.
 suppresses | A list of sink names which should be suppressed if this sink is executed.
 
+It is possible to add events through code via the asynchronous function `addEvent` and the synchronous function `addEventAndWait`. The former should be used within sinks to form event cascades which allow the code to run concurrently. The latter should be used to start event cascades. The function will wait until all sinks which were triggered by this event have finished and then return an error object. The error object is a data structure which contains all errors which have happened during an event cascade. Errors can either happen as runtime errors or explicitly when using the `sinkError` function.
+```
+sink mysink
+    kindmatch [ "web.page.*" ],
+	{
+    ...
+    sinkError("Error with request", ["some detail data"])
+    ...
+	}
 
-
-
+res := addEventAndWait("request", "web.page.index", {})
+```
+In the example above `res` will have the following form:
+```
+[
+  {
+    "errors": {
+      "mysink": {
+        "detail": [
+          "some detail data"
+        ],
+        "message": "ECAL error in ECALTestRuntime: Error in sink (Error with request) (Line:xx Pos:xx)"
+      }
+    },
+    "event": {
+      "kind": "web.page.index",
+      "name": "request",
+      "state": {}
+    }
+  }
+]
+```
+The event function has the required parameters of event name, kind, state and an optional parameter which defines the scope. The event name has no operational meaning other than identifying a particular event. The event kind is the main mechanism for selecting sinks - sinks can match kinds with different levels of precision. The event state is mainly used to attach data to events but can also be used by sinks for a triggering condition. Scopes can be used to define domains for rules. Defining a scope will always start a new event cascade. A sink will only trigger if all it's scopes are met by an event cascade.
+ ```
+res := addEventAndWait("request", "foo.bar.xxx", {
+  "payload" : 123  
+}, {
+  "data.read" : true,
+  "data.write" : false
+})
+ ```
+The order of execution of sinks can be controlled via their priority. All sinks which are triggered by a particular event will be executed in order of their priority.
 
 Functions
 --
@@ -368,6 +405,10 @@ Example:
 ```
 concat([1,2,3], [4,5,6], [7,8,9])
 ```
+
+Logging Functions
+--
+ECAL has a build-in logging system and provides by default the functions `debug`, `log` and `error` to log messages.
 
 Stdlib Functions
 --

@@ -10,7 +10,7 @@
 
 // TODO:
 // Document event processing with sinks
-// Context supporting final
+// Context supporting final and exception handling
 // Inline escaping in strings "bla {1+1} bla"
 
 package interpreter
@@ -147,7 +147,7 @@ func NewECALRuntimeProvider(name string, importLocator util.ECALImportLocator, l
 
 		// By default imports are located in the current directory
 
-		importLocator = &util.FileImportLocator{filepath.Dir(os.Args[0])}
+		importLocator = &util.FileImportLocator{Root: filepath.Dir(os.Args[0])}
 	}
 
 	if logger == nil {

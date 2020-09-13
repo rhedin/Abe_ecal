@@ -39,7 +39,12 @@ func identifierRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parse
 Eval evaluate this runtime component.
 */
 func (rt *identifierRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	return rt.resolveValue(vs, is, rt.node)
+	var res interface{}
+	_, err := rt.baseRuntime.Eval(vs, is)
+	if err == nil {
+		res, err = rt.resolveValue(vs, is, rt.node)
+	}
+	return res, err
 }
 
 /*

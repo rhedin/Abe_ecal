@@ -9,7 +9,6 @@
  */
 
 // TODO:
-// Document event processing with sinks
 // Context supporting final and exception handling
 // Inline escaping in strings "bla {1+1} bla"
 

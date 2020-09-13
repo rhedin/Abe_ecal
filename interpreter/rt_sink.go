@@ -86,144 +86,147 @@ func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 	var stateMatch map[string]interface{}
 	var priority int
 	var statements *parser.ASTNode
-	var err error
 
-	// Create default scope
+	_, err := rt.baseRuntime.Eval(vs, is)
 
-	scopeMatch = []string{}
+	if err == nil {
+		// Create default scope
 
-	// Get the name of the sink
+		scopeMatch = []string{}
 
-	name := rt.node.Children[0].Token.Val
+		// Get the name of the sink
 
-	// Create helper function
+		name := rt.node.Children[0].Token.Val
 
-	makeStringList := func(child *parser.ASTNode) ([]string, error) {
-		var ret []string
+		// Create helper function
 
-		val, err := child.Runtime.Eval(vs, is)
+		makeStringList := func(child *parser.ASTNode) ([]string, error) {
+			var ret []string
 
-		if err == nil {
-			for _, v := range val.([]interface{}) {
-				ret = append(ret, fmt.Sprint(v))
-			}
-		}
+			val, err := child.Runtime.Eval(vs, is)
 
-		return ret, err
-	}
-
-	// Collect values from children
-
-	for _, child := range rt.node.Children[1:] {
-
-		switch child.Name {
-
-		case parser.NodeKINDMATCH:
-			kindMatch, err = makeStringList(child)
-			break
-
-		case parser.NodeSCOPEMATCH:
-			scopeMatch, err = makeStringList(child)
-			break
-
-		case parser.NodeSTATEMATCH:
-			var val interface{}
-			stateMatch = make(map[string]interface{})
-
-			if val, err = child.Runtime.Eval(vs, is); err == nil {
-				for k, v := range val.(map[interface{}]interface{}) {
-					stateMatch[fmt.Sprint(k)] = v
+			if err == nil {
+				for _, v := range val.([]interface{}) {
+					ret = append(ret, fmt.Sprint(v))
 				}
 			}
-			break
 
-		case parser.NodePRIORITY:
-			var val interface{}
-
-			if val, err = child.Runtime.Eval(vs, is); err == nil {
-				priority = int(math.Floor(val.(float64)))
-			}
-			break
-
-		case parser.NodeSUPPRESSES:
-			suppresses, err = makeStringList(child)
-			break
-
-		case parser.NodeSTATEMENTS:
-			statements = child
-			break
+			return ret, err
 		}
 
-		if err != nil {
-			break
-		}
-	}
+		// Collect values from children
 
-	if err == nil && statements != nil {
-		var desc string
+		for _, child := range rt.node.Children[1:] {
 
-		sinkName := fmt.Sprint(name)
+			switch child.Name {
 
-		if len(rt.node.Meta) > 0 &&
-			(rt.node.Meta[0].Type() == parser.MetaDataPreComment ||
-				rt.node.Meta[0].Type() == parser.MetaDataPostComment) {
-			desc = strings.TrimSpace(rt.node.Meta[0].Value())
-		}
+			case parser.NodeKINDMATCH:
+				kindMatch, err = makeStringList(child)
+				break
 
-		rule := &engine.Rule{
-			Name:            sinkName,   // Name
-			Desc:            desc,       // Description
-			KindMatch:       kindMatch,  // Kind match
-			ScopeMatch:      scopeMatch, // Match on event cascade scope
-			StateMatch:      stateMatch, // No state match
-			Priority:        priority,   // Priority of the rule
-			SuppressionList: suppresses, // List of suppressed rules by this rule
-			Action: func(p engine.Processor, m engine.Monitor, e *engine.Event) error { // Action of the rule
+			case parser.NodeSCOPEMATCH:
+				scopeMatch, err = makeStringList(child)
+				break
 
-				// Create a new root variable scope
+			case parser.NodeSTATEMATCH:
+				var val interface{}
+				stateMatch = make(map[string]interface{})
 
-				sinkVS := scope.NewScope(fmt.Sprintf("sink: %v", sinkName))
-
-				// Create a new instance state with the monitor - everything called
-				// by the rule will have access to the current monitor.
-
-				sinkIs := map[string]interface{}{
-					"monitor": m,
+				if val, err = child.Runtime.Eval(vs, is); err == nil {
+					for k, v := range val.(map[interface{}]interface{}) {
+						stateMatch[fmt.Sprint(k)] = v
+					}
 				}
+				break
 
-				err = sinkVS.SetValue("event", map[interface{}]interface{}{
-					"name":  e.Name(),
-					"kind":  strings.Join(e.Kind(), engine.RuleKindSeparator),
-					"state": e.State(),
-				})
+			case parser.NodePRIORITY:
+				var val interface{}
 
-				if err == nil {
-					scope.SetParentOfScope(sinkVS, vs)
+				if val, err = child.Runtime.Eval(vs, is); err == nil {
+					priority = int(math.Floor(val.(float64)))
+				}
+				break
 
-					if _, err = statements.Runtime.Eval(sinkVS, sinkIs); err != nil {
+			case parser.NodeSUPPRESSES:
+				suppresses, err = makeStringList(child)
+				break
 
-						if sre, ok := err.(*SinkRuntimeError); ok {
-							sre.environment = sinkVS
+			case parser.NodeSTATEMENTS:
+				statements = child
+				break
+			}
 
-						} else {
+			if err != nil {
+				break
+			}
+		}
 
-							// Provide additional information for unexpected errors
+		if err == nil && statements != nil {
+			var desc string
 
-							err = &SinkRuntimeError{
-								err.(*util.RuntimeError),
-								sinkVS,
-								nil,
+			sinkName := fmt.Sprint(name)
+
+			if len(rt.node.Meta) > 0 &&
+				(rt.node.Meta[0].Type() == parser.MetaDataPreComment ||
+					rt.node.Meta[0].Type() == parser.MetaDataPostComment) {
+				desc = strings.TrimSpace(rt.node.Meta[0].Value())
+			}
+
+			rule := &engine.Rule{
+				Name:            sinkName,   // Name
+				Desc:            desc,       // Description
+				KindMatch:       kindMatch,  // Kind match
+				ScopeMatch:      scopeMatch, // Match on event cascade scope
+				StateMatch:      stateMatch, // No state match
+				Priority:        priority,   // Priority of the rule
+				SuppressionList: suppresses, // List of suppressed rules by this rule
+				Action: func(p engine.Processor, m engine.Monitor, e *engine.Event) error { // Action of the rule
+
+					// Create a new root variable scope
+
+					sinkVS := scope.NewScope(fmt.Sprintf("sink: %v", sinkName))
+
+					// Create a new instance state with the monitor - everything called
+					// by the rule will have access to the current monitor.
+
+					sinkIs := map[string]interface{}{
+						"monitor": m,
+					}
+
+					err = sinkVS.SetValue("event", map[interface{}]interface{}{
+						"name":  e.Name(),
+						"kind":  strings.Join(e.Kind(), engine.RuleKindSeparator),
+						"state": e.State(),
+					})
+
+					if err == nil {
+						scope.SetParentOfScope(sinkVS, vs)
+
+						if _, err = statements.Runtime.Eval(sinkVS, sinkIs); err != nil {
+
+							if sre, ok := err.(*SinkRuntimeError); ok {
+								sre.environment = sinkVS
+
+							} else {
+
+								// Provide additional information for unexpected errors
+
+								err = &SinkRuntimeError{
+									err.(*util.RuntimeError),
+									sinkVS,
+									nil,
+								}
 							}
 						}
 					}
-				}
 
-				return err
-			},
-		}
+					return err
+				},
+			}
 
-		if err = rt.erp.Processor.AddRule(rule); err != nil {
-			err = rt.erp.NewRuntimeError(util.ErrInvalidState, err.Error(), rt.node)
+			if err = rt.erp.Processor.AddRule(rule); err != nil {
+				err = rt.erp.NewRuntimeError(util.ErrInvalidState, err.Error(), rt.node)
+			}
 		}
 	}
 
@@ -254,34 +257,38 @@ type sinkDetailRuntime struct {
 Eval evaluate this runtime component.
 */
 func (rt *sinkDetailRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	var ret interface{}
 
-	ret, err := rt.node.Children[0].Runtime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is)
 
 	if err == nil {
 
-		// Check value is of expected type
+		if ret, err = rt.node.Children[0].Runtime.Eval(vs, is); err == nil {
 
-		if rt.valType == "list" {
-			if _, ok := ret.([]interface{}); !ok {
-				return nil, rt.erp.NewRuntimeError(util.ErrInvalidConstruct,
-					fmt.Sprintf("Expected a list as value"),
-					rt.node)
-			}
+			// Check value is of expected type
 
-		} else if rt.valType == "map" {
+			if rt.valType == "list" {
+				if _, ok := ret.([]interface{}); !ok {
+					return nil, rt.erp.NewRuntimeError(util.ErrInvalidConstruct,
+						fmt.Sprintf("Expected a list as value"),
+						rt.node)
+				}
 
-			if _, ok := ret.(map[interface{}]interface{}); !ok {
-				return nil, rt.erp.NewRuntimeError(util.ErrInvalidConstruct,
-					fmt.Sprintf("Expected a map as value"),
-					rt.node)
-			}
+			} else if rt.valType == "map" {
 
-		} else if rt.valType == "int" {
+				if _, ok := ret.(map[interface{}]interface{}); !ok {
+					return nil, rt.erp.NewRuntimeError(util.ErrInvalidConstruct,
+						fmt.Sprintf("Expected a map as value"),
+						rt.node)
+				}
 
-			if _, ok := ret.(float64); !ok {
-				return nil, rt.erp.NewRuntimeError(util.ErrInvalidConstruct,
-					fmt.Sprintf("Expected a number as value"),
-					rt.node)
+			} else if rt.valType == "int" {
+
+				if _, ok := ret.(float64); !ok {
+					return nil, rt.erp.NewRuntimeError(util.ErrInvalidConstruct,
+						fmt.Sprintf("Expected a number as value"),
+						rt.node)
+				}
 			}
 		}
 	}

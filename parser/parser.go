@@ -85,7 +85,7 @@ func init() {
 		// Import statement
 
 		TokenIMPORT: {NodeIMPORT, nil, nil, nil, nil, 0, ndImport, nil},
-		TokenAS:     {"", nil, nil, nil, nil, 0, ndImport, nil},
+		TokenAS:     {NodeAS, nil, nil, nil, nil, 0, nil, nil},
 
 		// Sink definition
 
@@ -127,11 +127,17 @@ func init() {
 		TokenELIF: {"", nil, nil, nil, nil, 0, nil, nil},
 		TokenELSE: {"", nil, nil, nil, nil, 0, nil, nil},
 
-		// Loop statements
+		// Loop statement
 
 		TokenFOR:      {NodeLOOP, nil, nil, nil, nil, 0, ndLoop, nil},
 		TokenBREAK:    {NodeBREAK, nil, nil, nil, nil, 0, ndTerm, nil},
 		TokenCONTINUE: {NodeCONTINUE, nil, nil, nil, nil, 0, ndTerm, nil},
+
+		// Try statement
+
+		TokenTRY:     {NodeTRY, nil, nil, nil, nil, 0, ndTry, nil},
+		TokenEXCEPT:  {NodeEXCEPT, nil, nil, nil, nil, 0, nil, nil},
+		TokenFINALLY: {NodeFINALLY, nil, nil, nil, nil, 0, nil, nil},
 	}
 }
 
@@ -756,6 +762,72 @@ func ndLoop(p *parser, self *ASTNode) (*ASTNode, error) {
 	}
 
 	return self, err
+}
+
+/*
+ndTry is used to parse a try block.
+*/
+func ndTry(p *parser, self *ASTNode) (*ASTNode, error) {
+
+	try, err := parseInnerStatements(p, self)
+
+	if p.node.Token.ID != TokenFINALLY {
+
+		for err == nil && IsNotEndAndToken(p, TokenEXCEPT) {
+
+			except := p.node
+
+			err = acceptChild(p, try, TokenEXCEPT)
+
+			if err == nil {
+				for err == nil &&
+					IsNotEndAndNotToken(p, TokenAS) &&
+					IsNotEndAndNotToken(p, TokenIDENTIFIER) &&
+					IsNotEndAndNotToken(p, TokenLBRACE) {
+
+					if err = acceptChild(p, except, TokenSTRING); err == nil {
+
+						// Skip commas
+
+						if p.node.Token.ID == TokenCOMMA {
+							err = skipToken(p, TokenCOMMA)
+						}
+					}
+				}
+
+				if err == nil {
+
+					if p.node.Token.ID == TokenAS {
+						as := p.node
+
+						err = acceptChild(p, except, TokenAS)
+
+						if err == nil {
+							err = acceptChild(p, as, TokenIDENTIFIER)
+						}
+
+					} else if p.node.Token.ID == TokenIDENTIFIER {
+
+						err = acceptChild(p, except, TokenIDENTIFIER)
+					}
+				}
+
+				if err == nil {
+					_, err = parseInnerStatements(p, except)
+				}
+			}
+		}
+	}
+
+	if err == nil && p.node.Token.ID == TokenFINALLY {
+		finally := p.node
+
+		if err = acceptChild(p, try, TokenFINALLY); err == nil {
+			_, err = parseInnerStatements(p, finally)
+		}
+	}
+
+	return try, err
 }
 
 // Standard left denotation functions

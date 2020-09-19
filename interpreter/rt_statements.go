@@ -13,6 +13,7 @@ package interpreter
 import (
 	"fmt"
 
+	"devt.de/krotik/common/errorutil"
 	"devt.de/krotik/common/sortutil"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
@@ -461,4 +462,138 @@ func (rt *continueRuntime) Eval(vs parser.Scope, is map[string]interface{}) (int
 	}
 
 	return nil, err
+}
+
+// Try Runtime
+// ===========
+
+/*
+tryRuntime is the runtime for try blocks.
+*/
+type tryRuntime struct {
+	*baseRuntime
+}
+
+/*
+tryRuntimeInst returns a new runtime component instance.
+*/
+func tryRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Runtime {
+	return &tryRuntime{newBaseRuntime(erp, node)}
+}
+
+/*
+Eval evaluate this runtime component.
+*/
+func (rt *tryRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	var res interface{}
+
+	evalExcept := func(errObj map[interface{}]interface{}, except *parser.ASTNode) bool {
+		ret := false
+
+		if len(except.Children) == 1 {
+
+			// We only have statements - any exception is handled here
+
+			evs := vs.NewChild(scope.NameFromASTNode(except))
+
+			except.Children[0].Runtime.Eval(evs, is)
+
+			ret = true
+
+		} else if len(except.Children) == 2 {
+
+			// We have statements and the error object is available - any exception is handled here
+
+			evs := vs.NewChild(scope.NameFromASTNode(except))
+			evs.SetValue(except.Children[0].Token.Val, errObj)
+
+			except.Children[1].Runtime.Eval(evs, is)
+
+			ret = true
+
+		} else {
+			errorVar := ""
+
+			for i := 0; i < len(except.Children); i++ {
+				child := except.Children[i]
+
+				if !ret && child.Name == parser.NodeSTRING {
+					exceptError, evalErr := child.Runtime.Eval(vs, is)
+
+					// If we fail evaluating the string we panic as otherwise
+					// we would need to generate a new error while trying to handle another error
+					errorutil.AssertOk(evalErr)
+
+					ret = exceptError == fmt.Sprint(errObj["type"])
+
+				} else if ret && child.Name == parser.NodeAS {
+					errorVar = child.Children[0].Token.Val
+
+				} else if ret && child.Name == parser.NodeSTATEMENTS {
+					evs := vs.NewChild(scope.NameFromASTNode(except))
+
+					if errorVar != "" {
+						evs.SetValue(errorVar, errObj)
+					}
+
+					child.Runtime.Eval(evs, is)
+				}
+			}
+		}
+
+		return ret
+	}
+
+	// Make sure the finally block is executed in any case
+
+	if finally := rt.node.Children[len(rt.node.Children)-1]; finally.Name == parser.NodeFINALLY {
+		fvs := vs.NewChild(scope.NameFromASTNode(finally))
+		defer finally.Children[0].Runtime.Eval(fvs, is)
+	}
+
+	_, err := rt.baseRuntime.Eval(vs, is)
+
+	if err == nil {
+		tvs := vs.NewChild(scope.NameFromASTNode(rt.node))
+
+		res, err = rt.node.Children[0].Runtime.Eval(tvs, is)
+
+		// Evaluate except clauses
+
+		if err != nil {
+			errObj := map[interface{}]interface{}{
+				"type":  "UnexpectedError",
+				"error": err.Error(),
+			}
+
+			if rtError, ok := err.(*util.RuntimeError); ok {
+				errObj["type"] = rtError.Type.Error()
+				errObj["detail"] = rtError.Detail
+				errObj["pos"] = rtError.Pos
+				errObj["line"] = rtError.Line
+				errObj["source"] = rtError.Source
+
+			} else if rtError, ok := err.(*util.RuntimeErrorWithDetail); ok {
+				errObj["type"] = rtError.Type.Error()
+				errObj["detail"] = rtError.Detail
+				errObj["pos"] = rtError.Pos
+				errObj["line"] = rtError.Line
+				errObj["source"] = rtError.Source
+				errObj["data"] = rtError.Data
+			}
+
+			res = nil
+
+			for i := 1; i < len(rt.node.Children); i++ {
+				if child := rt.node.Children[i]; child.Name == parser.NodeEXCEPT {
+					if evalExcept(errObj, child) {
+						err = nil
+						break
+					}
+				}
+			}
+		}
+	}
+
+	return res, err
 }

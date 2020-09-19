@@ -104,7 +104,7 @@ sink rule2
 	{
         log("rule2 - Tracking user:", event.state.user)
         if event.state.user == "bar" {
-            sinkError("User bar was here", [123])
+            raise("UserBarWasHere", "User bar was seen", [123])
         }
 	}
 
@@ -145,10 +145,12 @@ ErrorResult:[
   {
     "errors": {
       "rule2": {
-        "detail": [
+        "data": [
           123
         ],
-        "message": "ECAL error in ECALTestRuntime: Error in sink (User bar was here) (Line:17 Pos:13)"
+        "detail": "User bar was seen",
+        "error": "ECAL error in ECALTestRuntime: UserBarWasHere (User bar was seen) (Line:17 Pos:13)",
+        "type": "UserBarWasHere"
       }
     },
     "event": {
@@ -191,8 +193,10 @@ if err != null {
 rule1 - test
 error: {
   "rule1": {
-    "detail": null,
-    "message": "ECAL error in ECALTestRuntime: Unknown construct (Unknown function: noexitingfunctioncall) (Line:6 Pos:9)"
+    "data": null,
+    "detail": "Unknown function: noexitingfunctioncall",
+    "error": "ECAL error in ECALTestRuntime: Unknown construct (Unknown function: noexitingfunctioncall) (Line:6 Pos:9)",
+    "type": "Unknown construct"
   }
 }`[1:] {
 		t.Error("Unexpected result:", testlogger.String())

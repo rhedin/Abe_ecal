@@ -858,3 +858,148 @@ for a[t] in 1 {
 		return
 	}
 }
+
+func TestTryStatements(t *testing.T) {
+
+	vs := scope.NewScope(scope.GlobalScope)
+
+	_, err := UnitTestEvalAndAST(
+		`
+try {
+	debug("Raising custom error")
+    raise("test 12", null, [1,2,3])
+} except "test 12" as e {
+	error("Something happened: ", e)
+} finally {
+	log("Cleanup")
+}
+`, vs,
+		`
+try
+  statements
+    identifier: debug
+      funccall
+        string: 'Raising custom error'
+    identifier: raise
+      funccall
+        string: 'test 12'
+        null
+        list
+          number: 1
+          number: 2
+          number: 3
+  except
+    string: 'test 12'
+    as
+      identifier: e
+    statements
+      identifier: error
+        funccall
+          string: 'Something happened: '
+          identifier: e
+  finally
+    statements
+      identifier: log
+        funccall
+          string: 'Cleanup'
+`[1:])
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if testlogger.String() != `
+debug: Raising custom error
+error: Something happened: {
+  "data": [
+    1,
+    2,
+    3
+  ],
+  "detail": "",
+  "error": "ECAL error in ECALTestRuntime: test 12 () (Line:4 Pos:5)",
+  "line": 4,
+  "pos": 5,
+  "source": "ECALTestRuntime",
+  "type": "test 12"
+}
+Cleanup`[1:] {
+		t.Error("Unexpected result:", testlogger.String())
+		return
+	}
+
+	_, err = UnitTestEval(
+		`
+try {
+	debug("Raising custom error")
+    raise("test 13", null, [1,2,3])
+} except "test 12" as e {
+	error("Something happened: ", e)
+} except e {
+	error("Something else happened: ", e)
+
+	try {
+		x := 1 + a
+	} except e {
+		log("Runtime error: ", e)
+	}
+
+} finally {
+	log("Cleanup")
+}
+`, vs)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if testlogger.String() != `
+debug: Raising custom error
+error: Something else happened: {
+  "data": [
+    1,
+    2,
+    3
+  ],
+  "detail": "",
+  "error": "ECAL error in ECALTestRuntime: test 13 () (Line:4 Pos:5)",
+  "line": 4,
+  "pos": 5,
+  "source": "ECALTestRuntime",
+  "type": "test 13"
+}
+Runtime error: {
+  "detail": "a",
+  "error": "ECAL error in ECALTestRuntime: Operand is not a number (a) (Line:11 Pos:12)",
+  "line": 11,
+  "pos": 12,
+  "source": "ECALTestRuntime",
+  "type": "Operand is not a number"
+}
+Cleanup`[1:] {
+		t.Error("Unexpected result:", testlogger.String())
+		return
+	}
+
+	_, err = UnitTestEval(
+		`
+try {
+	x := 1 + "a"
+} except {
+	error("This did not work")
+}
+`, vs)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if testlogger.String() != `
+error: This did not work`[1:] {
+		t.Error("Unexpected result:", testlogger.String())
+		return
+	}
+}

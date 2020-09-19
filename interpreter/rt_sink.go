@@ -204,14 +204,14 @@ func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 
 						if _, err = statements.Runtime.Eval(sinkVS, sinkIs); err != nil {
 
-							if sre, ok := err.(*SinkRuntimeError); ok {
-								sre.environment = sinkVS
+							if sre, ok := err.(*util.RuntimeErrorWithDetail); ok {
+								sre.Environment = sinkVS
 
 							} else {
 
 								// Provide additional information for unexpected errors
 
-								err = &SinkRuntimeError{
+								err = &util.RuntimeErrorWithDetail{
 									err.(*util.RuntimeError),
 									sinkVS,
 									nil,
@@ -231,15 +231,6 @@ func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 	}
 
 	return nil, err
-}
-
-/*
-SinkRuntimeError is a sink specific error with additional environment information.
-*/
-type SinkRuntimeError struct {
-	*util.RuntimeError
-	environment parser.Scope
-	detail      interface{}
 }
 
 // Sink child nodes

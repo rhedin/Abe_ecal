@@ -82,3 +82,12 @@ func (re *RuntimeError) Error() string {
 
 	return ret
 }
+
+/*
+RuntimeErrorWithDetail is a runtime error with additional environment information.
+*/
+type RuntimeErrorWithDetail struct {
+	*RuntimeError
+	Environment parser.Scope
+	Data        interface{}
+}

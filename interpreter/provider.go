@@ -81,6 +81,7 @@ var providerMap = map[string]ecalRuntimeNew{
 	// Import statement
 
 	parser.NodeIMPORT: importRuntimeInst,
+	parser.NodeAS:     voidRuntimeInst,
 
 	// Sink definition
 
@@ -125,6 +126,12 @@ var providerMap = map[string]ecalRuntimeNew{
 	parser.NodeLOOP:     loopRuntimeInst,
 	parser.NodeBREAK:    breakRuntimeInst,
 	parser.NodeCONTINUE: continueRuntimeInst,
+
+	// Try statement
+
+	parser.NodeTRY:     tryRuntimeInst,
+	parser.NodeEXCEPT:  voidRuntimeInst,
+	parser.NodeFINALLY: voidRuntimeInst,
 }
 
 /*

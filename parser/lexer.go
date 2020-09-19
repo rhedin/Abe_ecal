@@ -228,6 +228,12 @@ var KeywordMap = map[string]LexTokenID{
 	"for":      TokenFOR,
 	"break":    TokenBREAK,
 	"continue": TokenCONTINUE,
+
+	// Try block
+
+	"try":     TokenTRY,
+	"except":  TokenEXCEPT,
+	"finally": TokenFINALLY,
 }
 
 /*

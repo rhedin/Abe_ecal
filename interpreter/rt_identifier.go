@@ -200,8 +200,8 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 
 						result, err = funcObj.Run(rt.instanceID, vs, is, args)
 
-						_, ok1 := err.(*util.RuntimeError)
-						_, ok2 := err.(*SinkRuntimeError)
+						_, ok1 := err.(*util.RuntimeErrorWithDetail)
+						_, ok2 := err.(*util.RuntimeErrorWithDetail)
 
 						if err != nil && !ok1 && !ok2 {
 

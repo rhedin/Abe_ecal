@@ -179,6 +179,12 @@ const (
 	TokenBREAK
 	TokenCONTINUE
 
+	// Try block
+
+	TokenTRY
+	TokenEXCEPT
+	TokenFINALLY
+
 	TokenENDLIST
 )
 
@@ -283,4 +289,11 @@ const (
 	NodeLOOP     = "loop"
 	NodeBREAK    = "break"
 	NodeCONTINUE = "continue"
+
+	// Try block
+
+	NodeTRY     = "try"
+	NodeEXCEPT  = "except"
+	NodeAS      = "as"
+	NodeFINALLY = "finally"
 )

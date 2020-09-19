@@ -32,7 +32,7 @@ var inbuildFuncMap = map[string]util.ECALFunction{
 	"add":             &addFunc{&inbuildBaseFunc{}},
 	"concat":          &concatFunc{&inbuildBaseFunc{}},
 	"dumpenv":         &dumpenvFunc{&inbuildBaseFunc{}},
-	"sinkError":       &sinkerror{&inbuildBaseFunc{}},
+	"raise":           &raise{&inbuildBaseFunc{}},
 	"addEvent":        &addevent{&inbuildBaseFunc{}},
 	"addEventAndWait": &addeventandwait{&addevent{&inbuildBaseFunc{}}},
 }
@@ -477,38 +477,45 @@ func (rf *dumpenvFunc) DocString() (string, error) {
 	return "Dumpenv returns the current variable environment as a string.", nil
 }
 
-// sinkerror
-// =========
+// raise
+// =====
 
 /*
-sinkerror returns a sink error object which indicates that the sink execution failed.
-This error can be used to break trigger sequences of sinks if
+raise returns an error. Outside of sinks this will stop the code execution
+if the error is not handled by try / except. Inside a sink only the specific sink
+will fail. This error can be used to break trigger sequences of sinks if
 FailOnFirstErrorInTriggerSequence is set.
 */
-type sinkerror struct {
+type raise struct {
 	*inbuildBaseFunc
 }
 
 /*
 Run executes this function.
 */
-func (rf *sinkerror) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
-	var msg string
+func (rf *raise) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	var err error
+	var detailMsg string
 	var detail interface{}
 
 	if len(args) > 0 {
-		msg = fmt.Sprint(args[0])
+		err = fmt.Errorf("%v", args[0])
 		if len(args) > 1 {
-			detail = args[1]
+			if args[1] != nil {
+				detailMsg = fmt.Sprint(args[1])
+			}
+			if len(args) > 2 {
+				detail = args[2]
+			}
 		}
 	}
 
 	erp := is["erp"].(*ECALRuntimeProvider)
 	node := is["astnode"].(*parser.ASTNode)
 
-	return nil, &SinkRuntimeError{
-		erp.NewRuntimeError(util.ErrSink, msg, node).(*util.RuntimeError),
-		nil,
+	return nil, &util.RuntimeErrorWithDetail{
+		erp.NewRuntimeError(err, detailMsg, node).(*util.RuntimeError),
+		vs,
 		detail,
 	}
 
@@ -517,8 +524,8 @@ func (rf *sinkerror) Run(instanceID string, vs parser.Scope, is map[string]inter
 /*
 DocString returns a descriptive string.
 */
-func (rf *sinkerror) DocString() (string, error) {
-	return "Sinkerror returns a sink error object which indicates that the sink execution failed.", nil
+func (rf *raise) DocString() (string, error) {
+	return "Raise returns an error object.", nil
 }
 
 // addEvent
@@ -639,15 +646,17 @@ func (rf *addeventandwait) Run(instanceID string, vs parser.Scope, is map[string
 
 				errors := map[interface{}]interface{}{}
 				for k, v := range e.ErrorMap {
-					se := v.(*SinkRuntimeError)
+					se := v.(*util.RuntimeErrorWithDetail)
 
 					// Note: The variable scope of the sink (se.environment)
 					// was also captured - for now it is not exposed to the
 					// language environment
 
 					errors[k] = map[interface{}]interface{}{
-						"message": se.Error(),
-						"detail":  se.detail,
+						"error":  se.Error(),
+						"type":   se.Type.Error(),
+						"detail": se.Detail,
+						"data":   se.Data,
 					}
 				}
 

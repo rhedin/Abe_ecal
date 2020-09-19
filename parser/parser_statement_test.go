@@ -49,6 +49,111 @@ statements
 
 }
 
+func TestTryContext(t *testing.T) {
+
+	input := `
+try {
+	raise("test", [1,2,3])
+} except "test", "bla" as e {
+	print(1)
+} except e {
+	print(1)
+} except {
+	print(1)
+} finally {
+	print(2)
+}
+`
+	expectedOutput := `
+try
+  statements
+    identifier: raise
+      funccall
+        string: 'test'
+        list
+          number: 1
+          number: 2
+          number: 3
+  except
+    string: 'test'
+    string: 'bla'
+    as
+      identifier: e
+    statements
+      identifier: print
+        funccall
+          number: 1
+  except
+    identifier: e
+    statements
+      identifier: print
+        funccall
+          number: 1
+  except
+    statements
+      identifier: print
+        funccall
+          number: 1
+  finally
+    statements
+      identifier: print
+        funccall
+          number: 2
+`[1:]
+
+	if res, err := UnitTestParse("mytest", input); err != nil || fmt.Sprint(res) != expectedOutput {
+		t.Error("Unexpected parser output:\n", res, "expected was:\n", expectedOutput, "Error:", err)
+		return
+	}
+
+	input = `
+try {
+	raise("test", [1,2,3])
+}
+`
+	expectedOutput = `
+try
+  statements
+    identifier: raise
+      funccall
+        string: 'test'
+        list
+          number: 1
+          number: 2
+          number: 3
+`[1:]
+
+	if res, err := UnitTestParse("mytest", input); err != nil || fmt.Sprint(res) != expectedOutput {
+		t.Error("Unexpected parser output:\n", res, "expected was:\n", expectedOutput, "Error:", err)
+		return
+	}
+
+	input = `
+try {
+	raise("test", [1,2,3])
+} finally {
+}
+`
+	expectedOutput = `
+try
+  statements
+    identifier: raise
+      funccall
+        string: 'test'
+        list
+          number: 1
+          number: 2
+          number: 3
+  finally
+    statements
+`[1:]
+
+	if res, err := UnitTestParse("mytest", input); err != nil || fmt.Sprint(res) != expectedOutput {
+		t.Error("Unexpected parser output:\n", res, "expected was:\n", expectedOutput, "Error:", err)
+		return
+	}
+}
+
 func TestLoopParsing(t *testing.T) {
 
 	input := `

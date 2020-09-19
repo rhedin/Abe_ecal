@@ -79,6 +79,7 @@ func init() {
 		// Import statement
 
 		NodeIMPORT + "_2": template.Must(template.New(NodeIMPORT).Parse("import {{.c1}} as {{.c2}}")),
+		NodeAS + "_1":     template.Must(template.New(NodeRETURN).Parse("as {{.c1}}")),
 
 		// Sink definition
 
@@ -122,11 +123,17 @@ func init() {
 		// TokenELIF - Special case (handled in code)
 		// TokenELSE - Special case (handled in code)
 
-		// Loop statements
+		// Loop statement
 
 		NodeLOOP + "_2": template.Must(template.New(NodeLOOP).Parse("for {{.c1}} {\n{{.c2}}}\n")),
 		NodeBREAK:       template.Must(template.New(NodeBREAK).Parse("break")),
 		NodeCONTINUE:    template.Must(template.New(NodeCONTINUE).Parse("continue")),
+
+		// Try statement
+
+		// TokenTRY - Special case (handled in code)
+		// TokenEXCEPT - Special case (handled in code)
+		NodeFINALLY + "_1": template.Must(template.New(NodeFINALLY).Parse(" finally {\n{{.c1}}}\n")),
 	}
 
 	bracketPrecedenceMap = map[string]bool{
@@ -325,6 +332,41 @@ func PrettyPrint(ast *ASTNode) (string, error) {
 			}
 
 			buf.WriteString("\n")
+
+			return ppMetaData(ast, buf.String()), nil
+
+		} else if ast.Name == NodeTRY {
+
+			buf.WriteString("try {\n")
+			buf.WriteString(tempParam[fmt.Sprint("c1")])
+
+			buf.WriteString("}")
+
+			for i := 1; i < len(ast.Children); i++ {
+				buf.WriteString(tempParam[fmt.Sprint("c", i+1)])
+			}
+
+			buf.WriteString("\n")
+
+			return ppMetaData(ast, buf.String()), nil
+
+		} else if ast.Name == NodeEXCEPT {
+			buf.WriteString(" except ")
+
+			for i := 0; i < len(ast.Children)-1; i++ {
+				buf.WriteString(tempParam[fmt.Sprint("c", i+1)])
+
+				if ast.Children[i+1].Name != NodeAS && i < len(ast.Children)-2 {
+					buf.WriteString(",")
+				}
+				buf.WriteString(" ")
+			}
+
+			buf.WriteString("{\n")
+
+			buf.WriteString(tempParam[fmt.Sprint("c", len(ast.Children))])
+
+			buf.WriteString("}")
 
 			return ppMetaData(ast, buf.String()), nil
 		}

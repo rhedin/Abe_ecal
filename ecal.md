@@ -51,13 +51,13 @@ statematch | Match on event state: A simple map of required key / value states i
 priority | Priority of the sink. Sinks of higher priority are executed first. The higher the number the lower the priority - 0 is the highest priority.
 suppresses | A list of sink names which should be suppressed if this sink is executed.
 
-It is possible to add events through code via the asynchronous function `addEvent` and the synchronous function `addEventAndWait`. The former should be used within sinks to form event cascades which allow the code to run concurrently. The latter should be used to start event cascades. The function will wait until all sinks which were triggered by this event have finished and then return an error object. The error object is a data structure which contains all errors which have happened during an event cascade. Errors can either happen as runtime errors or explicitly when using the `sinkError` function.
+It is possible to add events through code via the asynchronous function `addEvent` and the synchronous function `addEventAndWait`. The former should be used within sinks to form event cascades which allow the code to run concurrently. The latter should be used to start event cascades. The function will wait until all sinks which were triggered by this event have finished and then return an error object. The error object is a data structure which contains all errors which have happened during an event cascade. Errors can either happen as runtime errors or explicitly when using the `raise` function.
 ```
 sink mysink
     kindmatch [ "web.page.*" ],
 	{
     ...
-    sinkError("Error with request", ["some detail data"])
+    raise("MyCustomError", "Custom message", ["some detail data"])
     ...
 	}
 
@@ -72,7 +72,7 @@ In the example above `res` will have the following form:
         "detail": [
           "some detail data"
         ],
-        "message": "ECAL error in ECALTestRuntime: Error in sink (Error with request) (Line:xx Pos:xx)"
+        "message": "ECAL error in ECALTestRuntime: MyCustomError (Custom message) (Line:xx Pos:xx)"
       }
     },
     "event": {
@@ -242,7 +242,7 @@ e := c.foo
 ```
 
 Object-oriented programming structures
---------------------------------------
+--
 ECAL supports Object-oriented programming by providing the concept of objects containing data as properties and code in the form of methods. Methods can access properties of their object by using the variable `this`. Objects can be initialized with a constructor. Objects can inherit data and properties from each other. Multiple inheritance is allowed. Constructors of super map structures can be called by using the `super` function list variable available to the constructor of an object.
 
 Operator|Description
@@ -292,7 +292,7 @@ result := FooObject.getId() + FooObject.id # 623
 ```
 
 Loop statements
----------------
+--
 All loops are defined as a 'for' block statement. Counting loops are defined with the 'range' function. The following code iterates from 2 until 10 in steps of 2:
 ```
 for a in range(2, 10, 2) {
@@ -322,7 +322,7 @@ for [a, b] in x {
 ```
 
 Conditional statements
-----------------------
+--
 The "if" statement specifies the conditional execution of multiple branches based on defined conditions:
 ```
 if a == 1 {
@@ -334,9 +334,36 @@ if a == 1 {
 }
 ```
 
+Try-except blocks
+--
+ECAL uses try-except blocks to handle error states. Errors can either happen while executing statements or explicitly by using the `raise` function:
+```
+try {
+    raise("MyError", "My error message", [1,2,3])
+} except "MyError" as e {
+    log(e)
+}
+```
+
 Build-in Functions
 --
 ECAL has a number of function which are build-in that are always available:
+
+#### `raise([error type], [error detail], [data) : error`
+Raise returns a runtime error. Outside of sinks this will stop the code execution
+if the error is not handled by try / except. Inside a sink only the specific sink
+will fail.
+
+Parameter | Description
+-|-
+error type | Error type e.g. 'Permission error'
+error detail | Error details e.g. human-readable error message
+data | Additional data for the error handling
+
+Example:
+```
+raise("MyError", "Some detail message", [1, 2, 3])
+```
 
 #### `range([start], end, [step]) : <iterator>`
 Range function which can be used to iterate over number ranges. The parameters start and step are optional.

@@ -18,6 +18,44 @@ import (
 )
 
 /*
+GetStdlibSymbols returns all available packages of stdlib and their constant
+and function symbols.
+*/
+func GetStdlibSymbols() ([]string, []string, []string) {
+	var constSymbols, funcSymbols []string
+	var packageNames []string
+
+	packageSet := make(map[string]bool)
+
+	addSym := func(sym string, suffix string, symMap map[interface{}]interface{},
+		ret []string) []string {
+
+		if strings.HasSuffix(sym, suffix) {
+			trimSym := strings.TrimSuffix(sym, suffix)
+			packageSet[trimSym] = true
+			for k := range symMap {
+				ret = append(ret, fmt.Sprintf("%v.%v", trimSym, k))
+			}
+		}
+
+		return ret
+	}
+
+	for k, v := range genStdlib {
+		sym := fmt.Sprint(k)
+		symMap := v.(map[interface{}]interface{})
+
+		constSymbols = addSym(sym, "-const", symMap, constSymbols)
+		funcSymbols = addSym(sym, "-func", symMap, funcSymbols)
+	}
+	for k := range packageSet {
+		packageNames = append(packageNames, k)
+	}
+
+	return packageNames, constSymbols, funcSymbols
+}
+
+/*
 GetStdlibConst looks up a constant from stdlib.
 */
 func GetStdlibConst(name string) (interface{}, bool) {

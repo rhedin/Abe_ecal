@@ -11,6 +11,7 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 )
@@ -59,4 +60,61 @@ test` {
 	sol.LogDebug(nil, "test")
 	sol.LogInfo(nil, "test")
 	sol.LogError(nil, "test")
+
+	ml.Reset()
+
+	if _, err := NewLogLevelLogger(ml, "test"); err == nil || err.Error() != "Invalid log level: test" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	ml.Reset()
+	ll, _ := NewLogLevelLogger(ml, "debug")
+	ll.LogDebug("l", "test1")
+	ll.LogInfo(nil, "test2")
+	ll.LogError("l", "test3")
+
+	if ml.String() != `debug: ltest1
+<nil>test2
+error: ltest3` {
+		t.Error("Unexpected result:", ml.String())
+		return
+	}
+
+	ml.Reset()
+	ll, _ = NewLogLevelLogger(ml, "info")
+	ll.LogDebug("l", "test1")
+	ll.LogInfo(nil, "test2")
+	ll.LogError("l", "test3")
+
+	if ml.String() != `<nil>test2
+error: ltest3` {
+		t.Error("Unexpected result:", ml.String())
+		return
+	}
+
+	ml.Reset()
+	ll, _ = NewLogLevelLogger(ml, "error")
+	ll.LogDebug("l", "test1")
+	ll.LogInfo(nil, "test2")
+	ll.LogError("l", "test3")
+
+	if ml.String() != `error: ltest3` {
+		t.Error("Unexpected result:", ml.String())
+		return
+	}
+
+	buf := bytes.NewBuffer(nil)
+	bl := NewBufferLogger(buf)
+	bl.LogDebug("l", "test1")
+	bl.LogInfo(nil, "test2")
+	bl.LogError("l", "test3")
+
+	if buf.String() != `debug: ltest1
+<nil>test2
+error: ltest3
+` {
+		t.Error("Unexpected result:", buf.String())
+		return
+	}
 }

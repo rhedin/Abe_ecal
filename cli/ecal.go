@@ -10,15 +10,74 @@
 
 package main
 
-import "fmt"
+import (
+	"flag"
+	"fmt"
+	"os"
+
+	"devt.de/krotik/ecal/config"
+)
 
 /*
-Ideas:
-- auto reload code (watch)
-- cron job support (trigger periodic events)
+TODO:
+- CLI interpreter (show base directory when starting)
+-- console can specify a base directory
+-- console can preload code
+
 - create executable binary (pack into single binary)
+
+- debug server support (vscode)
 */
 
 func main() {
-	fmt.Println("ECAL")
+
+	// Initialize the default command line parser
+
+	flag.CommandLine.Init(os.Args[0], flag.ContinueOnError)
+
+	// Define default usage message
+
+	flag.Usage = func() {
+
+		// Print usage for tool selection
+
+		fmt.Println(fmt.Sprintf("Usage of %s <tool>", os.Args[0]))
+		fmt.Println()
+		fmt.Println(fmt.Sprintf("ECAL %v - Event Condition Action Language", config.ProductVersion))
+		fmt.Println()
+		fmt.Println("Available commands:")
+		fmt.Println()
+		fmt.Println("    console   Interactive console (default)")
+		fmt.Println("    run       Execute ECAL code")
+		fmt.Println("    debug     Run a debug server")
+		fmt.Println("    pack      Create a single executable from ECAL code")
+		fmt.Println()
+		fmt.Println(fmt.Sprintf("Use %s <command> -help for more information about a given command.", os.Args[0]))
+		fmt.Println()
+	}
+
+	// Parse the command bit
+
+	err := flag.CommandLine.Parse(os.Args[1:])
+
+	if len(flag.Args()) > 0 {
+
+		arg := flag.Args()[0]
+
+		if arg == "console" {
+			err = interpret(true)
+		} else if arg == "run" {
+			err = interpret(false)
+		} else {
+			flag.Usage()
+		}
+
+	} else if err == nil {
+
+		err = interpret(true)
+	}
+
+	if err != nil {
+		fmt.Println(fmt.Sprintf("Error: %v", err))
+	}
 }

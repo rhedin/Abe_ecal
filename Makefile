@@ -26,19 +26,19 @@ generate:
 	go generate devt.de/krotik/ecal/stdlib/generate
 
 build: clean mod generate fmt vet
-	go build -ldflags "-s -w" -o $(NAME) cli/ecal.go
+	go build -ldflags "-s -w" -o $(NAME) cli/*.go
 
 build-mac: clean mod generate fmt vet
-	GOOS=darwin GOARCH=amd64 go build -o $(NAME).mac cli/ecal.go
+	GOOS=darwin GOARCH=amd64 go build -o $(NAME).mac cli/*.go
 
 build-win: clean mod generate fmt vet
-	GOOS=windows GOARCH=amd64 go build -o $(NAME).exe cli/ecal.go
+	GOOS=windows GOARCH=amd64 go build -o $(NAME).exe cli/*.go
 
 build-arm7: clean mod generate fmt vet
-	GOOS=linux GOARCH=arm GOARM=7 go build -o $(NAME).arm7 cli/ecal.go
+	GOOS=linux GOARCH=arm GOARM=7 go build -o $(NAME).arm7 cli/*.go
 
 build-arm8: clean mod generate fmt vet
-	GOOS=linux GOARCH=arm64 go build -o $(NAME).arm8 cli/ecal.go
+	GOOS=linux GOARCH=arm64 go build -o $(NAME).arm8 cli/*.go
 
 dist: build build-win build-mac build-arm7 build-arm8
 	rm -fR dist

@@ -15,6 +15,14 @@ import (
 	"testing"
 )
 
+func TestSymbols(t *testing.T) {
+	p, c, f := GetStdlibSymbols()
+	if len(p) == 0 || len(c) == 0 || len(f) == 0 {
+		t.Error("Should have some entries in symbol lists:", p, c, f)
+		return
+	}
+}
+
 func TestSplitModuleAndName(t *testing.T) {
 
 	if m, n := splitModuleAndName("fmt.Println"); m != "fmt" || n != "Println" {

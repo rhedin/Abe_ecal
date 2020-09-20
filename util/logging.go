@@ -12,10 +12,75 @@ package util
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"strings"
 
 	"devt.de/krotik/common/datautil"
 )
+
+// Loger with loglevel support
+// ===========================
+
+/*
+LogLevel represents a logging level
+*/
+type LogLevel string
+
+/*
+Log levels
+*/
+const (
+	Debug LogLevel = "debug"
+	Info           = "info"
+	Error          = "error"
+)
+
+/*
+LogLevelLogger is a wrapper around loggers to add log level functionality.
+*/
+type LogLevelLogger struct {
+	logger Logger
+	level  LogLevel
+}
+
+func NewLogLevelLogger(logger Logger, level string) (*LogLevelLogger, error) {
+	llevel := LogLevel(strings.ToLower(level))
+
+	if llevel != Debug && llevel != Info && llevel != Error {
+		return nil, fmt.Errorf("Invalid log level: %v", llevel)
+	}
+
+	return &LogLevelLogger{
+		logger,
+		llevel,
+	}, nil
+}
+
+/*
+LogError adds a new error log message.
+*/
+func (ll *LogLevelLogger) LogError(m ...interface{}) {
+	ll.logger.LogError(m...)
+}
+
+/*
+LogInfo adds a new info log message.
+*/
+func (ll *LogLevelLogger) LogInfo(m ...interface{}) {
+	if ll.level == Info || ll.level == Debug {
+		ll.logger.LogInfo(m...)
+	}
+}
+
+/*
+LogDebug adds a new debug log message.
+*/
+func (ll *LogLevelLogger) LogDebug(m ...interface{}) {
+	if ll.level == Debug {
+		ll.logger.LogDebug(m...)
+	}
+}
 
 // Logging implementations
 // =======================
@@ -152,4 +217,39 @@ func (nl *NullLogger) LogInfo(m ...interface{}) {
 LogDebug adds a new debug log message.
 */
 func (nl *NullLogger) LogDebug(m ...interface{}) {
+}
+
+/*
+BufferLogger logs into a buffer.
+*/
+type BufferLogger struct {
+	buf io.Writer
+}
+
+/*
+NewNullLogger returns a buffer logger instance.
+*/
+func NewBufferLogger(buf io.Writer) *BufferLogger {
+	return &BufferLogger{buf}
+}
+
+/*
+LogError adds a new error log message.
+*/
+func (bl *BufferLogger) LogError(m ...interface{}) {
+	fmt.Fprintln(bl.buf, fmt.Sprintf("error: %v", fmt.Sprint(m...)))
+}
+
+/*
+LogInfo adds a new info log message.
+*/
+func (bl *BufferLogger) LogInfo(m ...interface{}) {
+	fmt.Fprintln(bl.buf, fmt.Sprintf("%v", fmt.Sprint(m...)))
+}
+
+/*
+LogDebug adds a new debug log message.
+*/
+func (bl *BufferLogger) LogDebug(m ...interface{}) {
+	fmt.Fprintln(bl.buf, fmt.Sprintf("debug: %v", fmt.Sprint(m...)))
 }

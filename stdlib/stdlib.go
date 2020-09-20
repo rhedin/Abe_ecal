@@ -51,11 +51,15 @@ func GetStdlibFunc(name string) (util.ECALFunction, bool) {
 	return nil, false
 }
 
-func splitModuleAndName(name string) (string, string) {
-	ccSplit := strings.SplitN(name, ".", 2)
+func splitModuleAndName(fullname string) (string, string) {
+	var module, name string
 
-	if len(ccSplit) == 0 {
-		return "", ""
+	ccSplit := strings.SplitN(fullname, ".", 2)
+
+	if len(ccSplit) != 0 {
+		module = ccSplit[0]
+		name = strings.Join(ccSplit[1:], "")
 	}
-	return ccSplit[0], strings.Join(ccSplit[1:], "")
+
+	return module, name
 }

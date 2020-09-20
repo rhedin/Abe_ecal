@@ -18,6 +18,7 @@ import (
 	"devt.de/krotik/ecal/engine"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
+	"devt.de/krotik/ecal/stdlib"
 	"devt.de/krotik/ecal/util"
 )
 
@@ -32,6 +33,7 @@ var inbuildFuncMap = map[string]util.ECALFunction{
 	"add":             &addFunc{&inbuildBaseFunc{}},
 	"concat":          &concatFunc{&inbuildBaseFunc{}},
 	"dumpenv":         &dumpenvFunc{&inbuildBaseFunc{}},
+	"doc":             &docFunc{&inbuildBaseFunc{}},
 	"raise":           &raise{&inbuildBaseFunc{}},
 	"addEvent":        &addevent{&inbuildBaseFunc{}},
 	"addEventAndWait": &addeventandwait{&addevent{&inbuildBaseFunc{}}},
@@ -475,6 +477,63 @@ DocString returns a descriptive string.
 */
 func (rf *dumpenvFunc) DocString() (string, error) {
 	return "Dumpenv returns the current variable environment as a string.", nil
+}
+
+// doc
+// ===
+
+/*
+docFunc returns the docstring of a function.
+*/
+type docFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *docFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	var res interface{}
+	err := fmt.Errorf("Need a function as parameter")
+
+	if len(args) > 0 {
+
+		funcObj, ok := args[0].(util.ECALFunction)
+
+		if args[0] == nil {
+
+			// Try to lookup by the given identifier
+
+			c := is["astnode"].(*parser.ASTNode).Children[0].Children[0]
+			astring := c.Token.Val
+
+			if len(c.Children) > 0 {
+				astring = fmt.Sprintf("%v.%v", astring, c.Children[0].Token.Val)
+			}
+
+			// Check for stdlib function
+
+			if funcObj, ok = stdlib.GetStdlibFunc(astring); !ok {
+
+				// Check for inbuild function
+
+				funcObj, ok = inbuildFuncMap[astring]
+			}
+		}
+
+		if ok {
+			res, err = funcObj.DocString()
+		}
+	}
+
+	return res, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *docFunc) DocString() (string, error) {
+	return "Doc returns the docstring of a function.", nil
 }
 
 // raise

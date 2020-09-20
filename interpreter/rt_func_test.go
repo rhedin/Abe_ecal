@@ -310,4 +310,20 @@ result2 := result1.getId() + result1.id
 		t.Error("Unexpected result: ", vsRes, res, err)
 		return
 	}
+
+	_, err = UnitTestEval(`
+Bar := {
+  "super" : "hans"
+
+}
+
+
+result1 := new(Bar)
+`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Runtime error (Property _super must be a list of super classes) (Line:8 Pos:12)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
 }

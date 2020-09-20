@@ -99,6 +99,46 @@ func TestSimpleAssignments(t *testing.T) {
 		t.Error("Unexpected result: ", vsRes, res, err)
 		return
 	}
+
+	_, err = UnitTestEval(
+		`1 := [1, 2]`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Cannot access variable (Must have a variable or list of variables on the left side of the assignment) (Line:1 Pos:3)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	_, err = UnitTestEval(
+		`[1] := [1, 2]`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Cannot access variable (Must have a list of variables on the left side of the assignment) (Line:1 Pos:5)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	_, err = UnitTestEval(
+		`[a, b] := [1, 2, 3]`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid state (Assigned number of variables is different to number of values (2 variables vs 3 values)) (Line:1 Pos:8)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	_, err = UnitTestEval(
+		`[a, b] := 1`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid state (Result is not a list (value is 1)) (Line:1 Pos:8)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	_, err = UnitTestEval(
+		`[a, b.c, c] := [1, 2, 3]`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Cannot access variable (Variable b is not a container) (Line:1 Pos:13)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
 }
 
 func TestComplexAssignments(t *testing.T) {

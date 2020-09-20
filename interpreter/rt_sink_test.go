@@ -96,6 +96,7 @@ sink rule1
         log("rule1 - Handling request: ", event.kind)
         addEvent("Rule1Event1", "not_existing", event.state)
         addEvent("Rule1Event2", "web.log", event.state)
+        addEvent("Rule1Event3", "notexisting", event.state, {})
 	}
 
 sink rule2
@@ -149,7 +150,7 @@ ErrorResult:[
           123
         ],
         "detail": "User bar was seen",
-        "error": "ECAL error in ECALTestRuntime: UserBarWasHere (User bar was seen) (Line:17 Pos:13)",
+        "error": "ECAL error in ECALTestRuntime: UserBarWasHere (User bar was seen) (Line:18 Pos:13)",
         "type": "UserBarWasHere"
       }
     },

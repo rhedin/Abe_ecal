@@ -169,7 +169,7 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 					var val interface{}
 
 					if err == nil {
-						val, err = c.Runtime.Eval(vs, is)
+						val, err = c.Runtime.Eval(vs, make(map[string]interface{}))
 						args = append(args, val)
 					}
 				}

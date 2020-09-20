@@ -425,6 +425,26 @@ Example:
 concat([1,2,3], [4,5,6], [7,8,9])
 ```
 
+#### `dumpenv() : string`
+Returns the current variable environment as a string.
+
+Example:
+```
+dumpenv()
+```
+
+#### `doc(function) : string`
+Returns the doc string of a function.
+
+Parameter | Description
+-|-
+function | A function object
+
+Example:
+```
+doc(len)
+```
+
 Logging Functions
 --
 ECAL has a build-in logging system and provides by default the functions `debug`, `log` and `error` to log messages.

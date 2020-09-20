@@ -330,6 +330,8 @@ func likeOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Ru
 Eval evaluate this runtime component.
 */
 func (rt *likeOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	var res interface{}
+
 	_, err := rt.baseRuntime.Eval(vs, is)
 
 	if err == nil {
@@ -347,13 +349,13 @@ func (rt *likeOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (inter
 				re, err = regexp.Compile(fmt.Sprint(pattern))
 				if err == nil {
 
-					return re.MatchString(fmt.Sprint(str)), nil
+					res = re.MatchString(fmt.Sprint(str))
 				}
 			}
 		}
 	}
 
-	return nil, err
+	return res, err
 }
 
 type beginswithOpRuntime struct {

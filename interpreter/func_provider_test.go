@@ -12,6 +12,7 @@ package interpreter
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -241,6 +242,49 @@ identifier: dumpenv
 		return
 	}
 
+	res, err = UnitTestEval(
+		`
+func foo() {
+	log("hello")
+}
+doc(foo)`, nil)
+
+	if err != nil || fmt.Sprint(res) != `Declared function: foo (Line 2, Pos 1)` {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`doc(len)`, nil)
+
+	if err != nil || fmt.Sprint(res) != `Len returns the size of a list or map.` {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`doc(fmt.Println)`, nil)
+
+	if err != nil || !strings.HasPrefix(fmt.Sprint(res), "Println") {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`
+/*
+Foo is my custom function.
+*/
+func foo() {
+	log("hello")
+}
+doc(foo)`, nil)
+
+	if err != nil || fmt.Sprint(res) != `Foo is my custom function.` {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
 	// Negative case
 
 	res, err = UnitTestEvalAndAST(
@@ -258,6 +302,48 @@ identifier: a
 	if err == nil ||
 		err.Error() != "ECAL error in ECALTestRuntime: Unknown construct (Unknown function: len) (Line:1 Pos:3)" {
 		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+}
+
+func TestDocstrings(t *testing.T) {
+	for k, v := range inbuildFuncMap {
+		if res, _ := v.DocString(); res == "" {
+			t.Error("Docstring missing for ", k)
+			return
+		}
+	}
+}
+
+func TestErrorConditions(t *testing.T) {
+
+	ib := &inbuildBaseFunc{}
+
+	if _, err := ib.AssertNumParam(1, "bob"); err == nil || err.Error() != "Parameter 1 should be a number" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	if _, err := ib.AssertMapParam(1, "bob"); err == nil || err.Error() != "Parameter 1 should be a map" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	if _, err := ib.AssertListParam(1, "bob"); err == nil || err.Error() != "Parameter 1 should be a list" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	rf := &rangeFunc{&inbuildBaseFunc{}}
+
+	if _, err := rf.Run("", nil, nil, nil); err == nil || err.Error() != "Need at least an end range as first parameter" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	if _, err := rf.Run("", nil, nil, []interface{}{"bob"}); err == nil || err.Error() != "Parameter 1 should be a number" {
+		t.Error("Unexpected result:", err)
 		return
 	}
 

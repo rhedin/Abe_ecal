@@ -13,6 +13,7 @@ package interpreter
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
@@ -155,8 +156,6 @@ func (f *function) Run(instanceID string, vs parser.Scope, is map[string]interfa
 
 				if i < len(args) {
 					val = args[i]
-				} else {
-					val = nil
 				}
 			} else if p.Name == parser.NodePRESET {
 				name = p.Children[0].Token.Val
@@ -195,6 +194,11 @@ func (f *function) Run(instanceID string, vs parser.Scope, is map[string]interfa
 DocString returns a descriptive string.
 */
 func (f *function) DocString() (string, error) {
+
+	if len(f.declaration.Meta) > 0 {
+		return strings.TrimSpace(f.declaration.Meta[0].Value()), nil
+	}
+
 	return fmt.Sprintf("Declared function: %v (%v)", f.name, f.declaration.Token.PosString()), nil
 }
 

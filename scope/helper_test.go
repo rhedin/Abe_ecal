@@ -12,7 +12,18 @@ package scope
 
 import (
 	"testing"
+
+	"devt.de/krotik/ecal/parser"
 )
+
+func TestNameFromASTNode(t *testing.T) {
+	n, _ := parser.Parse("", "foo")
+
+	if res := NameFromASTNode(n); res != "block: identifier (Line:1 Pos:1)" {
+		t.Error("Unexpected result:", res)
+		return
+	}
+}
 
 func TestScopeConversion(t *testing.T) {
 	vs := NewScope("foo")

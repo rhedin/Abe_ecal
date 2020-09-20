@@ -148,7 +148,7 @@ func TestErrorConditions(t *testing.T) {
 	}()
 
 	input = `"foo"`
-	if ast, err := Parse("test", input); err == nil || err.Error() != `Parse error in test: Unknown term (id:5 ("foo")) (Line:1 Pos:1)` {
+	if ast, err := Parse("test", input); err == nil || err.Error() != `Parse error in test: Unknown term (id:5 (v:"foo")) (Line:1 Pos:1)` {
 		t.Errorf("Unexpected result: %v\nAST:\n%v", err, ast)
 		return
 	}

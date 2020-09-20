@@ -297,3 +297,82 @@ rule2 - Handling request: test.event`[1:] {
 		return
 	}
 }
+
+func TestSinkErrorConditions(t *testing.T) {
+
+	vs := scope.NewScope(scope.GlobalScope)
+
+	_, err := UnitTestEval(
+		`
+sink test
+    apa
+    kindmatch [ "test.event", "foo.*" ],
+    statematch { "a" : null },
+	{
+        log("rule1 - Handling request: ", event.kind)
+	}
+`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid construct (Unknown expression in sink declaration apa) (Line:3 Pos:5)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	_, err = UnitTestEval(
+		`
+sink test
+    kindmatch 1,
+    statematch { "a" : null },
+	{
+        log("rule1 - Handling request: ", event.kind)
+	}
+`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid construct (Expected a list as value) (Line:3 Pos:5)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	_, err = UnitTestEval(
+		`
+sink test
+    statematch { "a" : null },
+	{
+        log("rule1 - Handling request: ", event.kind)
+	}
+`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid state (Cannot add rule without a kind match: test) (Line:2 Pos:1)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	_, err = UnitTestEval(
+		`
+sink test
+    priority "Hans",
+	{
+        log("rule1 - Handling request: ", event.kind)
+	}
+`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid construct (Expected a number as value) (Line:3 Pos:5)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	_, err = UnitTestEval(
+		`
+sink test
+    statematch "Hans",
+	{
+        log("rule1 - Handling request: ", event.kind)
+	}
+`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid construct (Expected a map as value) (Line:3 Pos:5)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+}

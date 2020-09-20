@@ -344,41 +344,37 @@ func (rt *loopRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 				if err == nil {
 
 					if len(vars) == 1 {
-						if err = vs.SetValue(vars[0], res); err != nil {
-							err = rt.erp.NewRuntimeError(util.ErrVarAccess,
-								err.Error(), rt.node)
-						}
+						err = vs.SetValue(vars[0], res)
 
 					} else if resList, ok := res.([]interface{}); ok {
 
 						if len(vars) != len(resList) {
-							return nil, rt.erp.NewRuntimeError(util.ErrInvalidState,
-								fmt.Sprintf("Assigned number of variables is different to "+
-									"number of values (%v variables vs %v values)",
-									len(vars), len(resList)), rt.node)
+							err = fmt.Errorf("Assigned number of variables is different to "+
+								"number of values (%v variables vs %v values)",
+								len(vars), len(resList))
 						}
 
-						for i, v := range vars {
-							if err == nil {
-								if err = vs.SetValue(v, resList[i]); err != nil {
-									err = rt.erp.NewRuntimeError(util.ErrVarAccess,
-										err.Error(), rt.node)
+						if err == nil {
+							for i, v := range vars {
+								if err == nil {
+									err = vs.SetValue(v, resList[i])
 								}
 							}
 						}
 
 					} else {
 
-						return nil, rt.erp.NewRuntimeError(util.ErrInvalidState,
-							fmt.Sprintf("Result for loop variable is not a list (value is %v)", res),
-							rt.node)
+						err = fmt.Errorf("Result for loop variable is not a list (value is %v)", res)
+					}
+
+					if err != nil {
+						return nil, rt.erp.NewRuntimeError(util.ErrRuntimeError,
+							err.Error(), rt.node)
 					}
 
 					// Execute block
 
-					if err == nil {
-						_, err = rt.node.Children[1].Runtime.Eval(vs, is)
-					}
+					_, err = rt.node.Children[1].Runtime.Eval(vs, is)
 				}
 
 				// Check for continue

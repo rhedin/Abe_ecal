@@ -210,8 +210,12 @@ type operatorRuntime struct {
 errorDetailString produces a detail string for errors.
 */
 func (rt *operatorRuntime) errorDetailString(token *parser.LexToken, opVal interface{}) string {
-	if token.Identifier {
+	if !token.Identifier {
 		return token.Val
+	}
+
+	if opVal == nil {
+		opVal = "NULL"
 	}
 
 	return fmt.Sprintf("%v=%v", token.Val, opVal)
@@ -223,27 +227,30 @@ numVal returns a transformed number value.
 func (rt *operatorRuntime) numVal(op func(float64) interface{}, vs parser.Scope,
 	is map[string]interface{}) (interface{}, error) {
 
+	var ret interface{}
+
 	errorutil.AssertTrue(len(rt.node.Children) == 1,
 		fmt.Sprint("Operation requires 1 operand", rt.node))
 
 	res, err := rt.node.Children[0].Runtime.Eval(vs, is)
-	if err != nil {
-		return nil, err
+	if err == nil {
+
+		// Check if the value is a number
+
+		resNum, ok := res.(float64)
+
+		if !ok {
+
+			// Produce a runtime error if the value is not a number
+
+			return nil, rt.erp.NewRuntimeError(util.ErrNotANumber,
+				rt.errorDetailString(rt.node.Children[0].Token, res), rt.node.Children[0])
+		}
+
+		ret = op(resNum)
 	}
 
-	// Check if the value is a number
-
-	resNum, ok := res.(float64)
-
-	if !ok {
-
-		// Produce a runtime error if the value is not a number
-
-		return nil, rt.erp.NewRuntimeError(util.ErrNotANumber,
-			rt.errorDetailString(rt.node.Children[0].Token, res), rt.node.Children[0])
-	}
-
-	return op(resNum), nil
+	return ret, err
 }
 
 /*
@@ -251,24 +258,26 @@ boolVal returns a transformed boolean value.
 */
 func (rt *operatorRuntime) boolVal(op func(bool) interface{},
 	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	var err error
+
+	var ret interface{}
 
 	errorutil.AssertTrue(len(rt.node.Children) == 1,
 		fmt.Sprint("Operation requires 1 operand", rt.node))
 
 	res, err := rt.node.Children[0].Runtime.Eval(vs, is)
-	if err != nil {
-		return nil, err
+	if err == nil {
+
+		resBool, ok := res.(bool)
+
+		if !ok {
+			return nil, rt.erp.NewRuntimeError(util.ErrNotABoolean,
+				rt.errorDetailString(rt.node.Children[0].Token, res), rt.node.Children[0])
+		}
+
+		ret = op(resBool)
 	}
 
-	resBool, ok := res.(bool)
-
-	if !ok {
-		return nil, rt.erp.NewRuntimeError(util.ErrNotABoolean,
-			rt.errorDetailString(rt.node.Children[0].Token, res), rt.node.Children[0])
-	}
-
-	return op(resBool), nil
+	return ret, err
 }
 
 /*
@@ -290,13 +299,15 @@ func (rt *operatorRuntime) numOp(op func(float64, float64) interface{},
 			if res1Num, ok = res1.(float64); !ok {
 				err = rt.erp.NewRuntimeError(util.ErrNotANumber,
 					rt.errorDetailString(rt.node.Children[0].Token, res1), rt.node.Children[0])
+
 			} else {
 				if res2Num, ok = res2.(float64); !ok {
 					err = rt.erp.NewRuntimeError(util.ErrNotANumber,
 						rt.errorDetailString(rt.node.Children[1].Token, res2), rt.node.Children[1])
+
 				} else {
 
-					return op(res1Num, res2Num), nil
+					return op(res1Num, res2Num), err
 				}
 			}
 		}
@@ -311,20 +322,21 @@ genOp executes an operation on two general values.
 func (rt *operatorRuntime) genOp(op func(interface{}, interface{}) interface{},
 	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
 
+	var ret interface{}
+
 	errorutil.AssertTrue(len(rt.node.Children) == 2,
 		fmt.Sprint("Operation requires 2 operands", rt.node))
 
 	res1, err := rt.node.Children[0].Runtime.Eval(vs, is)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		var res2 interface{}
+
+		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is); err == nil {
+			ret = op(res1, res2)
+		}
 	}
 
-	res2, err := rt.node.Children[1].Runtime.Eval(vs, is)
-	if err != nil {
-		return nil, err
-	}
-
-	return op(res1, res2), nil
+	return ret, err
 }
 
 /*
@@ -333,20 +345,21 @@ strOp executes an operation on two string values.
 func (rt *operatorRuntime) strOp(op func(string, string) interface{},
 	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
 
+	var ret interface{}
+
 	errorutil.AssertTrue(len(rt.node.Children) == 2,
 		fmt.Sprint("Operation requires 2 operands", rt.node))
 
 	res1, err := rt.node.Children[0].Runtime.Eval(vs, is)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		var res2 interface{}
+
+		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is); err == nil {
+			ret = op(fmt.Sprint(res1), fmt.Sprint(res2))
+		}
 	}
 
-	res2, err := rt.node.Children[1].Runtime.Eval(vs, is)
-	if err != nil {
-		return nil, err
-	}
-
-	return op(fmt.Sprint(res1), fmt.Sprint(res2)), nil
+	return ret, err
 }
 
 /*
@@ -355,32 +368,34 @@ boolOp executes an operation on two boolean values.
 func (rt *operatorRuntime) boolOp(op func(bool, bool) interface{},
 	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
 
+	var res interface{}
+
 	errorutil.AssertTrue(len(rt.node.Children) == 2,
 		fmt.Sprint("Operation requires 2 operands", rt.node))
 
 	res1, err := rt.node.Children[0].Runtime.Eval(vs, is)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		var res2 interface{}
+
+		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is); err == nil {
+
+			res1bool, ok := res1.(bool)
+			if !ok {
+				return nil, rt.erp.NewRuntimeError(util.ErrNotABoolean,
+					rt.errorDetailString(rt.node.Children[0].Token, res1), rt.node.Children[0])
+			}
+
+			res2bool, ok := res2.(bool)
+			if !ok {
+				return nil, rt.erp.NewRuntimeError(util.ErrNotABoolean,
+					rt.errorDetailString(rt.node.Children[1].Token, res2), rt.node.Children[0])
+			}
+
+			res = op(res1bool, res2bool)
+		}
 	}
 
-	res2, err := rt.node.Children[1].Runtime.Eval(vs, is)
-	if err != nil {
-		return nil, err
-	}
-
-	res1bool, ok := res1.(bool)
-	if !ok {
-		return nil, rt.erp.NewRuntimeError(util.ErrNotABoolean,
-			rt.errorDetailString(rt.node.Children[0].Token, res1), rt.node.Children[0])
-	}
-
-	res2bool, ok := res2.(bool)
-	if !ok {
-		return nil, rt.erp.NewRuntimeError(util.ErrNotABoolean,
-			rt.errorDetailString(rt.node.Children[1].Token, res2), rt.node.Children[0])
-	}
-
-	return op(res1bool, res2bool), nil
+	return res, err
 }
 
 /*
@@ -389,24 +404,26 @@ listOp executes an operation on a value and a list.
 func (rt *operatorRuntime) listOp(op func(interface{}, []interface{}) interface{},
 	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
 
+	var res interface{}
+
 	errorutil.AssertTrue(len(rt.node.Children) == 2,
 		fmt.Sprint("Operation requires 2 operands", rt.node))
 
 	res1, err := rt.node.Children[0].Runtime.Eval(vs, is)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		var res2 interface{}
+
+		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is); err == nil {
+
+			res2list, ok := res2.([]interface{})
+			if !ok {
+				err = rt.erp.NewRuntimeError(util.ErrNotAList,
+					rt.errorDetailString(rt.node.Children[1].Token, res2), rt.node.Children[0])
+			} else {
+				res = op(res1, res2list)
+			}
+		}
 	}
 
-	res2, err := rt.node.Children[1].Runtime.Eval(vs, is)
-	if err != nil {
-		return nil, err
-	}
-
-	res2list, ok := res2.([]interface{})
-	if !ok {
-		return nil, rt.erp.NewRuntimeError(util.ErrNotAList,
-			rt.errorDetailString(rt.node.Children[1].Token, res2), rt.node.Children[0])
-	}
-
-	return op(res1, res2list), nil
+	return res, err
 }

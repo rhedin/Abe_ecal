@@ -43,15 +43,6 @@ func (rt *sinkRuntime) Validate() error {
 
 	if err == nil {
 
-		nameNode := rt.node.Children[0]
-
-		// Make sure there is a constant as a name
-
-		if _, ok := nameNode.Runtime.(*identifierRuntime); !ok {
-			return rt.erp.NewRuntimeError(util.ErrInvalidConstruct,
-				"Must have an identifier as sink name", rt.node)
-		}
-
 		// Check that all children are valid
 
 		for _, child := range rt.node.Children[1:] {

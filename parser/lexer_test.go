@@ -167,7 +167,7 @@ func TestAssignmentLexing(t *testing.T) {
 
 	input = `name:=a[1] + b["d"] + c[a]`
 	if res := LexToList("mytest", input); fmt.Sprint(res) !=
-		`["name" := "a" [ v:"1" ] + "b" [ "d" ] + "c" [ "a" ] EOF]` {
+		`["name" := "a" [ v:"1" ] + "b" [ v:"d" ] + "c" [ "a" ] EOF]` {
 		t.Error("Unexpected lexer result:", res)
 		return
 	}
@@ -185,7 +185,7 @@ if a == 1 {
 }
 `
 	if res := LexToList("mytest", input); fmt.Sprint(res) !=
-		`[<IF> "a" == v:"1" { "print" ( "xxx" ) } <ELIF> "b" > v:"2" { "print" ( "yyy" ) } <ELSE> { "print" ( "zzz" ) } EOF]` {
+		`[<IF> "a" == v:"1" { "print" ( v:"xxx" ) } <ELIF> "b" > v:"2" { "print" ( v:"yyy" ) } <ELSE> { "print" ( v:"zzz" ) } EOF]` {
 		t.Error("Unexpected lexer result:", res)
 		return
 	}
@@ -208,7 +208,7 @@ for true {
 }
 `
 	if res := LexToList("mytest", input); fmt.Sprint(res) !=
-		`[<FOR> <TRUE> { "x" := "1" <BREAK> ; <CONTINUE> } EOF]` {
+		`[<FOR> <TRUE> { "x" := v:"1" <BREAK> ; <CONTINUE> } EOF]` {
 		t.Error("Unexpected lexer result:", res)
 		return
 	}
@@ -225,7 +225,7 @@ func TestStringLexing(t *testing.T) {
 	}
 
 	input = `name "test"  'bla'`
-	if res := LexToList("mytest", input); fmt.Sprint(res) != `["name" "test" "bla" EOF]` {
+	if res := LexToList("mytest", input); fmt.Sprint(res) != `["name" v:"test" v:"bla" EOF]` {
 		t.Error("Unexpected lexer result:", res)
 		return
 	}
@@ -240,7 +240,7 @@ func TestStringLexing(t *testing.T) {
 	input = `name r"te
 	st"  'bla'`
 	res := LexToList("mytest", input)
-	if fmt.Sprint(res) != `["name" "te\n\tst" "bla" EOF]` {
+	if fmt.Sprint(res) != `["name" v:"te\n\tst" v:"bla" EOF]` {
 		t.Error("Unexpected lexer result:", res)
 		return
 	}
@@ -254,7 +254,7 @@ func TestStringLexing(t *testing.T) {
 
 	input = `"test\n\ttest"  '\nfoo\u0028bar' "test{foo}.5w3f"`
 	res = LexToList("mytest", input)
-	if fmt.Sprint(res) != `["test\n\ttest" "\nfoo(bar" "test{foo}.5w3f" EOF]` {
+	if fmt.Sprint(res) != `[v:"test\n\ttest" v:"\nfoo(bar" v:"test{foo}.5w3f" EOF]` {
 		t.Error("Unexpected lexer result:", res)
 		return
 	}
@@ -272,7 +272,7 @@ func TestCommentLexing(t *testing.T) {
 	x*/ 'b/* - */la' /*test*/`
 	if res := LexToList("mytest", input); fmt.Sprint(res) != `["name" /*  foo
 		bar
-	x */ "b/* - */la" /* test */ EOF]` {
+	x */ v:"b/* - */la" /* test */ EOF]` {
 		t.Error("Unexpected lexer result:", res)
 		return
 	}
@@ -314,9 +314,9 @@ suppresses [ "myothersink" ]
 {
   a := 1
 }`
-	if res := LexToList("mytest", input); fmt.Sprint(res) != `[<SINK> "mysink" "\nA comment"... <KINDMATCH> `+
-		`[ "foo" . "bar" . * ] , <SCOPEMATCH> [ "data.read" , "data.write" ] , <STATEMATCH> `+
-		`{ "a" : v:"1" , "b" : <NULL> } , <PRIORITY> v:"0" , <SUPPRESSES> [ "myothersink" ] `+
+	if res := LexToList("mytest", input); fmt.Sprint(res) != `[<SINK> v:"mysink" v:"\nA comment"... <KINDMATCH> `+
+		`[ "foo" . "bar" . * ] , <SCOPEMATCH> [ v:"data.read" , v:"data.write" ] , <STATEMATCH> `+
+		`{ "a" : v:"1" , "b" : <NULL> } , <PRIORITY> v:"0" , <SUPPRESSES> [ v:"myothersink" ] `+
 		`{ "a" := v:"1" } EOF]` {
 		t.Error("Unexpected lexer result:", res)
 		return

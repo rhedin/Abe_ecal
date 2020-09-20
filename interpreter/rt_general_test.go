@@ -32,6 +32,29 @@ func TestGeneralErrorCases(t *testing.T) {
 		t.Error("Unexpected result:", err)
 		return
 	}
+
+	n, _ = parser.Parse("a", "a")
+	inv = &invalidRuntime{newBaseRuntime(NewECALRuntimeProvider("a", nil, nil), n)}
+	n.Runtime = inv
+
+	n2, _ := parser.Parse("a", "a")
+	inv2 := &invalidRuntime{newBaseRuntime(NewECALRuntimeProvider("a", nil, nil), n2)}
+	n2.Runtime = inv2
+	n.Children = append(n.Children, n2)
+
+	if err := inv.Validate().Error(); err != "ECAL error in a: Invalid construct (Unknown node: identifier) (Line:1 Pos:1)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	n, _ = parser.Parse("a", "a")
+	void := &voidRuntime{newBaseRuntime(NewECALRuntimeProvider("a", nil, nil), n)}
+	n.Runtime = void
+
+	if res, err := void.Eval(nil, nil); err != nil || res != nil {
+		t.Error("Unexpected result:", res, err)
+		return
+	}
 }
 
 func TestImporting(t *testing.T) {
@@ -63,6 +86,17 @@ statements
     foobar (map[interface {}]interface {}) : {"b":123}
 }` {
 		t.Error("Unexpected result: ", vsRes, res, err)
+		return
+	}
+
+	n, _ := parser.Parse("a", "a")
+	imp := &importRuntime{newBaseRuntime(NewECALRuntimeProvider("a", nil, nil), n)}
+	n.Runtime = imp
+	imp.erp = NewECALRuntimeProvider("ECALTestRuntime", nil, nil)
+	imp.erp.ImportLocator = nil
+
+	if res, err := imp.Eval(nil, nil); err == nil || err.Error() != "ECAL error in ECALTestRuntime: Runtime error (No import locator was specified) (Line:1 Pos:1)" {
+		t.Error("Unexpected result:", res, err)
 		return
 	}
 }
@@ -99,6 +133,72 @@ statements
 debug: foo
 error: bar` {
 		t.Error("Unexpected result: ", testlogger.String())
+		return
+	}
+}
+
+func TestOperatorRuntimeErrors(t *testing.T) {
+
+	n, _ := parser.Parse("a", "a")
+	op := &operatorRuntime{newBaseRuntime(NewECALRuntimeProvider("a", nil, nil), n)}
+
+	if res := op.errorDetailString(n.Token, "foo"); res != "a=foo" {
+		t.Error("Unexpected result:", res)
+	}
+
+	n.Token.Identifier = false
+
+	if res := op.errorDetailString(n.Token, "foo"); res != "a" {
+		t.Error("Unexpected result:", res)
+	}
+
+	n.Token.Identifier = true
+
+	res, err := UnitTestEval(
+		`+ "a"`, nil)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Operand is not a number (a) (Line:1 Pos:3)" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`x := "a"; + x`, nil)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Operand is not a number (x=a) (Line:1 Pos:13)" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`not "a"`, nil)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Operand is not a boolean (a) (Line:1 Pos:5)" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`a:= 5; a or 6`, nil)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Operand is not a boolean (a=5) (Line:1 Pos:8)" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`true or 2`, nil)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Operand is not a boolean (2) (Line:1 Pos:1)" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`a := "foo"; x in a`, nil)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Operand is not a list (a=foo) (Line:1 Pos:13)" {
+		t.Error("Unexpected result: ", res, err)
 		return
 	}
 }

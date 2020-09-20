@@ -804,6 +804,19 @@ Info->c-0`[1:] {
 		return
 	}
 
+	_, err = UnitTestEval(
+		`
+x := { "c": 0, "a":2, "b":4}
+for [1, b] in x {
+  testlog("Info", "->", a, "-", b)
+}
+	   `, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid construct (Must have a list of simple variables on the left side of the In expression) (Line:3 Pos:1)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
 	// Test continue
 
 	_, err = UnitTestEval(`
@@ -854,6 +867,26 @@ for a[t] in 1 {
 	   `[1:], vs)
 
 	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid construct (Must have a simple variable on the left side of the In expression) (Line:1 Pos:1)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	_, err = UnitTestEval(`
+for [a, b] in [[1,2],[3,4],3] {
+}
+	   `[1:], vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Runtime error (Result for loop variable is not a list (value is 3)) (Line:1 Pos:1)" {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	_, err = UnitTestEval(`
+for [a, b] in [[1,2],[3,4],[5,6,7]] {
+}
+	   `[1:], vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Runtime error (Assigned number of variables is different to number of values (2 variables vs 3 values)) (Line:1 Pos:1)" {
 		t.Error("Unexpected result:", err)
 		return
 	}
@@ -971,8 +1004,8 @@ error: Something else happened: {
   "type": "test 13"
 }
 Runtime error: {
-  "detail": "a",
-  "error": "ECAL error in ECALTestRuntime: Operand is not a number (a) (Line:11 Pos:12)",
+  "detail": "a=NULL",
+  "error": "ECAL error in ECALTestRuntime: Operand is not a number (a=NULL) (Line:11 Pos:12)",
   "line": 11,
   "pos": 12,
   "source": "ECALTestRuntime",

@@ -157,18 +157,15 @@ func (rt *mapValueRuntime) Eval(vs parser.Scope, is map[string]interface{}) (int
 
 	if err == nil {
 		for _, kvp := range rt.node.Children {
+			var key, val interface{}
 
-			key, err := kvp.Children[0].Runtime.Eval(vs, is)
-			if err != nil {
-				return nil, err
+			if err == nil {
+				if key, err = kvp.Children[0].Runtime.Eval(vs, is); err == nil {
+					if val, err = kvp.Children[1].Runtime.Eval(vs, is); err == nil {
+						m[key] = val
+					}
+				}
 			}
-
-			val, err := kvp.Children[1].Runtime.Eval(vs, is)
-			if err != nil {
-				return nil, err
-			}
-
-			m[key] = val
 		}
 	}
 
@@ -198,17 +195,16 @@ func (rt *listValueRuntime) Eval(vs parser.Scope, is map[string]interface{}) (in
 	var l []interface{}
 
 	if err == nil {
-
 		for _, item := range rt.node.Children {
+			if err == nil {
+				var val interface{}
+				if val, err = item.Runtime.Eval(vs, is); err == nil {
+					l = append(l, val)
+				}
 
-			val, err := item.Runtime.Eval(vs, is)
-			if err != nil {
-				return nil, err
 			}
-
-			l = append(l, val)
 		}
 	}
 
-	return l, nil
+	return l, err
 }

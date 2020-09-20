@@ -695,11 +695,11 @@ func lexValue(l *lexer) lexFunc {
 			return nil
 		}
 
-		l.emitTokenAndValue(TokenSTRING, s, true, true)
+		l.emitTokenAndValue(TokenSTRING, s, false, true)
 
 	} else {
 
-		l.emitTokenAndValue(TokenSTRING, l.input[l.start+2:l.pos-1], true, false)
+		l.emitTokenAndValue(TokenSTRING, l.input[l.start+2:l.pos-1], false, false)
 	}
 
 	//  Set newline

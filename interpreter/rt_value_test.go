@@ -41,6 +41,73 @@ string: 'test'
 	}
 }
 
+func TestStringInterpolation(t *testing.T) {
+
+	res, err := UnitTestEvalAndAST(
+		`"{{'foo'}}test{{'foo'}}test"`, nil,
+		`
+string: '{{'foo'}}test{{'foo'}}test'
+`[1:])
+
+	if err != nil || res != "footestfootest" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEvalAndAST(
+		`"{{foo'}}test{{'foo'}}test"`, nil,
+		`
+string: '{{foo'}}test{{'foo'}}test'
+`[1:])
+
+	if err != nil || res != "#Parse error in String interpolation: foo': Lexical "+
+		"error (Cannot parse identifier 'foo''. Identifies may only contain [a-zA-Z] "+
+		"and [a-zA-Z0-9] from the second character) (Line:1 Pos:1)testfootest" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`"Foo bar {{1+2}}"`, nil)
+
+	if err != nil || res != "Foo bar 3" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`r"Foo bar {{1+2}}"`, nil)
+
+	if err != nil || res != "Foo bar {{1+2}}" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`b:=1;"test{{a:=1;concat([1,2,3], [4,5], [a,b])}}test"`, nil)
+
+	if err != nil || res != "test[1 2 3 4 5 1 1]test" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`b:="foo";"test{{if b { 1 } else { 2 } }}test"`, nil)
+
+	if err != nil || res != "test1test" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`b:=null;"test{{if b { 1 } else { 2 } }}test"`, nil)
+
+	if err != nil || res != "test2test" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+}
+
 func TestCompositionValues(t *testing.T) {
 
 	res, err := UnitTestEvalAndAST(

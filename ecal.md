@@ -147,25 +147,17 @@ Strings can be normal quoted stings which interpret backslash escape characters:
 \uhhhh → a Unicode character whose codepoint can be expressed in 4 hexadecimal digits. (pad 0 in front)
 ```
 
-Normal quoted strings also interpret inline expressions escaped with `{}`:
+Normal quoted strings also interpret inline expressions and statements escaped with `{{}}`:
 ```
-"Foo bar {1+2}"
+"Foo bar {{1+2}}"
 ```
-Inline expression may also specify number formatting:
-```
-"Foo bar {1+2}.2f"
-```
-Formatting|Description
--|-
-{}.f|With decimal point full precision
-{}.3f|Decimal point with precision 3
-{}.5w3f|5 Width with decimal point with precision 3
-{}.e|Scientific notation
 
 Strings can also be expressed in raw form which will not interpret any escape characters.
 ```
-r"Foo bar {1+2}"
+r"Foo bar {{1+2}}"
 ```
+
+Some examples:
 
 Expression|Value
 -|-
@@ -173,8 +165,8 @@ Expression|Value
 `'foo"bar'`| `foo"bar`
 `'foo\u0028bar'`| `foo(bar`
 `"foo\u0028bar"`| `foo(bar`
-`"Foo bar {1+2}"`| `Foo bar 3`
-`r"Foo bar {1+2}"`| `Foo bar {1+2}`
+`"Foo bar {{1+2}}"`| `Foo bar 3`
+`r"Foo bar {{1+2}}"`| `Foo bar {{1+2}}`
 
 Variable Assignments
 --

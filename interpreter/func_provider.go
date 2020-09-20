@@ -514,9 +514,9 @@ func (rf *raise) Run(instanceID string, vs parser.Scope, is map[string]interface
 	node := is["astnode"].(*parser.ASTNode)
 
 	return nil, &util.RuntimeErrorWithDetail{
-		erp.NewRuntimeError(err, detailMsg, node).(*util.RuntimeError),
-		vs,
-		detail,
+		RuntimeError: erp.NewRuntimeError(err, detailMsg, node).(*util.RuntimeError),
+		Environment:  vs,
+		Data:         detail,
 	}
 
 }
@@ -586,7 +586,7 @@ func (rf *addevent) addEvent(addFunc func(engine.Processor, *engine.Event, *engi
 			)
 
 			if len(args) > 3 {
-				var scopeMap = map[interface{}]interface{}{}
+				var scopeMap map[interface{}]interface{}
 
 				// Add optional scope - if not specified it is { "": true }
 

@@ -11,9 +11,12 @@
 package interpreter
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 
 	"devt.de/krotik/ecal/parser"
+	"devt.de/krotik/ecal/scope"
 )
 
 /*
@@ -73,9 +76,61 @@ Eval evaluate this runtime component.
 func (rt *stringValueRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
 	_, err := rt.baseRuntime.Eval(vs, is)
 
-	// Do some string interpolation
+	ret := rt.node.Token.Val
 
-	return rt.node.Token.Val, err
+	if rt.node.Token.AllowEscapes {
+
+		// Do allow string interpolation if escape sequences are allowed
+
+		for {
+			var replace string
+
+			code, ok := rt.GetInfix(ret, "{{", "}}")
+			if !ok {
+				break
+			}
+
+			ast, ierr := parser.ParseWithRuntime(
+				fmt.Sprintf("String interpolation: %v", code), code, rt.erp)
+
+			if ierr == nil {
+
+				if ierr = ast.Runtime.Validate(); ierr == nil {
+					var res interface{}
+
+					res, ierr = ast.Runtime.Eval(
+						vs.NewChild(scope.NameFromASTNode(rt.node)),
+						make(map[string]interface{}))
+
+					if ierr == nil {
+						replace = fmt.Sprint(res)
+					}
+				}
+			}
+
+			if ierr != nil {
+				replace = fmt.Sprintf("#%v", ierr.Error())
+			}
+
+			ret = strings.Replace(ret, fmt.Sprintf("{{%v}}", code), replace, 1)
+		}
+
+	}
+
+	return ret, err
+}
+
+func (rt *stringValueRuntime) GetInfix(str string, start string, end string) (string, bool) {
+	res := str
+
+	if s := strings.Index(str, start); s >= 0 {
+		s += len(start)
+		if e := strings.Index(str, end); e >= 0 {
+			res = str[s:e]
+		}
+	}
+
+	return res, res != str
 }
 
 /*

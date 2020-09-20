@@ -28,12 +28,13 @@ var numberPattern = regexp.MustCompile("^[0-9].*$")
 LexToken represents a token which is returned by the lexer.
 */
 type LexToken struct {
-	ID         LexTokenID // Token kind
-	Pos        int        // Starting position (in bytes)
-	Val        string     // Token value
-	Identifier bool       // Flag if the value is an identifier (not quoted and not a number)
-	Lline      int        // Line in the input this token appears
-	Lpos       int        // Position in the input line this token appears
+	ID           LexTokenID // Token kind
+	Pos          int        // Starting position (in bytes)
+	Val          string     // Token value
+	Identifier   bool       // Flag if the value is an identifier (not quoted and not a number)
+	AllowEscapes bool       // Flag if the value did interpret escape charaters
+	Lline        int        // Line in the input this token appears
+	Lpos         int        // Position in the input line this token appears
 }
 
 /*
@@ -45,6 +46,7 @@ func NewLexTokenInstance(t LexToken) *LexToken {
 		t.Pos,
 		t.Val,
 		t.Identifier,
+		t.AllowEscapes,
 		t.Lline,
 		t.Lpos,
 	}
@@ -404,12 +406,12 @@ emitToken passes a token back to the client.
 */
 func (l *lexer) emitToken(t LexTokenID) {
 	if t == TokenEOF {
-		l.emitTokenAndValue(t, "", false)
+		l.emitTokenAndValue(t, "", false, false)
 		return
 	}
 
 	if l.tokens != nil {
-		l.tokens <- LexToken{t, l.start, l.input[l.start:l.pos], false,
+		l.tokens <- LexToken{t, l.start, l.input[l.start:l.pos], false, false,
 			l.line + 1, l.start - l.lastnl + 1}
 	}
 }
@@ -417,9 +419,9 @@ func (l *lexer) emitToken(t LexTokenID) {
 /*
 emitTokenAndValue passes a token with a given value back to the client.
 */
-func (l *lexer) emitTokenAndValue(t LexTokenID, val string, identifier bool) {
+func (l *lexer) emitTokenAndValue(t LexTokenID, val string, identifier bool, allowEscapes bool) {
 	if l.tokens != nil {
-		l.tokens <- LexToken{t, l.start, val, identifier, l.line + 1, l.start - l.lastnl + 1}
+		l.tokens <- LexToken{t, l.start, val, identifier, allowEscapes, l.line + 1, l.start - l.lastnl + 1}
 	}
 }
 
@@ -428,7 +430,7 @@ emitError passes an error token back to the client.
 */
 func (l *lexer) emitError(msg string) {
 	if l.tokens != nil {
-		l.tokens <- LexToken{TokenError, l.start, msg, false, l.line + 1, l.start - l.lastnl + 1}
+		l.tokens <- LexToken{TokenError, l.start, msg, false, false, l.line + 1, l.start - l.lastnl + 1}
 	}
 }
 
@@ -580,7 +582,7 @@ func lexToken(l *lexer) lexFunc {
 		_, err := strconv.ParseFloat(keywordCandidate, 64)
 
 		if err == nil {
-			l.emitTokenAndValue(TokenNUMBER, keywordCandidate, false)
+			l.emitTokenAndValue(TokenNUMBER, keywordCandidate, false, false)
 			return lexToken
 		}
 	}
@@ -618,7 +620,7 @@ func lexToken(l *lexer) lexFunc {
 
 		// An identifier was found
 
-		l.emitTokenAndValue(TokenIDENTIFIER, identifierCandidate, true)
+		l.emitTokenAndValue(TokenIDENTIFIER, identifierCandidate, true, false)
 	}
 
 	return lexToken
@@ -693,10 +695,11 @@ func lexValue(l *lexer) lexFunc {
 			return nil
 		}
 
-		l.emitTokenAndValue(TokenSTRING, s, true)
+		l.emitTokenAndValue(TokenSTRING, s, true, true)
 
 	} else {
-		l.emitTokenAndValue(TokenSTRING, l.input[l.start+2:l.pos-1], true)
+
+		l.emitTokenAndValue(TokenSTRING, l.input[l.start+2:l.pos-1], true, false)
 	}
 
 	//  Set newline
@@ -724,7 +727,7 @@ func lexComment(l *lexer) lexFunc {
 			r = l.next(0)
 		}
 
-		l.emitTokenAndValue(TokenPOSTCOMMENT, l.input[l.start:l.pos], false)
+		l.emitTokenAndValue(TokenPOSTCOMMENT, l.input[l.start:l.pos], false, false)
 
 		if r == RuneEOF {
 			return nil
@@ -757,7 +760,7 @@ func lexComment(l *lexer) lexFunc {
 			}
 		}
 
-		l.emitTokenAndValue(TokenPRECOMMENT, l.input[l.start:l.pos-1], false)
+		l.emitTokenAndValue(TokenPRECOMMENT, l.input[l.start:l.pos-1], false, false)
 
 		// Consume final /
 

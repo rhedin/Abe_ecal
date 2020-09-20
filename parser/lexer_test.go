@@ -81,6 +81,7 @@ Lpos is different 1 vs 2
   "Pos": 0,
   "Val": "not",
   "Identifier": false,
+  "AllowEscapes": false,
   "Lline": 1,
   "Lpos": 1
 }
@@ -90,6 +91,7 @@ vs
   "Pos": 5,
   "Val": "test",
   "Identifier": true,
+  "AllowEscapes": false,
   "Lline": 2,
   "Lpos": 2
 }` {
@@ -237,16 +239,28 @@ func TestStringLexing(t *testing.T) {
 
 	input = `name r"te
 	st"  'bla'`
-	if res := LexToList("mytest", input); fmt.Sprint(res) != `["name" "te\n\tst" "bla" EOF]` {
+	res := LexToList("mytest", input)
+	if fmt.Sprint(res) != `["name" "te\n\tst" "bla" EOF]` {
 		t.Error("Unexpected lexer result:", res)
+		return
+	}
+
+	if res[1].AllowEscapes {
+		t.Error("String value should not allow escapes")
 		return
 	}
 
 	// Parsing with escape sequences
 
 	input = `"test\n\ttest"  '\nfoo\u0028bar' "test{foo}.5w3f"`
-	if res := LexToList("mytest", input); fmt.Sprint(res) != `["test\n\ttest" "\nfoo(bar" "test{foo}.5w3f" EOF]` {
+	res = LexToList("mytest", input)
+	if fmt.Sprint(res) != `["test\n\ttest" "\nfoo(bar" "test{foo}.5w3f" EOF]` {
 		t.Error("Unexpected lexer result:", res)
+		return
+	}
+
+	if !res[0].AllowEscapes {
+		t.Error("String value should allow escapes")
 		return
 	}
 }

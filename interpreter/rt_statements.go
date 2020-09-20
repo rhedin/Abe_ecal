@@ -41,17 +41,18 @@ func statementsRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parse
 Eval evaluate this runtime component.
 */
 func (rt *statementsRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	var res interface{}
 	_, err := rt.baseRuntime.Eval(vs, is)
 
 	if err == nil {
 		for _, child := range rt.node.Children {
-			if _, err := child.Runtime.Eval(vs, is); err != nil {
+			if res, err = child.Runtime.Eval(vs, is); err != nil {
 				return nil, err
 			}
 		}
 	}
 
-	return nil, err
+	return res, err
 }
 
 // Condition statement

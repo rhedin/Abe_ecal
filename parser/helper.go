@@ -259,6 +259,7 @@ func (n *ASTNode) ToJSONObject() map[string]interface{} {
 			ret["value"] = n.Token.Val
 		}
 		ret["identifier"] = n.Token.Identifier
+		ret["allowescapes"] = n.Token.AllowEscapes
 		ret["pos"] = n.Token.Pos
 		ret["line"] = n.Token.Lline
 		ret["linepos"] = n.Token.Lpos
@@ -308,6 +309,11 @@ func ASTFromJSONObject(jsonAST map[string]interface{}) (*ASTNode, error) {
 	identifier, ok := jsonAST["identifier"]
 	if !ok {
 		identifier = false
+	}
+
+	allowescapes, ok := jsonAST["allowescapes"]
+	if !ok {
+		allowescapes = false
 	}
 
 	if posString, ok := jsonAST["pos"]; ok {
@@ -380,12 +386,13 @@ func ASTFromJSONObject(jsonAST map[string]interface{}) (*ASTNode, error) {
 	}
 
 	token := &LexToken{
-		nodeID,             // ID
-		pos,                // Pos
-		fmt.Sprint(value),  // Val
-		identifier == true, // Identifier
-		line,               // Lline
-		linepos,            // Lpos
+		nodeID,               // ID
+		pos,                  // Pos
+		fmt.Sprint(value),    // Val
+		identifier == true,   // Identifier
+		allowescapes == true, // AllowEscapes
+		line,                 // Lline
+		linepos,              // Lpos
 	}
 
 	return &ASTNode{fmt.Sprint(name), token, astMeta, astChildren, nil, 0, nil, nil}, nil

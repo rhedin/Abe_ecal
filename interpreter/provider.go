@@ -8,10 +8,6 @@
  * file, You can obtain one at https://opensource.org/licenses/MIT.
  */
 
-// TODO:
-// Context supporting final and exception handling
-// Inline escaping in strings "bla {1+1} bla"
-
 package interpreter
 
 import (

@@ -212,9 +212,9 @@ func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 								// Provide additional information for unexpected errors
 
 								err = &util.RuntimeErrorWithDetail{
-									err.(*util.RuntimeError),
-									sinkVS,
-									nil,
+									RuntimeError: err.(*util.RuntimeError),
+									Environment:  sinkVS,
+									Data:         nil,
 								}
 							}
 						}

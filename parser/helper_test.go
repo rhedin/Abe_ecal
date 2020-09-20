@@ -39,6 +39,7 @@ Lpos is different 3 vs 2
   "Pos": 2,
   "Val": "1",
   "Identifier": false,
+  "AllowEscapes": false,
   "Lline": 1,
   "Lpos": 3
 }
@@ -48,6 +49,7 @@ vs
   "Pos": 1,
   "Val": "2",
   "Identifier": false,
+  "AllowEscapes": false,
   "Lline": 1,
   "Lpos": 2
 }
@@ -85,6 +87,7 @@ Identifier is different false vs true
   "Pos": 1,
   "Val": "1",
   "Identifier": false,
+  "AllowEscapes": false,
   "Lline": 1,
   "Lpos": 2
 }
@@ -94,6 +97,7 @@ vs
   "Pos": 1,
   "Val": "a",
   "Identifier": true,
+  "AllowEscapes": false,
   "Lline": 1,
   "Lpos": 2
 }
@@ -207,6 +211,7 @@ Lpos is different 1 vs 10
   "Pos": 0,
   "Val": "1",
   "Identifier": false,
+  "AllowEscapes": false,
   "Lline": 1,
   "Lpos": 1
 }
@@ -216,6 +221,7 @@ vs
   "Pos": 9,
   "Val": "1",
   "Identifier": false,
+  "AllowEscapes": false,
   "Lline": 1,
   "Lpos": 10
 }

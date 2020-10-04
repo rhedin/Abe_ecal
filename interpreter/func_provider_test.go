@@ -308,7 +308,7 @@ identifier: a
 }
 
 func TestDocstrings(t *testing.T) {
-	for k, v := range inbuildFuncMap {
+	for k, v := range InbuildFuncMap {
 		if res, _ := v.DocString(); res == "" {
 			t.Error("Docstring missing for ", k)
 			return

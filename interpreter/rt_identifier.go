@@ -155,7 +155,7 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 
 						// Check for inbuild function
 
-						funcObj, ok = inbuildFuncMap[astring]
+						funcObj, ok = InbuildFuncMap[astring]
 					}
 				}
 			}

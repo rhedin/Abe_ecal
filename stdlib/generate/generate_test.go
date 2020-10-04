@@ -22,6 +22,7 @@ const InvalidFileName = "**" + string(0x0)
 
 func TestGenerate(t *testing.T) {
 	filename = InvalidFileName
+	generateDoc = false
 
 	var buf bytes.Buffer
 	stderrPrint = func(v ...interface{}) (int, error) {
@@ -76,8 +77,10 @@ genStdlib contains all generated stdlib constructs.
 var genStdlib = map[interface{}]interface{}{
 	"fmt-const" : fmtConstMap,
 	"fmt-func" : fmtFuncMap,
+	"fmt-func-doc" : fmtFuncDocMap,
 	"math-const" : mathConstMap,
 	"math-func" : mathFuncMap,
+	"math-func-doc" : mathFuncDocMap,
 }
 
 /*
@@ -94,6 +97,12 @@ var fmtFuncMap = map[interface{}]interface{}{
 }
 
 /*
+fmtFuncDocMap contains the documentation of stdlib fmt functions.
+*/
+var fmtFuncDocMap = map[interface{}]interface{}{
+}
+
+/*
 mathConstMap contains the mapping of stdlib math constants.
 */
 var mathConstMap = map[interface{}]interface{}{
@@ -104,6 +113,12 @@ var mathConstMap = map[interface{}]interface{}{
 mathFuncMap contains the mapping of stdlib math functions.
 */
 var mathFuncMap = map[interface{}]interface{}{
+}
+
+/*
+mathFuncDocMap contains the documentation of stdlib math functions.
+*/
+var mathFuncDocMap = map[interface{}]interface{}{
 }
 
 ` {

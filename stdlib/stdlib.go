@@ -89,6 +89,16 @@ func GetStdlibFunc(name string) (util.ECALFunction, bool) {
 	return nil, false
 }
 
+/*
+GetPkgDocString returns the docstring of a stdlib package.
+*/
+func GetPkgDocString(name string) (string, bool) {
+
+	// TODO Implement
+
+	return "", false
+}
+
 func splitModuleAndName(fullname string) (string, string) {
 	var module, name string
 

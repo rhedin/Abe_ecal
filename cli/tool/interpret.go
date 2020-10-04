@@ -8,13 +8,14 @@
  * file, You can obtain one at https://opensource.org/licenses/MIT.
  */
 
-package main
+package tool
 
 import (
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"devt.de/krotik/common/fileutil"
 	"devt.de/krotik/common/termutil"
@@ -26,9 +27,11 @@ import (
 )
 
 /*
-interpret starts the ECAL code interpreter.
+Interpret starts the ECAL code interpreter from a CLI application which
+calls the interpret function as a sub executable. Starts an interactive console
+if the interactive flag is set.
 */
-func interpret(interactive bool) error {
+func Interpret(interactive bool) error {
 	var err error
 
 	wd, _ := os.Getwd()
@@ -113,6 +116,10 @@ func interpret(interactive bool) error {
 
 		if interactive {
 
+			// Preload stdlib packages and functions
+
+			// TODO stdlibPackages, stdlibConst, stdlibFuncs := stdlib.GetStdlibSymbols()
+
 			// Drop into interactive shell
 
 			if err == nil {
@@ -139,6 +146,7 @@ func interpret(interactive bool) error {
 
 						line, err = clt.NextLine()
 						for err == nil && !isExitLine(line) {
+							trimmedLine := strings.TrimSpace(line)
 
 							// Process the entered line
 
@@ -150,12 +158,17 @@ func interpret(interactive bool) error {
 								clt.WriteString(fmt.Sprintf("\n"))
 								clt.WriteString(fmt.Sprintf("Console supports all normal ECAL statements and the following special commands:\n"))
 								clt.WriteString(fmt.Sprintf("\n"))
-								clt.WriteString(fmt.Sprintf("    !syms - List all available inbuild functions and available stdlib packages of ECAL.\n"))
-								clt.WriteString(fmt.Sprintf("    !stdl - List all available constants and functions of a stdlib package.\n"))
-								clt.WriteString(fmt.Sprintf("    !lk   - Do a full text search through all docstrings.\n"))
+								clt.WriteString(fmt.Sprintf("    @syms - List all available inbuild functions and available stdlib packages of ECAL.\n"))
+								clt.WriteString(fmt.Sprintf("    @stdl - List all available constants and functions of a stdlib package.\n"))
+								clt.WriteString(fmt.Sprintf("    @lk   - Do a full text search through all docstrings.\n"))
 								clt.WriteString(fmt.Sprintf("\n"))
 
-							} else if line == "!funcs" {
+							} else if strings.HasPrefix(trimmedLine, "@syms") {
+								args := strings.Split(trimmedLine, " ")[1:]
+
+								// TODO Implement
+
+								clt.WriteString(fmt.Sprint("syms:", args))
 
 							} else if line == "!reset" {
 

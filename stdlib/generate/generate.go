@@ -14,7 +14,11 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"go/ast"
+	"go/build"
+	"go/doc"
 	"go/importer"
+	goparser "go/parser"
 	"go/token"
 	"go/types"
 	"io/ioutil"
@@ -33,19 +37,31 @@ Stdlib candidates modules:
 go list std | grep -v internal | grep -v '\.' | grep -v unsafe | grep -v syscall
 */
 
+// List underneath the Go symbols which should be available in ECAL's stdlib
+// e.g. 	var pkgNames = map[string][]string{ "fmt":  {"Println", "Sprint"} }
+
+// =============EDIT HERE START=============
+
 var pkgNames = map[string][]string{
 	"math": {"Pi"},
 	"fmt":  {"Println", "Sprint"},
 }
+
+// ==============EDIT HERE END==============
 
 var filename = filepath.Join(os.Args[1], "stdlib_gen.go")
 
 var stderrPrint = fmt.Println
 var stdoutPrint = fmt.Println
 
+var generateDoc = true
+
 func main() {
 	var err error
 	var outbuf bytes.Buffer
+
+	synopsis := make(map[string]string)
+	pkgDocs := make(map[string]*doc.Package)
 
 	flag.Parse()
 
@@ -67,6 +83,17 @@ package stdlib
 
 	outbuf.WriteString("import (\n")
 	for _, pkgName := range importList {
+
+		if generateDoc {
+			syn, pkgDoc, err := getPackageDocs(pkgName)
+			if err != nil {
+				stderrPrint("Warning:", err)
+			} else {
+				synopsis[pkgName] = syn
+				pkgDocs[pkgName] = pkgDoc
+			}
+		}
+
 		outbuf.WriteString(fmt.Sprintf("\t\"%v\"\n", pkgName))
 	}
 
@@ -81,8 +108,12 @@ genStdlib contains all generated stdlib constructs.
 `)
 	outbuf.WriteString("var genStdlib = map[interface{}]interface{}{\n")
 	for _, pkgName := range importList {
+		if s, ok := synopsis[pkgName]; ok {
+			outbuf.WriteString(fmt.Sprintf("\t\"%v-synopsis\" : %#v,\n", pkgName, s))
+		}
 		outbuf.WriteString(fmt.Sprintf("\t\"%v-const\" : %vConstMap,\n", pkgName, pkgName))
 		outbuf.WriteString(fmt.Sprintf("\t\"%v-func\" : %vFuncMap,\n", pkgName, pkgName))
+		outbuf.WriteString(fmt.Sprintf("\t\"%v-func-doc\" : %vFuncDocMap,\n", pkgName, pkgName))
 	}
 	outbuf.WriteString("}\n\n")
 
@@ -92,7 +123,8 @@ genStdlib contains all generated stdlib constructs.
 		pkgSymbols := pkgNames[pkgName]
 
 		if err == nil {
-			pkg, err = importer.ForCompiler(token.NewFileSet(), "source", nil).Import(pkgName)
+
+			pkg, err = importer.ForCompiler(fset, "source", nil).Import(pkgName)
 
 			if err == nil {
 				stdoutPrint("Generating adapter functions for", pkg)
@@ -178,8 +210,35 @@ var %vFuncMap = map[interface{}]interface{}{
 				}
 
 				outbuf.WriteString("}\n\n")
-			}
 
+				// Write function documentation
+
+				outbuf.WriteString(fmt.Sprintf(`/*
+%vFuncDocMap contains the documentation of stdlib %v functions.
+*/
+var %vFuncDocMap = map[interface{}]interface{}{
+`, pkgName, pkgName, pkgName))
+
+				if pkgDoc, ok := pkgDocs[pkgName]; ok {
+
+					for _, name := range scope.Names() {
+
+						if !containsSymbol(pkgSymbols, name) {
+							continue
+						}
+
+						for _, f := range pkgDoc.Funcs {
+							if f.Name == name {
+								outbuf.WriteString(
+									fmt.Sprintf(`	"%v": %#v,
+`, name, f.Doc))
+							}
+						}
+					}
+				}
+
+				outbuf.WriteString("}\n\n")
+			}
 		}
 	}
 
@@ -190,6 +249,52 @@ var %vFuncMap = map[interface{}]interface{}{
 	if err != nil {
 		stderrPrint("Error:", err)
 	}
+}
+
+var (
+	fset = token.NewFileSet()
+	ctx  = &build.Default
+)
+
+/*
+getPackageDocs returns the source code documentation of as given Go package.
+Returns a short synopsis and a documentation object.
+*/
+func getPackageDocs(pkgName string) (string, *doc.Package, error) {
+	var synopsis string
+	var pkgDoc *doc.Package
+	var filenames []string
+
+	bp, err := ctx.Import(pkgName, ".", 0)
+
+	if err == nil {
+
+		synopsis = bp.Doc
+
+		// Get all go files of the package
+
+		filenames = append(filenames, bp.GoFiles...)
+		filenames = append(filenames, bp.CgoFiles...)
+
+		// Build the ast package from Go source
+
+		astPkg := &ast.Package{
+			Name:  bp.Name,
+			Files: make(map[string]*ast.File),
+		}
+
+		for _, filename := range filenames {
+			filepath := filepath.Join(bp.Dir, filename)
+			astFile, _ := goparser.ParseFile(fset, filepath, nil, goparser.ParseComments)
+			astPkg.Files[filepath] = astFile
+		}
+
+		// Build the package doc object
+
+		pkgDoc = doc.New(astPkg, bp.Dir, doc.AllDecls)
+	}
+
+	return synopsis, pkgDoc, err
 }
 
 func containsSymbol(symbols []string, item string) bool {

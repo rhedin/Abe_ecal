@@ -23,9 +23,9 @@ import (
 )
 
 /*
-inbuildFuncMap contains the mapping of inbuild functions.
+InbuildFuncMap contains the mapping of inbuild functions.
 */
-var inbuildFuncMap = map[string]util.ECALFunction{
+var InbuildFuncMap = map[string]util.ECALFunction{
 	"range":           &rangeFunc{&inbuildBaseFunc{}},
 	"new":             &newFunc{&inbuildBaseFunc{}},
 	"len":             &lenFunc{&inbuildBaseFunc{}},
@@ -517,7 +517,7 @@ func (rf *docFunc) Run(instanceID string, vs parser.Scope, is map[string]interfa
 
 				// Check for inbuild function
 
-				funcObj, ok = inbuildFuncMap[astring]
+				funcObj, ok = InbuildFuncMap[astring]
 			}
 		}
 

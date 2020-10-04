@@ -11,9 +11,16 @@
 package stdlib
 
 import (
+	"fmt"
 	"math"
 	"testing"
 )
+
+func TestGetPkgDocString(t *testing.T) {
+	doc, ok := GetPkgDocString("math")
+
+	fmt.Println(doc, ok)
+}
 
 func TestSymbols(t *testing.T) {
 	p, c, f := GetStdlibSymbols()

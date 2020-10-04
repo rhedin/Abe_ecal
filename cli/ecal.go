@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"os"
 
+	"devt.de/krotik/ecal/cli/tool"
 	"devt.de/krotik/ecal/config"
 )
 
@@ -65,16 +66,16 @@ func main() {
 		arg := flag.Args()[0]
 
 		if arg == "console" {
-			err = interpret(true)
+			err = tool.Interpret(true)
 		} else if arg == "run" {
-			err = interpret(false)
+			err = tool.Interpret(false)
 		} else {
 			flag.Usage()
 		}
 
 	} else if err == nil {
 
-		err = interpret(true)
+		err = tool.Interpret(true)
 	}
 
 	if err != nil {

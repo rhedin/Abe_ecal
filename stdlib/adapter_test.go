@@ -239,7 +239,7 @@ func TestECALFunctionAdapter(t *testing.T) {
 
 	// Get documentation
 
-	afuncEcal := &ECALFunctionAdapter{reflect.ValueOf(fmt.Sprint)}
+	afuncEcal := &ECALFunctionAdapter{reflect.ValueOf(fmt.Sprint), "test123"}
 
 	if s, err := afuncEcal.DocString(); s == "" || err != nil {
 		t.Error("Docstring should return something")
@@ -248,7 +248,7 @@ func TestECALFunctionAdapter(t *testing.T) {
 }
 
 func runAdapterTest(afunc reflect.Value, args []interface{}) (interface{}, error) {
-	afuncEcal := &ECALFunctionAdapter{afunc}
+	afuncEcal := &ECALFunctionAdapter{afunc, ""}
 	return afuncEcal.Run("test", scope.NewScope(""), make(map[string]interface{}), args)
 
 }

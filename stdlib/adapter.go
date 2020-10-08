@@ -12,14 +12,7 @@ package stdlib
 
 import (
 	"fmt"
-	"go/ast"
-	"go/doc"
-	goparser "go/parser"
-	"go/token"
-	"path/filepath"
 	"reflect"
-	"runtime"
-	"strings"
 
 	"devt.de/krotik/ecal/parser"
 )
@@ -28,7 +21,8 @@ import (
 ECALFunctionAdapter models a bridge adapter between an ECAL function to a Go function.
 */
 type ECALFunctionAdapter struct {
-	funcval reflect.Value
+	funcval   reflect.Value
+	docstring string
 }
 
 /*
@@ -160,33 +154,5 @@ func (ea *ECALFunctionAdapter) Run(instanceID string, vs parser.Scope,
 DocString returns the docstring of the wrapped function.
 */
 func (ea *ECALFunctionAdapter) DocString() (string, error) {
-	ffunc := runtime.FuncForPC(ea.funcval.Pointer())
-	fileName, _ := ffunc.FileLine(0)
-	funcNameSplit := strings.Split(ffunc.Name(), ".")
-	funcName := funcNameSplit[len(funcNameSplit)-1]
-	fset := token.NewFileSet()
-	res := ""
-
-	parsedAst, err := goparser.ParseFile(fset, fileName, nil, goparser.ParseComments)
-
-	if err == nil {
-
-		pkg := &ast.Package{
-			Name:  "Any",
-			Files: make(map[string]*ast.File),
-		}
-		pkg.Files[fileName] = parsedAst
-
-		importPath, _ := filepath.Abs("/")
-		myDoc := doc.New(pkg, importPath, doc.AllDecls)
-
-		for _, theFunc := range myDoc.Funcs {
-			if theFunc.Name == funcName {
-				res = theFunc.Doc
-				break
-			}
-		}
-	}
-
-	return res, err
+	return ea.docstring, nil
 }

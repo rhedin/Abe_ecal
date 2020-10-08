@@ -13,13 +13,27 @@ package stdlib
 import (
 	"fmt"
 	"math"
+	"reflect"
 	"testing"
 )
 
 func TestGetPkgDocString(t *testing.T) {
-	doc, ok := GetPkgDocString("math")
 
-	fmt.Println(doc, ok)
+	mathFuncMap["Println"] = &ECALFunctionAdapter{reflect.ValueOf(fmt.Println), "foo"}
+
+	f, _ := GetStdlibFunc("math.Println")
+
+	if s, _ := f.DocString(); s != "foo" {
+		t.Error("Unexpected result:", s)
+		return
+	}
+
+	doc, _ := GetPkgDocString("math")
+
+	if doc == "" {
+		t.Error("Unexpected result:", doc)
+		return
+	}
 }
 
 func TestSymbols(t *testing.T) {
@@ -55,7 +69,9 @@ func TestSplitModuleAndName(t *testing.T) {
 
 func TestGetStdLibItems(t *testing.T) {
 
-	if f, _ := GetStdlibFunc("fmt.Println"); f != fmtFuncMap["Println"] {
+	mathFuncMap["Println"] = &ECALFunctionAdapter{reflect.ValueOf(fmt.Println), "foo"}
+
+	if f, _ := GetStdlibFunc("math.Println"); f != mathFuncMap["Println"] {
 		t.Error("Unexpected resutl: functions should lookup correctly")
 		return
 	}

@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -75,9 +76,11 @@ import (
 genStdlib contains all generated stdlib constructs.
 */
 var genStdlib = map[interface{}]interface{}{
+	"fmt-synopsis" : "Package fmt",
 	"fmt-const" : fmtConstMap,
 	"fmt-func" : fmtFuncMap,
 	"fmt-func-doc" : fmtFuncDocMap,
+	"math-synopsis" : "Package math",
 	"math-const" : mathConstMap,
 	"math-func" : mathFuncMap,
 	"math-func-doc" : mathFuncDocMap,
@@ -90,16 +93,17 @@ var fmtConstMap = map[interface{}]interface{}{
 }
 
 /*
-fmtFuncMap contains the mapping of stdlib fmt functions.
-*/
-var fmtFuncMap = map[interface{}]interface{}{
-	"Println": &ECALFunctionAdapter{reflect.ValueOf(fmt.Println)},
-}
-
-/*
 fmtFuncDocMap contains the documentation of stdlib fmt functions.
 */
 var fmtFuncDocMap = map[interface{}]interface{}{
+	"Println": "Function: Println",
+}
+
+/*
+fmtFuncMap contains the mapping of stdlib fmt functions.
+*/
+var fmtFuncMap = map[interface{}]interface{}{
+	"Println": &ECALFunctionAdapter{reflect.ValueOf(fmt.Println), fmt.Sprint(fmtFuncDocMap["Println"])},
 }
 
 /*
@@ -110,19 +114,38 @@ var mathConstMap = map[interface{}]interface{}{
 }
 
 /*
-mathFuncMap contains the mapping of stdlib math functions.
-*/
-var mathFuncMap = map[interface{}]interface{}{
-}
-
-/*
 mathFuncDocMap contains the documentation of stdlib math functions.
 */
 var mathFuncDocMap = map[interface{}]interface{}{
 }
 
+/*
+mathFuncMap contains the mapping of stdlib math functions.
+*/
+var mathFuncMap = map[interface{}]interface{}{
+}
+
+// Dummy statement to prevent declared and not used errors
+var Dummy = fmt.Sprint(reflect.ValueOf(fmt.Sprint))
+
 ` {
 		t.Errorf("Unexpected result: Go string: %#v\nNormal output: %v", string(out), string(out))
+		return
+	}
+
+	generateDoc = true
+
+	main()
+
+	out, err = ioutil.ReadFile(filename)
+
+	if err != nil {
+		t.Error("Could not read file:", filename, " ", err)
+		return
+	}
+
+	if !strings.Contains(string(out), "formats using the default formats") {
+		t.Error("Unexpected result:", string(out))
 		return
 	}
 }

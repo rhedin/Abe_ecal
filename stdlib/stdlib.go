@@ -43,10 +43,11 @@ func GetStdlibSymbols() ([]string, []string, []string) {
 
 	for k, v := range genStdlib {
 		sym := fmt.Sprint(k)
-		symMap := v.(map[interface{}]interface{})
 
-		constSymbols = addSym(sym, "-const", symMap, constSymbols)
-		funcSymbols = addSym(sym, "-func", symMap, funcSymbols)
+		if symMap, ok := v.(map[interface{}]interface{}); ok {
+			constSymbols = addSym(sym, "-const", symMap, constSymbols)
+			funcSymbols = addSym(sym, "-func", symMap, funcSymbols)
+		}
 	}
 	for k := range packageSet {
 		packageNames = append(packageNames, k)
@@ -59,46 +60,53 @@ func GetStdlibSymbols() ([]string, []string, []string) {
 GetStdlibConst looks up a constant from stdlib.
 */
 func GetStdlibConst(name string) (interface{}, bool) {
-	m, n := splitModuleAndName(name)
+	var res interface{}
+	var resok bool
 
-	if n != "" {
+	if m, n := splitModuleAndName(name); n != "" {
 		if cmap, ok := genStdlib[fmt.Sprintf("%v-const", m)]; ok {
-			if cv, ok := cmap.(map[interface{}]interface{})[n]; ok {
-				return cv.(interface{}), true
-			}
+			res, resok = cmap.(map[interface{}]interface{})[n]
 		}
 	}
 
-	return nil, false
+	return res, resok
 }
 
 /*
 GetStdlibFunc looks up a function from stdlib.
 */
 func GetStdlibFunc(name string) (util.ECALFunction, bool) {
-	m, n := splitModuleAndName(name)
+	var res util.ECALFunction
+	var resok bool
 
-	if n != "" {
+	if m, n := splitModuleAndName(name); n != "" {
 		if fmap, ok := genStdlib[fmt.Sprintf("%v-func", m)]; ok {
 			if fn, ok := fmap.(map[interface{}]interface{})[n]; ok {
-				return fn.(util.ECALFunction), true
+				res = fn.(util.ECALFunction)
+				resok = true
 			}
 		}
 	}
 
-	return nil, false
+	return res, resok
 }
 
 /*
 GetPkgDocString returns the docstring of a stdlib package.
 */
 func GetPkgDocString(name string) (string, bool) {
+	var res = ""
+	s, ok := genStdlib[fmt.Sprintf("%v-synopsis", name)]
+	if ok {
+		res = fmt.Sprint(s)
+	}
 
-	// TODO Implement
-
-	return "", false
+	return res, ok
 }
 
+/*
+splitModuleAndName splits up a given full function name in module and function name part.
+*/
 func splitModuleAndName(fullname string) (string, string) {
 	var module, name string
 

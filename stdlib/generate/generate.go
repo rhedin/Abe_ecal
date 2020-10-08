@@ -26,6 +26,9 @@ import (
 	"path/filepath"
 	"sort"
 	"unicode"
+
+	"devt.de/krotik/common/errorutil"
+	"devt.de/krotik/common/stringutil"
 )
 
 //go:generate echo Generating ECAL stdlib from Go functions ...
@@ -40,12 +43,17 @@ go list std | grep -v internal | grep -v '\.' | grep -v unsafe | grep -v syscall
 // List underneath the Go symbols which should be available in ECAL's stdlib
 // e.g. 	var pkgNames = map[string][]string{ "fmt":  {"Println", "Sprint"} }
 
+// Turn the generateDoc switch on or off to extract documentation from the
+// Go source.
+
 // =============EDIT HERE START=============
 
 var pkgNames = map[string][]string{
-	"math": {"Pi"},
-	"fmt":  {"Println", "Sprint"},
+	//	"math": {"Pi"},
+	//	"fmt":  {"Println", "Sprint"},
 }
+
+var generateDoc = true
 
 // ==============EDIT HERE END==============
 
@@ -53,8 +61,6 @@ var filename = filepath.Join(os.Args[1], "stdlib_gen.go")
 
 var stderrPrint = fmt.Println
 var stdoutPrint = fmt.Println
-
-var generateDoc = true
 
 func main() {
 	var err error
@@ -64,6 +70,12 @@ func main() {
 	pkgDocs := make(map[string]*doc.Package)
 
 	flag.Parse()
+
+	// Make sure we have at least an empty pkgName
+
+	if len(pkgNames) == 0 {
+		pkgNames["math"] = []string{"Pi"}
+	}
 
 	// Make sure pkgNames is sorted
 
@@ -86,21 +98,27 @@ package stdlib
 
 		if generateDoc {
 			syn, pkgDoc, err := getPackageDocs(pkgName)
-			if err != nil {
-				stderrPrint("Warning:", err)
-			} else {
-				synopsis[pkgName] = syn
-				pkgDocs[pkgName] = pkgDoc
-			}
+			errorutil.AssertOk(err) // If this throws try not generating the docs!
+			synopsis[pkgName] = syn
+			pkgDocs[pkgName] = pkgDoc
+		} else {
+			synopsis[pkgName] = fmt.Sprintf("Package %v", pkgName)
 		}
 
 		outbuf.WriteString(fmt.Sprintf("\t\"%v\"\n", pkgName))
 	}
 
-	outbuf.WriteString(`	"reflect"
+	if stringutil.IndexOf("fmt", importList) == -1 {
+		outbuf.WriteString(`	"fmt"
+`)
+	}
+
+	if stringutil.IndexOf("reflect", importList) == -1 {
+		outbuf.WriteString(`	"reflect"
 )
 
 `)
+	}
 
 	outbuf.WriteString(`/*
 genStdlib contains all generated stdlib constructs.
@@ -185,32 +203,6 @@ var %vConstMap = map[interface{}]interface{}{
 
 				outbuf.WriteString("}\n\n")
 
-				// Write functions
-
-				outbuf.WriteString(fmt.Sprintf(`/*
-%vFuncMap contains the mapping of stdlib %v functions.
-*/
-var %vFuncMap = map[interface{}]interface{}{
-`, pkgName, pkgName, pkgName))
-
-				for _, name := range scope.Names() {
-
-					if !containsSymbol(pkgSymbols, name) {
-						continue
-					}
-
-					switch obj := scope.Lookup(name).(type) {
-					case *types.Func:
-						if unicode.IsUpper([]rune(name)[0]) {
-							outbuf.WriteString(
-								fmt.Sprintf(`	"%v": &ECALFunctionAdapter{reflect.ValueOf(%v)},
-`, name, obj.FullName()))
-						}
-					}
-				}
-
-				outbuf.WriteString("}\n\n")
-
 				// Write function documentation
 
 				outbuf.WriteString(fmt.Sprintf(`/*
@@ -235,12 +227,53 @@ var %vFuncDocMap = map[interface{}]interface{}{
 							}
 						}
 					}
+
+				} else {
+
+					for _, name := range pkgSymbols {
+						switch scope.Lookup(name).(type) {
+						case *types.Func:
+							outbuf.WriteString(
+								fmt.Sprintf(`	"%v": "Function: %v",
+`, name, name))
+						}
+					}
+				}
+
+				outbuf.WriteString("}\n\n")
+
+				// Write functions
+
+				outbuf.WriteString(fmt.Sprintf(`/*
+%vFuncMap contains the mapping of stdlib %v functions.
+*/
+var %vFuncMap = map[interface{}]interface{}{
+`, pkgName, pkgName, pkgName))
+
+				for _, name := range scope.Names() {
+
+					if !containsSymbol(pkgSymbols, name) {
+						continue
+					}
+
+					switch obj := scope.Lookup(name).(type) {
+					case *types.Func:
+						if unicode.IsUpper([]rune(name)[0]) {
+							outbuf.WriteString(
+								fmt.Sprintf(`	%#v: &ECALFunctionAdapter{reflect.ValueOf(%v), fmt.Sprint(%vFuncDocMap[%#v])},
+`, name, obj.FullName(), pkgName, name))
+						}
+					}
 				}
 
 				outbuf.WriteString("}\n\n")
 			}
 		}
 	}
+
+	// Write dummy statement
+	outbuf.WriteString("// Dummy statement to prevent declared and not used errors\n")
+	outbuf.WriteString("var Dummy = fmt.Sprint(reflect.ValueOf(fmt.Sprint))\n\n")
 
 	if err == nil {
 		err = ioutil.WriteFile(filename, outbuf.Bytes(), 0644)

@@ -58,6 +58,13 @@ func NewLogLevelLogger(logger Logger, level string) (*LogLevelLogger, error) {
 }
 
 /*
+Level returns the current log level.
+*/
+func (ll *LogLevelLogger) Level() LogLevel {
+	return ll.level
+}
+
+/*
 LogError adds a new error log message.
 */
 func (ll *LogLevelLogger) LogError(m ...interface{}) {

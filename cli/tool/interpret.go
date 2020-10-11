@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -69,6 +70,8 @@ func Interpret(interactive bool) error {
 
 	clt, err = termutil.NewConsoleLineTerminal(os.Stdout)
 
+	fmt.Println(fmt.Sprintf("ECAL %v", config.ProductVersion))
+
 	// Create the logger
 
 	if err == nil {
@@ -92,17 +95,20 @@ func Interpret(interactive bool) error {
 
 		if err == nil {
 			if ilogLevel != nil && *ilogLevel != "" {
-				logger, err = util.NewLogLevelLogger(logger, *ilogLevel)
+				if logger, err = util.NewLogLevelLogger(logger, *ilogLevel); err == nil {
+					fmt.Print(fmt.Sprintf("Log level: %v - ", logger.(*util.LogLevelLogger).Level()))
+				}
 			}
-
 		}
 	}
 
-	// Get the import locator
-
-	importLocator := &util.FileImportLocator{Root: *idir}
-
 	if err == nil {
+
+		// Get the import locator
+
+		fmt.Println(fmt.Sprintf("Root directory: %v", *idir))
+
+		importLocator := &util.FileImportLocator{Root: *idir}
 
 		name := "console"
 
@@ -114,84 +120,96 @@ func Interpret(interactive bool) error {
 
 		vs := scope.NewScope(scope.GlobalScope)
 
-		// TODO Execute file
+		// Execute file if given
 
-		if interactive {
+		if cargs := flag.Args(); len(cargs) > 0 {
+			var ast *parser.ASTNode
+			var initFile []byte
 
-			// Preload stdlib packages and functions
+			initFileName := flag.Arg(0)
+			initFile, err = ioutil.ReadFile(initFileName)
 
-			// TODO stdlibPackages, stdlibConst, stdlibFuncs := stdlib.GetStdlibSymbols()
-
-			// Drop into interactive shell
-
-			if err == nil {
-				isExitLine := func(s string) bool {
-					return s == "exit" || s == "q" || s == "quit" || s == "bye" || s == "\x04"
+			if ast, err = parser.ParseWithRuntime(initFileName, string(initFile), erp); err == nil {
+				if err = ast.Runtime.Validate(); err == nil {
+					_, err = ast.Runtime.Eval(vs, make(map[string]interface{}))
 				}
+			}
+		}
 
-				// Add history functionality without file persistence
+		if err == nil {
 
-				clt, err = termutil.AddHistoryMixin(clt, "",
-					func(s string) bool {
-						return isExitLine(s)
-					})
+			if interactive {
+
+				// Drop into interactive shell
 
 				if err == nil {
+					isExitLine := func(s string) bool {
+						return s == "exit" || s == "q" || s == "quit" || s == "bye" || s == "\x04"
+					}
 
-					if err = clt.StartTerm(); err == nil {
-						var line string
+					// Add history functionality without file persistence
 
-						defer clt.StopTerm()
+					clt, err = termutil.AddHistoryMixin(clt, "",
+						func(s string) bool {
+							return isExitLine(s)
+						})
 
-						fmt.Println(fmt.Sprintf("ECAL %v", config.ProductVersion))
-						fmt.Println("Type 'q' or 'quit' to exit the shell and '?' to get help")
+					if err == nil {
 
-						line, err = clt.NextLine()
-						for err == nil && !isExitLine(line) {
-							trimmedLine := strings.TrimSpace(line)
+						if err = clt.StartTerm(); err == nil {
+							var line string
 
-							// Process the entered line
+							defer clt.StopTerm()
 
-							if line == "?" {
+							fmt.Println("Type 'q' or 'quit' to exit the shell and '?' to get help")
 
-								// Show help
+							line, err = clt.NextLine()
+							for err == nil && !isExitLine(line) {
+								trimmedLine := strings.TrimSpace(line)
 
-								clt.WriteString(fmt.Sprintf("ECAL %v\n", config.ProductVersion))
-								clt.WriteString(fmt.Sprintf("\n"))
-								clt.WriteString(fmt.Sprintf("Console supports all normal ECAL statements and the following special commands:\n"))
-								clt.WriteString(fmt.Sprintf("\n"))
-								clt.WriteString(fmt.Sprintf("    @sym [glob] - List all available inbuild functions and available stdlib packages of ECAL.\n"))
-								clt.WriteString(fmt.Sprintf("    @std <package> [glob] - List all available constants and functions of a stdlib package.\n"))
-								clt.WriteString(fmt.Sprintf("\n"))
-								clt.WriteString(fmt.Sprintf("Add an argument after a list command to do a full text search. The search string should be in glob format.\n"))
+								// Process the entered line
 
-							} else if strings.HasPrefix(trimmedLine, "@sym") {
-								displaySymbols(clt, strings.Split(trimmedLine, " ")[1:])
+								if line == "?" {
 
-							} else if strings.HasPrefix(trimmedLine, "@std") {
-								displayPackage(clt, strings.Split(trimmedLine, " ")[1:])
+									// Show help
 
-							} else {
-								var ierr error
-								var ast *parser.ASTNode
-								var res interface{}
+									clt.WriteString(fmt.Sprintf("ECAL %v\n", config.ProductVersion))
+									clt.WriteString(fmt.Sprintf("\n"))
+									clt.WriteString(fmt.Sprintf("Console supports all normal ECAL statements and the following special commands:\n"))
+									clt.WriteString(fmt.Sprintf("\n"))
+									clt.WriteString(fmt.Sprintf("    @sym [glob] - List all available inbuild functions and available stdlib packages of ECAL.\n"))
+									clt.WriteString(fmt.Sprintf("    @std <package> [glob] - List all available constants and functions of a stdlib package.\n"))
+									clt.WriteString(fmt.Sprintf("\n"))
+									clt.WriteString(fmt.Sprintf("Add an argument after a list command to do a full text search. The search string should be in glob format.\n"))
 
-								if ast, ierr = parser.ParseWithRuntime("console input", line, erp); ierr == nil {
+								} else if strings.HasPrefix(trimmedLine, "@sym") {
+									displaySymbols(clt, strings.Split(trimmedLine, " ")[1:])
 
-									if ierr = ast.Runtime.Validate(); ierr == nil {
+								} else if strings.HasPrefix(trimmedLine, "@std") {
+									displayPackage(clt, strings.Split(trimmedLine, " ")[1:])
 
-										if res, ierr = ast.Runtime.Eval(vs, make(map[string]interface{})); ierr == nil && res != nil {
-											clt.WriteString(fmt.Sprintln(res))
+								} else {
+									var ierr error
+									var ast *parser.ASTNode
+									var res interface{}
+
+									if ast, ierr = parser.ParseWithRuntime("console input", line, erp); ierr == nil {
+
+										if ierr = ast.Runtime.Validate(); ierr == nil {
+
+											if res, ierr = ast.Runtime.Eval(vs, make(map[string]interface{})); ierr == nil && res != nil {
+												clt.WriteString(fmt.Sprintln(res))
+											}
 										}
+									}
+
+									if ierr != nil {
+										clt.WriteString(fmt.Sprintln(ierr.Error()))
 									}
 								}
 
-								if ierr != nil {
-									clt.WriteString(fmt.Sprintln(ierr.Error()))
-								}
+								line, err = clt.NextLine()
 							}
-
-							line, err = clt.NextLine()
 						}
 					}
 				}

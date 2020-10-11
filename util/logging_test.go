@@ -95,6 +95,12 @@ error: ltest3` {
 
 	ml.Reset()
 	ll, _ = NewLogLevelLogger(ml, "error")
+
+	if ll.Level() != "error" {
+		t.Error("Unexpected level:", ll.Level())
+		return
+	}
+
 	ll.LogDebug("l", "test1")
 	ll.LogInfo(nil, "test2")
 	ll.LogError("l", "test3")

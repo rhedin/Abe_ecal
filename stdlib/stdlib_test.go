@@ -18,6 +18,7 @@ import (
 )
 
 func TestGetPkgDocString(t *testing.T) {
+	AddStdlibPkg("foo", "foo doc")
 
 	mathFuncMap["Println"] = &ECALFunctionAdapter{reflect.ValueOf(fmt.Println), "foo"}
 
@@ -34,9 +35,24 @@ func TestGetPkgDocString(t *testing.T) {
 		t.Error("Unexpected result:", doc)
 		return
 	}
+
+	doc, _ = GetPkgDocString("foo")
+
+	if doc != "foo doc" {
+		t.Error("Unexpected result:", doc)
+		return
+	}
+
+	if err := AddStdlibPkg("foo", "foo doc"); err == nil || err.Error() != "Package foo already exists" {
+		t.Error("Unexpected error:", err)
+		return
+	}
 }
 
 func TestSymbols(t *testing.T) {
+	AddStdlibPkg("foo", "foo doc")
+	AddStdlibFunc("foo", "bar", nil)
+
 	p, c, f := GetStdlibSymbols()
 	if len(p) == 0 || len(c) == 0 || len(f) == 0 {
 		t.Error("Should have some entries in symbol lists:", p, c, f)
@@ -68,6 +84,8 @@ func TestSplitModuleAndName(t *testing.T) {
 }
 
 func TestGetStdLibItems(t *testing.T) {
+	dummyFunc := &ECALFunctionAdapter{}
+	AddStdlibFunc("foo", "bar", dummyFunc)
 
 	mathFuncMap["Println"] = &ECALFunctionAdapter{reflect.ValueOf(fmt.Println), "foo"}
 
@@ -76,8 +94,13 @@ func TestGetStdLibItems(t *testing.T) {
 		return
 	}
 
+	if f, _ := GetStdlibFunc("foo.bar"); f != dummyFunc {
+		t.Error("Unexpected resutl: functions should lookup correctly")
+		return
+	}
+
 	if c, ok := GetStdlibFunc("foo"); c != nil || ok {
-		t.Error("Unexpected resutl: constants should lookup correctly")
+		t.Error("Unexpected resutl: func should lookup correctly")
 		return
 	}
 
@@ -88,6 +111,21 @@ func TestGetStdLibItems(t *testing.T) {
 
 	if c, ok := GetStdlibConst("foo"); c != nil || ok {
 		t.Error("Unexpected resutl: constants should lookup correctly")
+		return
+	}
+}
+
+func TestAddStdLibFunc(t *testing.T) {
+	dummyFunc := &ECALFunctionAdapter{}
+	AddStdlibFunc("foo", "bar", dummyFunc)
+
+	if f, _ := GetStdlibFunc("foo.bar"); f != dummyFunc {
+		t.Error("Unexpected resutl: functions should lookup correctly")
+		return
+	}
+
+	if err := AddStdlibFunc("foo2", "bar", dummyFunc); err == nil || err.Error() != "Package foo2 does not exist" {
+		t.Error("Unexpected error:", err)
 		return
 	}
 }

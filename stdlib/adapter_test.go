@@ -239,7 +239,7 @@ func TestECALFunctionAdapter(t *testing.T) {
 
 	// Get documentation
 
-	afuncEcal := &ECALFunctionAdapter{reflect.ValueOf(fmt.Sprint), "test123"}
+	afuncEcal := NewECALFunctionAdapter(reflect.ValueOf(fmt.Sprint), "test123")
 
 	if s, err := afuncEcal.DocString(); s == "" || err != nil {
 		t.Error("Docstring should return something")

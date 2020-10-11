@@ -70,7 +70,9 @@ func Interpret(interactive bool) error {
 
 	clt, err = termutil.NewConsoleLineTerminal(os.Stdout)
 
-	fmt.Println(fmt.Sprintf("ECAL %v", config.ProductVersion))
+	if interactive {
+		fmt.Println(fmt.Sprintf("ECAL %v", config.ProductVersion))
+	}
 
 	// Create the logger
 
@@ -95,7 +97,7 @@ func Interpret(interactive bool) error {
 
 		if err == nil {
 			if ilogLevel != nil && *ilogLevel != "" {
-				if logger, err = util.NewLogLevelLogger(logger, *ilogLevel); err == nil {
+				if logger, err = util.NewLogLevelLogger(logger, *ilogLevel); err == nil && interactive {
 					fmt.Print(fmt.Sprintf("Log level: %v - ", logger.(*util.LogLevelLogger).Level()))
 				}
 			}
@@ -106,7 +108,9 @@ func Interpret(interactive bool) error {
 
 		// Get the import locator
 
-		fmt.Println(fmt.Sprintf("Root directory: %v", *idir))
+		if interactive {
+			fmt.Println(fmt.Sprintf("Root directory: %v", *idir))
+		}
 
 		importLocator := &util.FileImportLocator{Root: *idir}
 

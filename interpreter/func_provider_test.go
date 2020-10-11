@@ -12,11 +12,16 @@ package interpreter
 
 import (
 	"fmt"
-	"strings"
+	"reflect"
 	"testing"
+
+	"devt.de/krotik/ecal/stdlib"
 )
 
 func TestStdlib(t *testing.T) {
+	stdlib.AddStdlibPkg("fmt", "fmt package")
+	stdlib.AddStdlibFunc("fmt", "Sprint",
+		stdlib.NewECALFunctionAdapter(reflect.ValueOf(fmt.Sprint), "foo"))
 
 	res, err := UnitTestEvalAndAST(
 		`fmt.Sprint([1,2,3])`, nil,
@@ -262,10 +267,14 @@ doc(foo)`, nil)
 		return
 	}
 
+	stdlib.AddStdlibPkg("fmt", "fmt package")
+	stdlib.AddStdlibFunc("fmt", "Println",
+		stdlib.NewECALFunctionAdapter(reflect.ValueOf(fmt.Sprint), "foo"))
+
 	res, err = UnitTestEval(
 		`doc(fmt.Println)`, nil)
 
-	if err != nil || !strings.HasPrefix(fmt.Sprint(res), "Println") {
+	if err != nil || res != "foo" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}

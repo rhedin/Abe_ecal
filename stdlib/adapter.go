@@ -26,6 +26,13 @@ type ECALFunctionAdapter struct {
 }
 
 /*
+NewECALFunctionAdapter creates a new ECALFunctionAdapter.
+*/
+func NewECALFunctionAdapter(funcval reflect.Value, docstring string) *ECALFunctionAdapter {
+	return &ECALFunctionAdapter{funcval, docstring}
+}
+
+/*
 Run executes this function.
 */
 func (ea *ECALFunctionAdapter) Run(instanceID string, vs parser.Scope,

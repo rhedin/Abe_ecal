@@ -288,18 +288,23 @@ func (p *parser) next() (*ASTNode, error) {
 
 	token, more := p.tokens.Next()
 
-	// Skip over pre comment token
+	for more && (token.ID == TokenPRECOMMENT || token.ID == TokenPOSTCOMMENT) {
 
-	for more && token.ID == TokenPRECOMMENT {
-		preComments = append(preComments, NewLexTokenInstance(token))
-		token, more = p.tokens.Next()
-	}
+		if token.ID == TokenPRECOMMENT {
 
-	// Skip over post comment token
+			// Skip over pre comment token
 
-	for more && token.ID == TokenPOSTCOMMENT {
-		postComments = append(postComments, NewLexTokenInstance(token))
-		token, more = p.tokens.Next()
+			preComments = append(preComments, NewLexTokenInstance(token))
+			token, more = p.tokens.Next()
+		}
+
+		if token.ID == TokenPOSTCOMMENT {
+
+			// Skip over post comment token
+
+			postComments = append(postComments, NewLexTokenInstance(token))
+			token, more = p.tokens.Next()
+		}
 	}
 
 	if !more {

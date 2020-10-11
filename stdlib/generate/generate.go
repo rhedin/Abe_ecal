@@ -53,7 +53,7 @@ var pkgNames = map[string][]string{
 	//	"fmt":  {"Println", "Sprint"},
 }
 
-var generateDoc = true
+var generateDoc = false
 
 // ==============EDIT HERE END==============
 

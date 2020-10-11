@@ -49,7 +49,7 @@ go list std | grep -v internal | grep -v '\.' | grep -v unsafe | grep -v syscall
 // =============EDIT HERE START=============
 
 var pkgNames = map[string][]string{
-	//	"math": {"Pi"},
+	//	"math": {"Pi", "E", "Phi", "Pow"},
 	//	"fmt":  {"Println", "Sprint"},
 }
 

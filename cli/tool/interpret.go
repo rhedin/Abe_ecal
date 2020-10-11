@@ -18,11 +18,13 @@ import (
 	"strings"
 
 	"devt.de/krotik/common/fileutil"
+	"devt.de/krotik/common/stringutil"
 	"devt.de/krotik/common/termutil"
 	"devt.de/krotik/ecal/config"
 	"devt.de/krotik/ecal/interpreter"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
+	"devt.de/krotik/ecal/stdlib"
 	"devt.de/krotik/ecal/util"
 )
 
@@ -102,7 +104,7 @@ func Interpret(interactive bool) error {
 
 	if err == nil {
 
-		name := "ECAL console"
+		name := "console"
 
 		// Create interpreter
 
@@ -158,19 +160,16 @@ func Interpret(interactive bool) error {
 								clt.WriteString(fmt.Sprintf("\n"))
 								clt.WriteString(fmt.Sprintf("Console supports all normal ECAL statements and the following special commands:\n"))
 								clt.WriteString(fmt.Sprintf("\n"))
-								clt.WriteString(fmt.Sprintf("    @syms - List all available inbuild functions and available stdlib packages of ECAL.\n"))
-								clt.WriteString(fmt.Sprintf("    @stdl - List all available constants and functions of a stdlib package.\n"))
-								clt.WriteString(fmt.Sprintf("    @lk   - Do a full text search through all docstrings.\n"))
+								clt.WriteString(fmt.Sprintf("    @sym [glob] - List all available inbuild functions and available stdlib packages of ECAL.\n"))
+								clt.WriteString(fmt.Sprintf("    @std <package> [glob] - List all available constants and functions of a stdlib package.\n"))
 								clt.WriteString(fmt.Sprintf("\n"))
+								clt.WriteString(fmt.Sprintf("Add an argument after a list command to do a full text search. The search string should be in glob format.\n"))
 
-							} else if strings.HasPrefix(trimmedLine, "@syms") {
-								args := strings.Split(trimmedLine, " ")[1:]
+							} else if strings.HasPrefix(trimmedLine, "@sym") {
+								displaySymbols(clt, strings.Split(trimmedLine, " ")[1:])
 
-								// TODO Implement
-
-								clt.WriteString(fmt.Sprint("syms:", args))
-
-							} else if line == "!reset" {
+							} else if strings.HasPrefix(trimmedLine, "@std") {
+								displayPackage(clt, strings.Split(trimmedLine, " ")[1:])
 
 							} else {
 								var ierr error
@@ -201,4 +200,97 @@ func Interpret(interactive bool) error {
 	}
 
 	return err
+}
+
+/*
+displaySymbols lists all available inbuild functions and available stdlib packages of ECAL.
+*/
+func displaySymbols(clt termutil.ConsoleLineTerminal, args []string) {
+
+	tabData := []string{"Inbuild function", "Description"}
+
+	for name, f := range interpreter.InbuildFuncMap {
+		ds, _ := f.DocString()
+
+		if len(args) > 0 && !matchesFulltextSearch(clt, fmt.Sprintf("%v %v", name, ds), args[0]) {
+			continue
+		}
+
+		tabData = fillTableRow(tabData, name, ds)
+	}
+
+	if len(tabData) > 2 {
+		clt.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
+			stringutil.SingleDoubleLineTable))
+	}
+
+	packageNames, _, _ := stdlib.GetStdlibSymbols()
+
+	tabData = []string{"Package name", "Description"}
+
+	for _, p := range packageNames {
+		ps, _ := stdlib.GetPkgDocString(p)
+
+		if len(args) > 0 && !matchesFulltextSearch(clt, fmt.Sprintf("%v %v", p, ps), args[0]) {
+			continue
+		}
+
+		tabData = fillTableRow(tabData, p, ps)
+	}
+
+	if len(tabData) > 2 {
+		clt.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
+			stringutil.SingleDoubleLineTable))
+	}
+}
+
+/*
+displayPackage list all available constants and functions of a stdlib package.
+*/
+func displayPackage(clt termutil.ConsoleLineTerminal, args []string) {
+
+	_, constSymbols, funcSymbols := stdlib.GetStdlibSymbols()
+
+	tabData := []string{"Constant", "Value"}
+
+	for _, s := range constSymbols {
+
+		if len(args) > 0 && !strings.HasPrefix(s, args[0]) {
+			continue
+		}
+
+		val, _ := stdlib.GetStdlibConst(s)
+
+		tabData = fillTableRow(tabData, s, fmt.Sprint(val))
+	}
+
+	if len(tabData) > 2 {
+		clt.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
+			stringutil.SingleDoubleLineTable))
+	}
+
+	tabData = []string{"Function", "Description"}
+
+	for _, f := range funcSymbols {
+		if len(args) > 0 && !strings.HasPrefix(f, args[0]) {
+			continue
+		}
+
+		fObj, _ := stdlib.GetStdlibFunc(f)
+		fDoc, _ := fObj.DocString()
+
+		fDoc = strings.Replace(fDoc, "\n", " ", -1)
+		fDoc = strings.Replace(fDoc, "\t", " ", -1)
+
+		if len(args) > 1 && !matchesFulltextSearch(clt, fmt.Sprintf("%v %v", f, fDoc), args[1]) {
+			continue
+		}
+
+		tabData = fillTableRow(tabData, f, fDoc)
+	}
+
+	if len(tabData) > 2 {
+		clt.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
+			stringutil.SingleDoubleLineTable))
+	}
 }

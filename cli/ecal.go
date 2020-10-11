@@ -24,9 +24,10 @@ TODO:
 - CLI interpreter (show base directory when starting)
 -- console can specify a base directory
 -- console can preload code
-
+- adding external stdlib functions
+- cron trigger (async) in-build function
+- web server (sync/async) in-build function with options
 - create executable binary (pack into single binary)
-
 - debug server support (vscode)
 */
 

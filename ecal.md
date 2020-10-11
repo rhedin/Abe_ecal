@@ -336,6 +336,22 @@ try {
     log(e)
 }
 ```
+The variable `e` has the following structure:
+```
+{
+  "data": [
+    1,
+    2,
+    3
+  ],
+  "detail": "My error message",
+  "error": "ECAL error in console: MyError (My error message) (Line:1 Pos:7)",
+  "line": 1,
+  "pos": 7,
+  "source": "console",
+  "type": "MyError"
+}
+```
 
 Build-in Functions
 --

@@ -98,7 +98,7 @@ func (rt *funcRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 			name = rt.node.Children[0].Token.Val
 		}
 
-		fc = &function{name, nil, nil, rt.node}
+		fc = &function{name, nil, nil, rt.node, vs}
 
 		if name != "" {
 			vs.SetValue(name, fc)
@@ -112,10 +112,11 @@ func (rt *funcRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 function models a function in ECAL. It can have a context object attached - this.
 */
 type function struct {
-	name        string
-	super       []interface{}   // Super function pointer
-	this        interface{}     // Function context
-	declaration *parser.ASTNode // Function declaration node
+	name          string
+	super         []interface{}   // Super function pointer
+	this          interface{}     // Function context
+	declaration   *parser.ASTNode // Function declaration node
+	declarationVS parser.Scope    // Function declaration scope
 }
 
 /*
@@ -175,7 +176,7 @@ func (f *function) Run(instanceID string, vs parser.Scope, is map[string]interfa
 
 	if err == nil {
 
-		scope.SetParentOfScope(fvs, vs)
+		scope.SetParentOfScope(fvs, f.declarationVS)
 
 		res, err = body.Runtime.Eval(fvs, make(map[string]interface{}))
 

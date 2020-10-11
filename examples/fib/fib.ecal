@@ -1,0 +1,3 @@
+import "lib.ecal" as lib
+
+log("fib(1) = ", lib.fib(12))

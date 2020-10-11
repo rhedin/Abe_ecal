@@ -252,7 +252,7 @@ func (rf *newFunc) addSuperClasses(vs parser.Scope, is map[string]interface{},
 		// Save previous init function
 
 		if funcVal, ok := v.(*function); ok {
-			newFunction := &function{funcVal.name, nil, obj, funcVal.declaration}
+			newFunction := &function{funcVal.name, nil, obj, funcVal.declaration, funcVal.declarationVS}
 			if k == "init" {
 				newFunction.super = initSuperList
 				initFunc = newFunction

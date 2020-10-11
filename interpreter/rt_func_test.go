@@ -201,6 +201,27 @@ result1 := foo(3, 2)
 		t.Error("Unexpected result: ", vsRes, res, err)
 		return
 	}
+
+	vs = scope.NewScope(scope.GlobalScope)
+
+	res, err = UnitTestEval(`
+func fib(n) {
+  if (n <= 1) {
+      return n
+  }
+  return fib(n-1) + fib(n-2)
+}
+
+result1 := fib(12)
+`, vs)
+
+	if vsRes := vs.String(); err != nil || res != nil || vsRes != `GlobalScope {
+    fib (*interpreter.function) : ecal.function: fib (Line 2, Pos 1)
+    result1 (float64) : 144
+}` {
+		t.Error("Unexpected result: ", vsRes, res, err)
+		return
+	}
 }
 
 func TestObjectInstantiation(t *testing.T) {

@@ -74,7 +74,7 @@ func main() {
 	// Make sure we have at least an empty pkgName
 
 	if len(pkgNames) == 0 {
-		pkgNames["math"] = []string{"Pi"}
+		pkgNames["math"] = []string{"Pi", "E", "Phi"}
 	}
 
 	// Make sure pkgNames is sorted
@@ -83,6 +83,7 @@ func main() {
 	for pkgName, names := range pkgNames {
 		sort.Strings(names)
 		importList = append(importList, pkgName)
+		synopsis["math"] = "Mathematics-related constants and functions"
 	}
 	sort.Strings(importList)
 
@@ -101,7 +102,7 @@ package stdlib
 			errorutil.AssertOk(err) // If this throws try not generating the docs!
 			synopsis[pkgName] = syn
 			pkgDocs[pkgName] = pkgDoc
-		} else {
+		} else if _, ok := synopsis[pkgName]; !ok {
 			synopsis[pkgName] = fmt.Sprintf("Package %v", pkgName)
 		}
 

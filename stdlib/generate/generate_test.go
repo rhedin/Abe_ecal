@@ -80,7 +80,7 @@ var genStdlib = map[interface{}]interface{}{
 	"fmt-const" : fmtConstMap,
 	"fmt-func" : fmtFuncMap,
 	"fmt-func-doc" : fmtFuncDocMap,
-	"math-synopsis" : "Package math",
+	"math-synopsis" : "Mathematics-related constants and functions",
 	"math-const" : mathConstMap,
 	"math-func" : mathFuncMap,
 	"math-func-doc" : mathFuncDocMap,

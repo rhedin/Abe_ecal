@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"devt.de/krotik/common/datautil"
+	"devt.de/krotik/common/timeutil"
 	"devt.de/krotik/ecal/engine"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
@@ -54,6 +55,10 @@ var usedNodes = map[string]bool{
 //
 var testlogger *util.MemoryLogger
 
+// Last used cron
+//
+var testcron *timeutil.Cron
+
 // Last used processor
 //
 var testprocessor engine.Processor
@@ -84,6 +89,18 @@ func UnitTestEvalAndASTAndImport(input string, vs parser.Scope, expectedAST stri
 	erp := NewECALRuntimeProvider("ECALTestRuntime", importLocator, nil)
 
 	testlogger = erp.Logger.(*util.MemoryLogger)
+
+	// For testing we change the cron object to be a testing cron which goes
+	// quickly through a day when started. To test cron functionality a test
+	// needs to first specify a setCronTrigger and the sinks. Once this has
+	// been done the testcron object needs to be started. It will go through
+	// a day instantly and add a deterministic number of events (according to
+	// the cronspec given to setCronTrigger for one day).
+
+	erp.Cron.Stop()
+	erp.Cron = timeutil.NewTestingCronDay()
+	testcron = erp.Cron
+
 	testprocessor = erp.Processor
 
 	ast, err := parser.ParseWithRuntime("ECALEvalTest", input, erp)

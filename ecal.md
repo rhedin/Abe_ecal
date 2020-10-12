@@ -461,6 +461,43 @@ Example:
 doc(len)
 ```
 
+#### `setCronTrigger(cronspec, eventname, eventkind) : string`
+Adds a periodic cron job which fires events. Use this function for long running
+periodic tasks.
+
+The function requires a cronspec which defines the time schedule in which events
+should be fired. The cronspec is a single text string which must have the
+following 6 entries separated by whitespace:
+
+```
+Field	         Valid values
+-----	         ------------
+second         * or 0-59 or *%1-59
+minute         * or 0-59 or *%1-59
+hour           * or 0-23 or *%1-23
+day of month   * or 1-31 or *%1-31
+month          * or 1-12 or *%1-12
+day of week    * or 0-6 (0 is Sunday) or *%1-7
+```
+
+Multiple values for an entry can be separated by commas e.g. `1,3,5,7`.
+A `*` in any field matches all values i.e. execute every minute, every
+day, etc. A `*%<number>` in any field entry matches when the time is a
+multiple of <number>.
+
+Returns a human readable string representing the cronspec.
+
+For example `0 0 12 1 * *` returns `at the beginning of hour 12:00 on 1st of every month`.
+
+Parameter | Description
+-|-
+cronspec  | The cron job specification string
+eventname | Event name for the cron triggered events
+eventkind | Event kind for the cron triggered events
+
+#### `setPulseTrigger() : string`
+
+
 Logging Functions
 --
 ECAL has a build-in logging system and provides by default the functions `debug`, `log` and `error` to log messages.
@@ -469,7 +506,9 @@ Stdlib Functions
 --
 ECAL contains a bridge to Go functions which allows some Go functions to be used as standard library (stdlib) functions. Stdlib functions should be called using the corresponding Go Module and function or constant name.
 
+By default only some `math` constants are available it is possible to include other constants and functions using code generation (as part of the normal build process of the ECAL interpreter). Please see the comments and modify the file `/stdlib/generate/generate.go` and then run a normal `make` to build a new ECAL interpreter with extended stdlib.
+
 Example:
 ```
-fmt.Sprint(math.Pi)
+log(math.Pi)
 ```

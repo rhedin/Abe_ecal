@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"devt.de/krotik/ecal/stdlib"
 )
@@ -311,6 +312,71 @@ identifier: a
 	if err == nil ||
 		err.Error() != "ECAL error in ECALTestRuntime: Unknown construct (Unknown function: len) (Line:1 Pos:3)" {
 		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+}
+
+func TestCronTrigger(t *testing.T) {
+
+	res, err := UnitTestEval(
+		`setCronTrigger("1 * * * *", "foo", "bar")`, nil)
+
+	if err == nil ||
+		err.Error() != "ECAL error in ECALTestRuntime: Runtime error (Cron spec must have 6 entries separated by space) (Line:1 Pos:1)" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`
+sink test
+  kindmatch [ "foo.*" ],
+{
+	log("test rule - Handling request: ", event)
+}
+
+log("Cron:", setCronTrigger("1 1 *%10 * * *", "cronevent", "foo.bar"))
+`, nil)
+
+	if err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	testcron.Start()
+	time.Sleep(100 * time.Millisecond)
+
+	if testlogger.String() != `
+Cron:at second 1 of minute 1 of every 10th hour every day
+test rule - Handling request: {
+  "kind": "foo.bar",
+  "name": "cronevent",
+  "state": {
+    "tick": 1,
+    "time": "2000-01-01T00:01:01Z",
+    "timestamp": "946684861000"
+  }
+}
+test rule - Handling request: {
+  "kind": "foo.bar",
+  "name": "cronevent",
+  "state": {
+    "tick": 2,
+    "time": "2000-01-01T10:01:01Z",
+    "timestamp": "946720861000"
+  }
+}
+test rule - Handling request: {
+  "kind": "foo.bar",
+  "name": "cronevent",
+  "state": {
+    "tick": 3,
+    "time": "2000-01-01T20:01:01Z",
+    "timestamp": "946756861000"
+  }
+}`[1:] {
+		t.Error("Unexpected result:", testlogger.String())
 		return
 	}
 

@@ -495,8 +495,25 @@ cronspec  | The cron job specification string
 eventname | Event name for the cron triggered events
 eventkind | Event kind for the cron triggered events
 
-#### `setPulseTrigger() : string`
+Example:
+```
+# at second 1 of minute 1 of every 10th hour every day
+setCronTrigger("1 1 *%10 * * *", "cronevent", "foo.bar")
+```
 
+#### `setPulseTrigger(micros, eventname, eventkind)`
+Adds recurring events in very short intervals.
+
+Parameter | Description
+-|-
+micros    | Microsecond interval between events
+eventname | Event name for the triggered events
+eventkind | Event kind for the triggered events
+
+Example:
+```
+setPulseTrigger(100, "foo", "bar")
+```
 
 Logging Functions
 --

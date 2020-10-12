@@ -41,6 +41,7 @@ var InbuildFuncMap = map[string]util.ECALFunction{
 	"addEvent":        &addevent{&inbuildBaseFunc{}},
 	"addEventAndWait": &addeventandwait{&addevent{&inbuildBaseFunc{}}},
 	"setCronTrigger":  &setCronTrigger{&inbuildBaseFunc{}},
+	"setPulseTrigger": &setPulseTrigger{&inbuildBaseFunc{}},
 }
 
 /*
@@ -790,7 +791,7 @@ func (ct *setCronTrigger) Run(instanceID string, vs parser.Scope, is map[string]
 				event := engine.NewEvent(eventname, eventkind, map[interface{}]interface{}{
 					"time":      now,
 					"timestamp": fmt.Sprintf("%d", now.UnixNano()/int64(time.Millisecond)),
-					"tick":      tick,
+					"tick":      float64(tick),
 				})
 				monitor := proc.NewRootMonitor(nil, nil)
 				_, err := proc.AddEvent(event, monitor)
@@ -809,4 +810,80 @@ DocString returns a descriptive string.
 */
 func (ct *setCronTrigger) DocString() (string, error) {
 	return "setCronTrigger adds a periodic cron job which fires events.", nil
+}
+
+// setPulseTrigger
+// ==============
+
+/*
+setPulseTrigger adds recurring events in very short intervals.
+*/
+type setPulseTrigger struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (pt *setPulseTrigger) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	err := fmt.Errorf("Need micro second interval, an event name and an event scope as parameters")
+
+	if len(args) > 2 {
+		var micros float64
+
+		micros, err = pt.AssertNumParam(1, args[0])
+
+		if err == nil {
+			eventname := fmt.Sprint(args[1])
+			eventkind := strings.Split(fmt.Sprint(args[2]), ".")
+
+			erp := is["erp"].(*ECALRuntimeProvider)
+			proc := erp.Processor
+
+			if proc.Stopped() {
+				proc.Start()
+			}
+
+			tick := 0
+
+			go func() {
+				var lastmicros int64
+
+				for {
+					time.Sleep(time.Duration(micros) * time.Microsecond)
+
+					tick += 1
+					now := time.Now()
+					micros := now.UnixNano() / int64(time.Microsecond)
+					event := engine.NewEvent(eventname, eventkind, map[interface{}]interface{}{
+						"currentMicros": float64(micros),
+						"lastMicros":    float64(lastmicros),
+						"timestamp":     fmt.Sprintf("%d", now.UnixNano()/int64(time.Microsecond)),
+						"tick":          float64(tick),
+					})
+					lastmicros = micros
+
+					monitor := proc.NewRootMonitor(nil, nil)
+					_, err := proc.AddEvent(event, monitor)
+
+					if proc.Stopped() {
+						break
+					}
+
+					errorutil.AssertTrue(err == nil,
+						fmt.Sprintf("Could not add pulse event for trigger %v %v %v: %v",
+							micros, eventname, eventkind, err))
+				}
+			}()
+		}
+	}
+
+	return nil, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (pt *setPulseTrigger) DocString() (string, error) {
+	return "setPulseTrigger adds recurring events in microsecond intervals.", nil
 }

@@ -13,6 +13,7 @@ package interpreter
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -345,7 +346,7 @@ log("Cron:", setCronTrigger("1 1 *%10 * * *", "cronevent", "foo.bar"))
 	}
 
 	testcron.Start()
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	if testlogger.String() != `
 Cron:at second 1 of minute 1 of every 10th hour every day
@@ -379,7 +380,43 @@ test rule - Handling request: {
 		t.Error("Unexpected result:", testlogger.String())
 		return
 	}
+}
 
+func TestPulseTrigger(t *testing.T) {
+
+	res, err := UnitTestEval(
+		`setPulseTrigger("test", "foo", "bar")`, nil)
+
+	if err == nil ||
+		err.Error() != "ECAL error in ECALTestRuntime: Runtime error (Parameter 1 should be a number) (Line:1 Pos:1)" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(
+		`
+sink test
+  kindmatch [ "foo.*" ],
+{
+	log("test rule - Handling request: ", event)
+	log("Duration: ", event.state.currentMicros - event.state.lastMicros," us (microsecond)")
+}
+
+setPulseTrigger(100, "pulseevent", "foo.bar")
+`, nil)
+
+	if err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	testprocessor.Finish()
+
+	if !strings.Contains(testlogger.String(), "Handling request") {
+		t.Error("Unexpected result:", testlogger.String())
+		return
+	}
 }
 
 func TestDocstrings(t *testing.T) {

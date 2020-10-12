@@ -21,9 +21,6 @@ import (
 
 /*
 TODO:
-- cron trigger (async) in-build function
-- web server (sync/async) in-build function with options
-- web request library
 - create executable binary (pack into single binary)
 - debug server support (vscode)
 */

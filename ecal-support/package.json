@@ -1,0 +1,25 @@
+{
+    "name": "ecal-support",
+    "displayName": "ECAL Support",
+    "description": "Support for the Event Condition Action Language (ECAL).",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.50.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "ecal",
+            "aliases": ["Event Condition Action Language", "ecal"],
+            "extensions": [".ecal"],
+            "configuration": "./ecal-support/language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "ecal",
+            "scopeName": "source.ecal",
+            "path": "./ecal-support/syntaxes/ecal.tmLanguage.json"
+        }]
+    }
+}

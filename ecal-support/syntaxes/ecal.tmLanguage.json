@@ -48,14 +48,14 @@
 		},
 		"identifiers": {
 			"patterns": [{
-				"match": "([a-z]+)\\(",
+				"match": "([a-zA-Z]+)\\(",
 				"captures": {
 					"1": {
 						"name": "entity.name.function.ecal"
 					}
 				}
 			}, {
-				"match": "([a-z]+) :?=",
+				"match": "([a-zA-Z]+) :?=",
 				"captures": {
 					"1": {
 						"name": "storage.type.var.ecal"

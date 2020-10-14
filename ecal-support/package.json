@@ -14,12 +14,12 @@
             "id": "ecal",
             "aliases": ["Event Condition Action Language", "ecal"],
             "extensions": [".ecal"],
-            "configuration": "./ecal-support/language-configuration.json"
+            "configuration": "./language-configuration.json"
         }],
         "grammars": [{
             "language": "ecal",
             "scopeName": "source.ecal",
-            "path": "./ecal-support/syntaxes/ecal.tmLanguage.json"
+            "path": "./syntaxes/ecal.tmLanguage.json"
         }]
     }
 }

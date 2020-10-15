@@ -746,7 +746,7 @@ func lexComment(l *lexer) lexFunc {
 
 		r = l.next(0)
 
-		for r != '*' && l.next(1) != '/' {
+		for r != '*' || l.next(1) != '/' {
 
 			if r == '\n' {
 				lLine++

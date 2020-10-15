@@ -298,6 +298,27 @@ bar`
 		t.Error("Unexpected lexer result:", res)
 		return
 	}
+
+	input = `
+/*
+Conway's Game of Life
+
+A zero-player game that evolves based on its initial state.
+
+https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
+*/
+
+1+ 2 # Some comment`
+	if res := LexToList("mytest", input); fmt.Sprint(res) != `[/* 
+Conway's Game of Life
+
+A zero-player game that evolves based on its initial state.
+
+https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
+ */ v:"1" + v:"2" #  Some comment EOF]` {
+		t.Error("Unexpected lexer result:", res)
+		return
+	}
 }
 
 func TestSinkLexing(t *testing.T) {

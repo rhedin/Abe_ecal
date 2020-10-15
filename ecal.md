@@ -461,6 +461,18 @@ Example:
 doc(len)
 ```
 
+#### `sleep(micros)`
+Sleep pauses the current thread for a number of micro seconds.
+
+Parameter | Description
+-|-
+micros | Number of micro seconds to sleep
+
+Example:
+```
+sleep(1000000) // Sleep a millisecond
+```
+
 #### `setCronTrigger(cronspec, eventname, eventkind) : string`
 Adds a periodic cron job which fires events. Use this function for long running
 periodic tasks.

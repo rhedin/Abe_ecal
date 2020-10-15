@@ -316,6 +316,12 @@ identifier: a
 		return
 	}
 
+	_, err = UnitTestEval(`sleep(10)`, nil)
+
+	if err != nil {
+		t.Error("Unexpected result: ", err)
+		return
+	}
 }
 
 func TestCronTrigger(t *testing.T) {

@@ -13,4 +13,20 @@ Package interpreter contains the ECAL interpreter.
 */
 package interpreter
 
-// TODO: Stacktrace
+/*
+OutputTerminal is a generic output terminal which can write strings.
+*/
+type OutputTerminal interface {
+
+	/*
+	   WriteString write a string on this terminal.
+	*/
+	WriteString(s string)
+}
+
+/*
+Debugger is a debugging object which can be used to inspect and modify a running
+ECAL environment.
+*/
+type Debugger interface {
+}

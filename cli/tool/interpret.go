@@ -30,189 +30,201 @@ import (
 )
 
 /*
-Interpret starts the ECAL code interpreter from a CLI application which
-calls the interpret function as a sub executable. Starts an interactive console
-if the interactive flag is set.
+CLIInterpreter is a commandline interpreter for ECAL.
 */
-func Interpret(interactive bool) error {
-	var err error
+type CLIInterpreter struct {
+	GlobalVS        parser.Scope                     // Global variable scope
+	RuntimeProvider *interpreter.ECALRuntimeProvider // Runtime provider of the interpreter
+
+	// Customizations of output and input handling
+
+	CustomHandler        CLIInputHandler
+	CustomWelcomeMessage string
+	CustomHelpString     string
+
+	// Parameter these can either be set programmatically or via CLI args
+
+	Dir      *string // Root dir for interpreter
+	LogFile  *string // Logfile (blank for stdout)
+	LogLevel *string // Log level string (Debug, Info, Error)
+}
+
+/*
+NewCLIInterpreter creates a new commandline interpreter for ECAL.
+*/
+func NewCLIInterpreter() *CLIInterpreter {
+	return &CLIInterpreter{scope.NewScope(scope.GlobalScope), nil, nil, "", "", nil, nil, nil}
+}
+
+/*
+ParseArgs parses the command line arguments. Call this after adding custon flags.
+Returns true if the program should exit.
+*/
+func (i *CLIInterpreter) ParseArgs() bool {
+
+	if i.Dir != nil && i.LogFile != nil && i.LogLevel != nil {
+		return false
+	}
 
 	wd, _ := os.Getwd()
 
-	idir := flag.String("dir", wd, "Root directory for ECAL interpreter")
-	ilogFile := flag.String("logfile", "", "Log to a file")
-	ilogLevel := flag.String("loglevel", "Info", "Logging level (Debug, Info, Error)")
+	i.Dir = flag.String("dir", wd, "Root directory for ECAL interpreter")
+	i.LogFile = flag.String("logfile", "", "Log to a file")
+	i.LogLevel = flag.String("loglevel", "Info", "Logging level (Debug, Info, Error)")
 	showHelp := flag.Bool("help", false, "Show this help message")
 
 	flag.Usage = func() {
 		fmt.Println()
-		if !interactive {
-			fmt.Println(fmt.Sprintf("Usage of %s run [options] <file>", os.Args[0]))
-		} else {
-			fmt.Println(fmt.Sprintf("Usage of %s [options]", os.Args[0]))
-		}
+		fmt.Println(fmt.Sprintf("Usage of %s run [options] [file]", os.Args[0]))
 		fmt.Println()
 		flag.PrintDefaults()
 		fmt.Println()
 	}
 
-	if len(os.Args) > 2 {
+	if len(os.Args) >= 2 {
 		flag.CommandLine.Parse(os.Args[2:])
 
 		if *showHelp {
 			flag.Usage()
-			return nil
 		}
 	}
 
-	var clt termutil.ConsoleLineTerminal
-	var logger util.Logger
+	return *showHelp
+}
 
-	clt, err = termutil.NewConsoleLineTerminal(os.Stdout)
+/*
+Create the runtime provider of this interpreter. This function expects Dir,
+LogFile and LogLevel to be set.
+*/
+func (i *CLIInterpreter) CreateRuntimeProvider(name string) error {
+	var logger util.Logger
+	var err error
+
+	if i.RuntimeProvider != nil {
+		return nil
+	}
+
+	// Check if we should log to a file
+
+	if i.LogFile != nil && *i.LogFile != "" {
+		var logWriter io.Writer
+		logFileRollover := fileutil.SizeBasedRolloverCondition(1000000) // Each file can be up to a megabyte
+		logWriter, err = fileutil.NewMultiFileBuffer(*i.LogFile, fileutil.ConsecutiveNumberIterator(10), logFileRollover)
+		logger = util.NewBufferLogger(logWriter)
+
+	} else {
+
+		// Log to the console by default
+
+		logger = util.NewStdOutLogger()
+	}
+
+	// Set the log level
+
+	if err == nil {
+		if i.LogLevel != nil && *i.LogLevel != "" {
+			logger, err = util.NewLogLevelLogger(logger, *i.LogLevel)
+		}
+
+		if err == nil {
+			// Get the import locator
+
+			importLocator := &util.FileImportLocator{Root: *i.Dir}
+
+			// Create interpreter
+
+			i.RuntimeProvider = interpreter.NewECALRuntimeProvider(name, importLocator, logger)
+		}
+	}
+
+	return err
+}
+
+/*
+Interpret starts the ECAL code interpreter. Starts an interactive console in
+the current tty if the interactive flag is set.
+*/
+func (i *CLIInterpreter) Interpret(interactive bool) error {
+
+	if i.ParseArgs() {
+		return nil
+	}
+
+	clt, err := termutil.NewConsoleLineTerminal(os.Stdout)
 
 	if interactive {
 		fmt.Println(fmt.Sprintf("ECAL %v", config.ProductVersion))
 	}
 
-	// Create the logger
+	// Create Runtime Provider
 
 	if err == nil {
 
-		// Check if we should log to a file
-
-		if ilogFile != nil && *ilogFile != "" {
-			var logWriter io.Writer
-			logFileRollover := fileutil.SizeBasedRolloverCondition(1000000) // Each file can be up to a megabyte
-			logWriter, err = fileutil.NewMultiFileBuffer(*ilogFile, fileutil.ConsecutiveNumberIterator(10), logFileRollover)
-			logger = util.NewBufferLogger(logWriter)
-
-		} else {
-
-			// Log to the console by default
-
-			logger = util.NewStdOutLogger()
-		}
-
-		// Set the log level
-
-		if err == nil {
-			if ilogLevel != nil && *ilogLevel != "" {
-				if logger, err = util.NewLogLevelLogger(logger, *ilogLevel); err == nil && interactive {
-					fmt.Print(fmt.Sprintf("Log level: %v - ", logger.(*util.LogLevelLogger).Level()))
-				}
-			}
-		}
-	}
-
-	if err == nil {
-
-		// Get the import locator
-
-		if interactive {
-			fmt.Println(fmt.Sprintf("Root directory: %v", *idir))
-		}
-
-		importLocator := &util.FileImportLocator{Root: *idir}
-
-		name := "console"
-
-		// Create interpreter
-
-		erp := interpreter.NewECALRuntimeProvider(name, importLocator, logger)
-
-		// Create global variable scope
-
-		vs := scope.NewScope(scope.GlobalScope)
-
-		// Execute file if given
-
-		if cargs := flag.Args(); len(cargs) > 0 {
-			var ast *parser.ASTNode
-			var initFile []byte
-
-			initFileName := flag.Arg(0)
-			initFile, err = ioutil.ReadFile(initFileName)
-
-			if ast, err = parser.ParseWithRuntime(initFileName, string(initFile), erp); err == nil {
-				if err = ast.Runtime.Validate(); err == nil {
-					_, err = ast.Runtime.Eval(vs, make(map[string]interface{}))
-				}
-			}
-		}
-
-		if err == nil {
+		if err = i.CreateRuntimeProvider("console"); err == nil {
 
 			if interactive {
+				if lll, ok := i.RuntimeProvider.Logger.(*util.LogLevelLogger); ok {
+					fmt.Print(fmt.Sprintf("Log level: %v - ", lll.Level()))
+				}
 
-				// Drop into interactive shell
+				fmt.Println(fmt.Sprintf("Root directory: %v", *i.Dir))
 
-				if err == nil {
-					isExitLine := func(s string) bool {
-						return s == "exit" || s == "q" || s == "quit" || s == "bye" || s == "\x04"
+				if i.CustomWelcomeMessage != "" {
+					fmt.Println(fmt.Sprintf(i.CustomWelcomeMessage))
+				}
+			}
+
+			// Execute file if given
+
+			if cargs := flag.Args(); len(cargs) > 0 {
+				var ast *parser.ASTNode
+				var initFile []byte
+
+				initFileName := flag.Arg(0)
+				initFile, err = ioutil.ReadFile(initFileName)
+
+				if ast, err = parser.ParseWithRuntime(initFileName, string(initFile), i.RuntimeProvider); err == nil {
+					if err = ast.Runtime.Validate(); err == nil {
+						_, err = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}))
 					}
+				}
+			}
 
-					// Add history functionality without file persistence
+			if err == nil {
 
-					clt, err = termutil.AddHistoryMixin(clt, "",
-						func(s string) bool {
-							return isExitLine(s)
-						})
+				if interactive {
+
+					// Drop into interactive shell
 
 					if err == nil {
+						isExitLine := func(s string) bool {
+							return s == "exit" || s == "q" || s == "quit" || s == "bye" || s == "\x04"
+						}
 
-						if err = clt.StartTerm(); err == nil {
-							var line string
+						// Add history functionality without file persistence
 
-							defer clt.StopTerm()
+						clt, err = termutil.AddHistoryMixin(clt, "",
+							func(s string) bool {
+								return isExitLine(s)
+							})
 
-							fmt.Println("Type 'q' or 'quit' to exit the shell and '?' to get help")
+						if err == nil {
 
-							line, err = clt.NextLine()
-							for err == nil && !isExitLine(line) {
-								trimmedLine := strings.TrimSpace(line)
+							if err = clt.StartTerm(); err == nil {
+								var line string
 
-								// Process the entered line
+								defer clt.StopTerm()
 
-								if line == "?" {
-
-									// Show help
-
-									clt.WriteString(fmt.Sprintf("ECAL %v\n", config.ProductVersion))
-									clt.WriteString(fmt.Sprintf("\n"))
-									clt.WriteString(fmt.Sprintf("Console supports all normal ECAL statements and the following special commands:\n"))
-									clt.WriteString(fmt.Sprintf("\n"))
-									clt.WriteString(fmt.Sprintf("    @sym [glob] - List all available inbuild functions and available stdlib packages of ECAL.\n"))
-									clt.WriteString(fmt.Sprintf("    @std <package> [glob] - List all available constants and functions of a stdlib package.\n"))
-									clt.WriteString(fmt.Sprintf("\n"))
-									clt.WriteString(fmt.Sprintf("Add an argument after a list command to do a full text search. The search string should be in glob format.\n"))
-
-								} else if strings.HasPrefix(trimmedLine, "@sym") {
-									displaySymbols(clt, strings.Split(trimmedLine, " ")[1:])
-
-								} else if strings.HasPrefix(trimmedLine, "@std") {
-									displayPackage(clt, strings.Split(trimmedLine, " ")[1:])
-
-								} else {
-									var ierr error
-									var ast *parser.ASTNode
-									var res interface{}
-
-									if ast, ierr = parser.ParseWithRuntime("console input", line, erp); ierr == nil {
-
-										if ierr = ast.Runtime.Validate(); ierr == nil {
-
-											if res, ierr = ast.Runtime.Eval(vs, make(map[string]interface{})); ierr == nil && res != nil {
-												clt.WriteString(fmt.Sprintln(res))
-											}
-										}
-									}
-
-									if ierr != nil {
-										clt.WriteString(fmt.Sprintln(ierr.Error()))
-									}
-								}
+								fmt.Println("Type 'q' or 'quit' to exit the shell and '?' to get help")
 
 								line, err = clt.NextLine()
+								for err == nil && !isExitLine(line) {
+									trimmedLine := strings.TrimSpace(line)
+
+									i.HandleInput(clt, trimmedLine)
+
+									line, err = clt.NextLine()
+								}
 							}
 						}
 					}
@@ -225,16 +237,70 @@ func Interpret(interactive bool) error {
 }
 
 /*
+HandleInput handles input to this interpreter. It parses a given input line
+and outputs on the given output terminal.
+*/
+func (i *CLIInterpreter) HandleInput(ot interpreter.OutputTerminal, line string) {
+
+	// Process the entered line
+
+	if line == "?" {
+
+		// Show help
+
+		ot.WriteString(fmt.Sprintf("ECAL %v\n", config.ProductVersion))
+		ot.WriteString(fmt.Sprint("\n"))
+		ot.WriteString(fmt.Sprint("Console supports all normal ECAL statements and the following special commands:\n"))
+		ot.WriteString(fmt.Sprint("\n"))
+		ot.WriteString(fmt.Sprint("    @sym [glob] - List all available inbuild functions and available stdlib packages of ECAL.\n"))
+		ot.WriteString(fmt.Sprint("    @std <package> [glob] - List all available constants and functions of a stdlib package.\n"))
+		if i.CustomHelpString != "" {
+			ot.WriteString(i.CustomHelpString)
+		}
+		ot.WriteString(fmt.Sprint("\n"))
+		ot.WriteString(fmt.Sprint("Add an argument after a list command to do a full text search. The search string should be in glob format.\n"))
+
+	} else if strings.HasPrefix(line, "@sym") {
+		i.displaySymbols(ot, strings.Split(line, " ")[1:])
+
+	} else if strings.HasPrefix(line, "@std") {
+		i.displayPackage(ot, strings.Split(line, " ")[1:])
+
+	} else if i.CustomHandler != nil && i.CustomHandler.CanHandle(line) {
+		i.CustomHandler.Handle(ot, strings.Split(line, " ")[1:])
+
+	} else {
+		var ierr error
+		var ast *parser.ASTNode
+		var res interface{}
+
+		if ast, ierr = parser.ParseWithRuntime("console input", line, i.RuntimeProvider); ierr == nil {
+
+			if ierr = ast.Runtime.Validate(); ierr == nil {
+
+				if res, ierr = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{})); ierr == nil && res != nil {
+					ot.WriteString(fmt.Sprintln(res))
+				}
+			}
+		}
+
+		if ierr != nil {
+			ot.WriteString(fmt.Sprintln(ierr.Error()))
+		}
+	}
+}
+
+/*
 displaySymbols lists all available inbuild functions and available stdlib packages of ECAL.
 */
-func displaySymbols(clt termutil.ConsoleLineTerminal, args []string) {
+func (i *CLIInterpreter) displaySymbols(ot interpreter.OutputTerminal, args []string) {
 
 	tabData := []string{"Inbuild function", "Description"}
 
 	for name, f := range interpreter.InbuildFuncMap {
 		ds, _ := f.DocString()
 
-		if len(args) > 0 && !matchesFulltextSearch(clt, fmt.Sprintf("%v %v", name, ds), args[0]) {
+		if len(args) > 0 && !matchesFulltextSearch(ot, fmt.Sprintf("%v %v", name, ds), args[0]) {
 			continue
 		}
 
@@ -242,7 +308,7 @@ func displaySymbols(clt termutil.ConsoleLineTerminal, args []string) {
 	}
 
 	if len(tabData) > 2 {
-		clt.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
+		ot.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
 			stringutil.SingleDoubleLineTable))
 	}
 
@@ -253,7 +319,7 @@ func displaySymbols(clt termutil.ConsoleLineTerminal, args []string) {
 	for _, p := range packageNames {
 		ps, _ := stdlib.GetPkgDocString(p)
 
-		if len(args) > 0 && !matchesFulltextSearch(clt, fmt.Sprintf("%v %v", p, ps), args[0]) {
+		if len(args) > 0 && !matchesFulltextSearch(ot, fmt.Sprintf("%v %v", p, ps), args[0]) {
 			continue
 		}
 
@@ -261,7 +327,7 @@ func displaySymbols(clt termutil.ConsoleLineTerminal, args []string) {
 	}
 
 	if len(tabData) > 2 {
-		clt.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
+		ot.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
 			stringutil.SingleDoubleLineTable))
 	}
 }
@@ -269,7 +335,7 @@ func displaySymbols(clt termutil.ConsoleLineTerminal, args []string) {
 /*
 displayPackage list all available constants and functions of a stdlib package.
 */
-func displayPackage(clt termutil.ConsoleLineTerminal, args []string) {
+func (i *CLIInterpreter) displayPackage(ot interpreter.OutputTerminal, args []string) {
 
 	_, constSymbols, funcSymbols := stdlib.GetStdlibSymbols()
 
@@ -287,7 +353,7 @@ func displayPackage(clt termutil.ConsoleLineTerminal, args []string) {
 	}
 
 	if len(tabData) > 2 {
-		clt.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
+		ot.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
 			stringutil.SingleDoubleLineTable))
 	}
 
@@ -304,7 +370,7 @@ func displayPackage(clt termutil.ConsoleLineTerminal, args []string) {
 		fDoc = strings.Replace(fDoc, "\n", " ", -1)
 		fDoc = strings.Replace(fDoc, "\t", " ", -1)
 
-		if len(args) > 1 && !matchesFulltextSearch(clt, fmt.Sprintf("%v %v", f, fDoc), args[1]) {
+		if len(args) > 1 && !matchesFulltextSearch(ot, fmt.Sprintf("%v %v", f, fDoc), args[1]) {
 			continue
 		}
 
@@ -312,7 +378,7 @@ func displayPackage(clt termutil.ConsoleLineTerminal, args []string) {
 	}
 
 	if len(tabData) > 2 {
-		clt.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
+		ot.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
 			stringutil.SingleDoubleLineTable))
 	}
 }

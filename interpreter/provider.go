@@ -140,6 +140,7 @@ type ECALRuntimeProvider struct {
 	Logger        util.Logger            // Logger object for log messages
 	Processor     engine.Processor       // Processor of the ECA engine
 	Cron          *timeutil.Cron         // Cron object for scheduled execution
+	Debugger      Debugger               // Optional: Debugger object
 }
 
 /*
@@ -171,7 +172,7 @@ func NewECALRuntimeProvider(name string, importLocator util.ECALImportLocator, l
 	cron := timeutil.NewCron()
 	cron.Start()
 
-	return &ECALRuntimeProvider{name, importLocator, logger, proc, cron}
+	return &ECALRuntimeProvider{name, importLocator, logger, proc, cron, nil}
 }
 
 /*

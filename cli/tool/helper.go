@@ -16,14 +16,30 @@ import (
 	"strings"
 
 	"devt.de/krotik/common/stringutil"
-	"devt.de/krotik/common/termutil"
+	"devt.de/krotik/ecal/interpreter"
 )
+
+/*
+CLIInputHandler is a handler object for CLI input.
+*/
+type CLIInputHandler interface {
+
+	/*
+	   CanHandle checks if a given string can be handled by this handler.
+	*/
+	CanHandle(s string) bool
+
+	/*
+	   Handle handles a given input string.
+	*/
+	Handle(ot interpreter.OutputTerminal, args []string)
+}
 
 /*
 matchesFulltextSearch checks if a given text matches a given glob expression. Returns
 true if an error occurs.
 */
-func matchesFulltextSearch(clt termutil.ConsoleLineTerminal, text string, glob string) bool {
+func matchesFulltextSearch(ot interpreter.OutputTerminal, text string, glob string) bool {
 	var res bool
 
 	re, err := stringutil.GlobToRegex(glob)
@@ -33,7 +49,7 @@ func matchesFulltextSearch(clt termutil.ConsoleLineTerminal, text string, glob s
 	}
 
 	if err != nil {
-		clt.WriteString(fmt.Sprintln("Invalid search expression:", err.Error()))
+		ot.WriteString(fmt.Sprintln("Invalid search expression:", err.Error()))
 		res = true
 	}
 

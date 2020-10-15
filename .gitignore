@@ -8,3 +8,7 @@ ecal
 /dist
 /build
 /stdlib/stdlib_gen.go
+/ecal-support/node_modules
+/ecal-support/out
+/ecal-support/*.vsix
+/ecal-support/package-lock.json

@@ -23,6 +23,7 @@ import (
 TODO:
 - create executable binary (pack into single binary)
 - debug server support (vscode)
+- pretty printer
 */
 
 func main() {
@@ -45,7 +46,7 @@ func main() {
 		fmt.Println()
 		fmt.Println("    console   Interactive console (default)")
 		fmt.Println("    run       Execute ECAL code")
-		fmt.Println("    debug     Run a debug server")
+		fmt.Println("    debug     Run in debug mode")
 		fmt.Println("    pack      Create a single executable from ECAL code")
 		fmt.Println()
 		fmt.Println(fmt.Sprintf("Use %s <command> -help for more information about a given command.", os.Args[0]))
@@ -54,26 +55,34 @@ func main() {
 
 	// Parse the command bit
 
-	err := flag.CommandLine.Parse(os.Args[1:])
+	if err := flag.CommandLine.Parse(os.Args[1:]); err == nil {
+		interpreter := tool.NewCLIInterpreter()
 
-	if len(flag.Args()) > 0 {
+		if len(flag.Args()) > 0 {
 
-		arg := flag.Args()[0]
+			arg := flag.Args()[0]
 
-		if arg == "console" {
-			err = tool.Interpret(true)
-		} else if arg == "run" {
-			err = tool.Interpret(false)
-		} else {
-			flag.Usage()
+			if arg == "console" {
+				err = interpreter.Interpret(true)
+			} else if arg == "run" {
+				err = interpreter.Interpret(false)
+			} else if arg == "debug" {
+				debugInterpreter := tool.NewCLIDebugInterpreter(interpreter)
+				err = debugInterpreter.Interpret()
+			} else {
+				flag.Usage()
+			}
+
+		} else if err == nil {
+
+			err = interpreter.Interpret(true)
 		}
 
-	} else if err == nil {
+		if err != nil {
+			fmt.Println(fmt.Sprintf("Error: %v", err))
+		}
 
-		err = tool.Interpret(true)
-	}
-
-	if err != nil {
-		fmt.Println(fmt.Sprintf("Error: %v", err))
+	} else {
+		flag.Usage()
 	}
 }

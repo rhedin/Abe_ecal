@@ -37,6 +37,7 @@ var InbuildFuncMap = map[string]util.ECALFunction{
 	"concat":          &concatFunc{&inbuildBaseFunc{}},
 	"dumpenv":         &dumpenvFunc{&inbuildBaseFunc{}},
 	"doc":             &docFunc{&inbuildBaseFunc{}},
+	"sleep":           &sleepFunc{&inbuildBaseFunc{}},
 	"raise":           &raise{&inbuildBaseFunc{}},
 	"addEvent":        &addevent{&inbuildBaseFunc{}},
 	"addEventAndWait": &addeventandwait{&addevent{&inbuildBaseFunc{}}},
@@ -539,6 +540,43 @@ DocString returns a descriptive string.
 */
 func (rf *docFunc) DocString() (string, error) {
 	return "Doc returns the docstring of a function.", nil
+}
+
+// sleep
+// =====
+
+/*
+sleepFunc pauses the current thread for a number of micro seconds.
+*/
+type sleepFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *sleepFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+	var res interface{}
+	err := fmt.Errorf("Need number of micro seconds as parameter")
+
+	if len(args) > 0 {
+		var micros float64
+
+		micros, err = rf.AssertNumParam(1, args[0])
+
+		if err == nil {
+			time.Sleep(time.Duration(micros) * time.Microsecond)
+		}
+	}
+
+	return res, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *sleepFunc) DocString() (string, error) {
+	return "Sleep pauses the current thread for a number of micro seconds.", nil
 }
 
 // raise

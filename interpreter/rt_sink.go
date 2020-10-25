@@ -72,13 +72,13 @@ func (rt *sinkRuntime) Validate() error {
 /*
 Eval evaluate this runtime component.
 */
-func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var kindMatch, scopeMatch, suppresses []string
 	var stateMatch map[string]interface{}
 	var priority int
 	var statements *parser.ASTNode
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		// Create default scope
@@ -94,7 +94,7 @@ func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 		makeStringList := func(child *parser.ASTNode) ([]string, error) {
 			var ret []string
 
-			val, err := child.Runtime.Eval(vs, is)
+			val, err := child.Runtime.Eval(vs, is, tid)
 
 			if err == nil {
 				for _, v := range val.([]interface{}) {
@@ -123,7 +123,7 @@ func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 				var val interface{}
 				stateMatch = make(map[string]interface{})
 
-				if val, err = child.Runtime.Eval(vs, is); err == nil {
+				if val, err = child.Runtime.Eval(vs, is, tid); err == nil {
 					for k, v := range val.(map[interface{}]interface{}) {
 						stateMatch[fmt.Sprint(k)] = v
 					}
@@ -133,7 +133,7 @@ func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 			case parser.NodePRIORITY:
 				var val interface{}
 
-				if val, err = child.Runtime.Eval(vs, is); err == nil {
+				if val, err = child.Runtime.Eval(vs, is, tid); err == nil {
 					priority = int(math.Floor(val.(float64)))
 				}
 				break
@@ -171,7 +171,7 @@ func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 				StateMatch:      stateMatch, // No state match
 				Priority:        priority,   // Priority of the rule
 				SuppressionList: suppresses, // List of suppressed rules by this rule
-				Action: func(p engine.Processor, m engine.Monitor, e *engine.Event) error { // Action of the rule
+				Action: func(p engine.Processor, m engine.Monitor, e *engine.Event, tid uint64) error { // Action of the rule
 
 					// Create a new root variable scope
 
@@ -193,7 +193,7 @@ func (rt *sinkRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 					if err == nil {
 						scope.SetParentOfScope(sinkVS, vs)
 
-						if _, err = statements.Runtime.Eval(sinkVS, sinkIs); err != nil {
+						if _, err = statements.Runtime.Eval(sinkVS, sinkIs, tid); err != nil {
 
 							if sre, ok := err.(*util.RuntimeErrorWithDetail); ok {
 								sre.Environment = sinkVS
@@ -238,14 +238,14 @@ type sinkDetailRuntime struct {
 /*
 Eval evaluate this runtime component.
 */
-func (rt *sinkDetailRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *sinkDetailRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var ret interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
-		if ret, err = rt.node.Children[0].Runtime.Eval(vs, is); err == nil {
+		if ret, err = rt.node.Children[0].Runtime.Eval(vs, is, tid); err == nil {
 
 			// Check value is of expected type
 

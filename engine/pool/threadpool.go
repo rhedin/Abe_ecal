@@ -33,9 +33,10 @@ Task is a task which should be run in a thread.
 type Task interface {
 
 	/*
-		Run the task.
+		Run the task. The function gets the unique thread ID of the worker
+		which executes the task.
 	*/
-	Run() error
+	Run(tid uint64) error
 
 	/*
 		HandleError handles an error which occurred during the run method.
@@ -124,7 +125,9 @@ type ThreadPool struct {
 
 	// Worker regulation
 
-	workerIDCount uint64                       // Id counter for worker tasks
+	workerIDCount uint64      // Id counter for worker tasks
+	workerIDLock  *sync.Mutex // Lock for ID generation
+
 	workerMap     map[uint64]*ThreadPoolWorker // Map of all workers
 	workerIdleMap map[uint64]*ThreadPoolWorker // Map of all idle workers
 	workerMapLock *sync.Mutex                  // Lock for worker map
@@ -156,7 +159,7 @@ NewThreadPoolWithQueue creates a new thread pool with a specific task queue.
 */
 func NewThreadPoolWithQueue(q TaskQueue) *ThreadPool {
 	return &ThreadPool{q, &sync.Mutex{},
-		0, make(map[uint64]*ThreadPoolWorker),
+		0, &sync.Mutex{}, make(map[uint64]*ThreadPoolWorker),
 		make(map[uint64]*ThreadPoolWorker), &sync.Mutex{},
 		0, sync.NewCond(&sync.Mutex{}), &sync.Mutex{},
 		math.MaxInt32, func() {}, false, 0, func() {}, false}
@@ -255,6 +258,21 @@ func (tp *ThreadPool) getTask() Task {
 }
 
 /*
+NewThreadID creates a new thread ID unique to this pool.
+*/
+func (tp *ThreadPool) NewThreadID() uint64 {
+
+	tp.workerIDLock.Lock()
+
+	res := tp.workerIDCount
+	tp.workerIDCount++
+
+	tp.workerIDLock.Unlock()
+
+	return res
+}
+
+/*
 SetWorkerCount sets the worker count of this pool. If the wait flag is true then
 this call will return after the pool has reached the requested worker count.
 */
@@ -279,10 +297,10 @@ func (tp *ThreadPool) SetWorkerCount(count int, wait bool) {
 		tp.workerKill = 0
 
 		for len(tp.workerMap) != count {
-			worker := &ThreadPoolWorker{tp.workerIDCount, tp}
+			tid := tp.NewThreadID()
+			worker := &ThreadPoolWorker{tid, tp}
 			go worker.run()
-			tp.workerMap[tp.workerIDCount] = worker
-			tp.workerIDCount++
+			tp.workerMap[tid] = worker
 		}
 
 		tp.workerMapLock.Unlock()
@@ -480,7 +498,7 @@ func (w *ThreadPoolWorker) run() {
 
 		// Run the task
 
-		if err := task.Run(); err != nil {
+		if err := task.Run(w.id); err != nil {
 			task.HandleError(err)
 		}
 
@@ -508,7 +526,7 @@ type idleTask struct {
 /*
 Run the idle task.
 */
-func (t *idleTask) Run() error {
+func (t *idleTask) Run(tid uint64) error {
 	t.tp.newTaskCond.L.Lock()
 	t.tp.newTaskCond.Wait()
 	t.tp.newTaskCond.L.Unlock()

@@ -18,17 +18,26 @@ import (
 	"devt.de/krotik/ecal/util"
 )
 
-func TestGeneralErrorCases(t *testing.T) {
+func TestGeneralCases(t *testing.T) {
+
+	rt := NewECALRuntimeProvider("a", nil, nil)
+	id1 := rt.NewThreadID()
+	id2 := rt.NewThreadID()
+
+	if id1 == id2 {
+		t.Error("Thread ids should not be the same:", id1)
+		return
+	}
 
 	n, _ := parser.Parse("a", "a")
-	inv := &invalidRuntime{newBaseRuntime(NewECALRuntimeProvider("a", nil, nil), n)}
+	inv := &invalidRuntime{newBaseRuntime(rt, n)}
 
 	if err := inv.Validate().Error(); err != "ECAL error in a: Invalid construct (Unknown node: identifier) (Line:1 Pos:1)" {
 		t.Error("Unexpected result:", err)
 		return
 	}
 
-	if _, err := inv.Eval(nil, nil); err.Error() != "ECAL error in a: Invalid construct (Unknown node: identifier) (Line:1 Pos:1)" {
+	if _, err := inv.Eval(nil, nil, 0); err.Error() != "ECAL error in a: Invalid construct (Unknown node: identifier) (Line:1 Pos:1)" {
 		t.Error("Unexpected result:", err)
 		return
 	}
@@ -51,7 +60,7 @@ func TestGeneralErrorCases(t *testing.T) {
 	void := &voidRuntime{newBaseRuntime(NewECALRuntimeProvider("a", nil, nil), n)}
 	n.Runtime = void
 
-	if res, err := void.Eval(nil, nil); err != nil || res != nil {
+	if res, err := void.Eval(nil, nil, 0); err != nil || res != nil {
 		t.Error("Unexpected result:", res, err)
 		return
 	}
@@ -95,7 +104,7 @@ statements
 	imp.erp = NewECALRuntimeProvider("ECALTestRuntime", nil, nil)
 	imp.erp.ImportLocator = nil
 
-	if res, err := imp.Eval(nil, nil); err == nil || err.Error() != "ECAL error in ECALTestRuntime: Runtime error (No import locator was specified) (Line:1 Pos:1)" {
+	if res, err := imp.Eval(nil, nil, 0); err == nil || err.Error() != "ECAL error in ECALTestRuntime: Runtime error (No import locator was specified) (Line:1 Pos:1)" {
 		t.Error("Unexpected result:", res, err)
 		return
 	}

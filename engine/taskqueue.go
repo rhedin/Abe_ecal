@@ -73,10 +73,10 @@ type Task struct {
 /*
 Run the task.
 */
-func (t *Task) Run() error {
+func (t *Task) Run(tid uint64) error {
 	EventTracer.record(t.e, "Task.Run", "Running task")
 
-	errors := t.p.ProcessEvent(t.e, t.m)
+	errors := t.p.ProcessEvent(tid, t.e, t.m)
 
 	if len(errors) > 0 {
 

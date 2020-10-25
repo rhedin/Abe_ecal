@@ -40,13 +40,13 @@ func statementsRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parse
 /*
 Eval evaluate this runtime component.
 */
-func (rt *statementsRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *statementsRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		for _, child := range rt.node.Children {
-			if res, err = child.Runtime.Eval(vs, is); err != nil {
+			if res, err = child.Runtime.Eval(vs, is, tid); err != nil {
 				return nil, err
 			}
 		}
@@ -75,8 +75,8 @@ func ifRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Runtim
 /*
 Eval evaluate this runtime component.
 */
-func (rt *ifRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	_, err := rt.baseRuntime.Eval(vs, is)
+func (rt *ifRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
@@ -90,13 +90,13 @@ func (rt *ifRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface
 			// Evaluate guard
 
 			if err == nil {
-				guardres, err = rt.node.Children[offset].Runtime.Eval(vs, is)
+				guardres, err = rt.node.Children[offset].Runtime.Eval(vs, is, tid)
 
 				if err == nil && guardres.(bool) {
 
 					// The guard holds true so we execture its statements
 
-					return rt.node.Children[offset+1].Runtime.Eval(vs, is)
+					return rt.node.Children[offset+1].Runtime.Eval(vs, is, tid)
 				}
 			}
 		}
@@ -125,17 +125,17 @@ func guardRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Run
 /*
 Eval evaluate this runtime component.
 */
-func (rt *guardRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *guardRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		var ret interface{}
 
 		// Evaluate the condition
 
-		ret, err = rt.node.Children[0].Runtime.Eval(vs, is)
+		ret, err = rt.node.Children[0].Runtime.Eval(vs, is, tid)
 
 		// Guard returns always a boolean
 
@@ -206,9 +206,9 @@ func (rt *loopRuntime) Validate() error {
 /*
 Eval evaluate this runtime component.
 */
-func (rt *loopRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *loopRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		var guardres interface{}
@@ -225,13 +225,13 @@ func (rt *loopRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 
 			// Evaluate guard
 
-			guardres, err = rt.node.Children[0].Runtime.Eval(vs, is)
+			guardres, err = rt.node.Children[0].Runtime.Eval(vs, is, tid)
 
 			for err == nil && guardres.(bool) {
 
 				// Execute block
 
-				_, err = rt.node.Children[1].Runtime.Eval(vs, is)
+				_, err = rt.node.Children[1].Runtime.Eval(vs, is, tid)
 
 				// Check for continue
 
@@ -247,7 +247,7 @@ func (rt *loopRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 
 					// Evaluate guard
 
-					guardres, err = rt.node.Children[0].Runtime.Eval(vs, is)
+					guardres, err = rt.node.Children[0].Runtime.Eval(vs, is, tid)
 				}
 			}
 
@@ -257,7 +257,7 @@ func (rt *loopRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 
 			it := rt.node.Children[0].Children[1]
 
-			val, err = it.Runtime.Eval(vs, is)
+			val, err = it.Runtime.Eval(vs, is, tid)
 
 			// Create an iterator object
 
@@ -266,7 +266,7 @@ func (rt *loopRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 				// We got an iterator - all subsequent calls will return values
 
 				iterator = func() (interface{}, error) {
-					return it.Runtime.Eval(vs, is)
+					return it.Runtime.Eval(vs, is, tid)
 				}
 				err = nil
 
@@ -374,7 +374,7 @@ func (rt *loopRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 
 					// Execute block
 
-					_, err = rt.node.Children[1].Runtime.Eval(vs, is)
+					_, err = rt.node.Children[1].Runtime.Eval(vs, is, tid)
 				}
 
 				// Check for continue
@@ -421,8 +421,8 @@ func breakRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Run
 /*
 Eval evaluate this runtime component.
 */
-func (rt *breakRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	_, err := rt.baseRuntime.Eval(vs, is)
+func (rt *breakRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		err = rt.erp.NewRuntimeError(util.ErrEndOfIteration, "", rt.node)
@@ -451,8 +451,8 @@ func continueRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.
 /*
 Eval evaluate this runtime component.
 */
-func (rt *continueRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	_, err := rt.baseRuntime.Eval(vs, is)
+func (rt *continueRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		err = rt.erp.NewRuntimeError(util.ErrContinueIteration, "", rt.node)
@@ -481,7 +481,7 @@ func tryRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Runti
 /*
 Eval evaluate this runtime component.
 */
-func (rt *tryRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *tryRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
 	evalExcept := func(errObj map[interface{}]interface{}, except *parser.ASTNode) bool {
@@ -493,7 +493,7 @@ func (rt *tryRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfac
 
 			evs := vs.NewChild(scope.NameFromASTNode(except))
 
-			except.Children[0].Runtime.Eval(evs, is)
+			except.Children[0].Runtime.Eval(evs, is, tid)
 
 			ret = true
 
@@ -504,7 +504,7 @@ func (rt *tryRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfac
 			evs := vs.NewChild(scope.NameFromASTNode(except))
 			evs.SetValue(except.Children[0].Token.Val, errObj)
 
-			except.Children[1].Runtime.Eval(evs, is)
+			except.Children[1].Runtime.Eval(evs, is, tid)
 
 			ret = true
 
@@ -515,7 +515,7 @@ func (rt *tryRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfac
 				child := except.Children[i]
 
 				if !ret && child.Name == parser.NodeSTRING {
-					exceptError, evalErr := child.Runtime.Eval(vs, is)
+					exceptError, evalErr := child.Runtime.Eval(vs, is, tid)
 
 					// If we fail evaluating the string we panic as otherwise
 					// we would need to generate a new error while trying to handle another error
@@ -533,7 +533,7 @@ func (rt *tryRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfac
 						evs.SetValue(errorVar, errObj)
 					}
 
-					child.Runtime.Eval(evs, is)
+					child.Runtime.Eval(evs, is, tid)
 				}
 			}
 		}
@@ -545,15 +545,15 @@ func (rt *tryRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfac
 
 	if finally := rt.node.Children[len(rt.node.Children)-1]; finally.Name == parser.NodeFINALLY {
 		fvs := vs.NewChild(scope.NameFromASTNode(finally))
-		defer finally.Children[0].Runtime.Eval(fvs, is)
+		defer finally.Children[0].Runtime.Eval(fvs, is, tid)
 	}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		tvs := vs.NewChild(scope.NameFromASTNode(rt.node))
 
-		res, err = rt.node.Children[0].Runtime.Eval(tvs, is)
+		res, err = rt.node.Children[0].Runtime.Eval(tvs, is, tid)
 
 		// Evaluate except clauses
 

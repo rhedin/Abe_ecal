@@ -41,7 +41,7 @@ type ECALFunction interface {
 		to store instance specific state (e.g. for iterator functions) and a list
 		of argument values which were passed to the function by the calling code.
 	*/
-	Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error)
+	Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error)
 
 	/*
 	   DocString returns a descriptive text about this function.

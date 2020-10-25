@@ -31,6 +31,11 @@ type Processor interface {
 	ID() uint64
 
 	/*
+	   ThreadPool returns the thread pool which this processor is using.
+	*/
+	ThreadPool() *pool.ThreadPool
+
+	/*
 	   Workers returns the number of threads of this processor.
 	*/
 	Workers() int
@@ -110,10 +115,11 @@ type Processor interface {
 	IsTriggering(event *Event) bool
 
 	/*
-	   ProcessEvent processes an event by determining which rules trigger and match
-	   the given event.
+		ProcessEvent processes an event by determining which rules trigger and match
+		the given event. This function must receive a unique thread ID from the
+		executing thread.
 	*/
-	ProcessEvent(event *Event, parent Monitor) map[string]error
+	ProcessEvent(tid uint64, event *Event, parent Monitor) map[string]error
 
 	/*
 	   String returns a string representation the processor.
@@ -155,6 +161,13 @@ ID returns the processor ID.
 */
 func (p *eventProcessor) ID() uint64 {
 	return p.id
+}
+
+/*
+ThreadPool returns the thread pool which this processor is using.
+*/
+func (p *eventProcessor) ThreadPool() *pool.ThreadPool {
+	return p.pool
 }
 
 /*
@@ -414,7 +427,7 @@ func (p *eventProcessor) IsTriggering(event *Event) bool {
 ProcessEvent processes an event by determining which rules trigger and match
 the given event.
 */
-func (p *eventProcessor) ProcessEvent(event *Event, parent Monitor) map[string]error {
+func (p *eventProcessor) ProcessEvent(tid uint64, event *Event, parent Monitor) map[string]error {
 	var rulesTriggering []*Rule
 	var rulesExecuting []*Rule
 
@@ -459,7 +472,7 @@ func (p *eventProcessor) ProcessEvent(event *Event, parent Monitor) map[string]e
 	EventTracer.record(event, "eventProcessor.ProcessEvent", "Running rules: ", rulesExecuting)
 
 	for _, rule := range rulesExecuting {
-		if err := rule.Action(p, parent, event); err != nil {
+		if err := rule.Action(p, parent, event, tid); err != nil {
 			errors[rule.Name] = err
 		}
 		if p.failOnFirstError && len(errors) > 0 {

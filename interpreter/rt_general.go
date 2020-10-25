@@ -52,7 +52,7 @@ func (rt *baseRuntime) Validate() error {
 /*
 Eval evaluate this runtime component.
 */
-func (rt *baseRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *baseRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	return nil, nil
 }
 
@@ -92,8 +92,8 @@ func (rt *voidRuntime) Validate() error {
 /*
 Eval evaluate this runtime component.
 */
-func (rt *voidRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	return rt.baseRuntime.Eval(vs, is)
+func (rt *voidRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
+	return rt.baseRuntime.Eval(vs, is, tid)
 }
 
 // Import Runtime
@@ -123,8 +123,8 @@ func (rt *importRuntime) Validate() error {
 /*
 Eval evaluate this runtime component.
 */
-func (rt *importRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	_, err := rt.baseRuntime.Eval(vs, is)
+func (rt *importRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if rt.erp.ImportLocator == nil {
 		err = rt.erp.NewRuntimeError(util.ErrRuntimeError, "No import locator was specified", rt.node)
@@ -133,7 +133,7 @@ func (rt *importRuntime) Eval(vs parser.Scope, is map[string]interface{}) (inter
 	if err == nil {
 
 		var importPath interface{}
-		if importPath, err = rt.node.Children[0].Runtime.Eval(vs, is); err == nil {
+		if importPath, err = rt.node.Children[0].Runtime.Eval(vs, is, tid); err == nil {
 
 			var codeText string
 			if codeText, err = rt.erp.ImportLocator.Resolve(fmt.Sprint(importPath)); err == nil {
@@ -143,9 +143,9 @@ func (rt *importRuntime) Eval(vs parser.Scope, is map[string]interface{}) (inter
 					if err = ast.Runtime.Validate(); err == nil {
 
 						ivs := scope.NewScope(scope.GlobalScope)
-						if _, err = ast.Runtime.Eval(ivs, make(map[string]interface{})); err == nil {
+						if _, err = ast.Runtime.Eval(ivs, make(map[string]interface{}), tid); err == nil {
 							irt := rt.node.Children[1].Runtime.(*identifierRuntime)
-							irt.Set(vs, is, scope.ToObject(ivs))
+							irt.Set(vs, is, tid, scope.ToObject(ivs))
 						}
 					}
 				}
@@ -188,8 +188,8 @@ func (rt *invalidRuntime) Validate() error {
 /*
 Eval evaluate this runtime component.
 */
-func (rt *invalidRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	_, err := rt.baseRuntime.Eval(vs, is)
+func (rt *invalidRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 	if err == nil {
 		err = rt.erp.NewRuntimeError(util.ErrInvalidConstruct, fmt.Sprintf("Unknown node: %s", rt.node.Name), rt.node)
 	}
@@ -225,14 +225,14 @@ func (rt *operatorRuntime) errorDetailString(token *parser.LexToken, opVal inter
 numVal returns a transformed number value.
 */
 func (rt *operatorRuntime) numVal(op func(float64) interface{}, vs parser.Scope,
-	is map[string]interface{}) (interface{}, error) {
+	is map[string]interface{}, tid uint64) (interface{}, error) {
 
 	var ret interface{}
 
 	errorutil.AssertTrue(len(rt.node.Children) == 1,
 		fmt.Sprint("Operation requires 1 operand", rt.node))
 
-	res, err := rt.node.Children[0].Runtime.Eval(vs, is)
+	res, err := rt.node.Children[0].Runtime.Eval(vs, is, tid)
 	if err == nil {
 
 		// Check if the value is a number
@@ -257,14 +257,14 @@ func (rt *operatorRuntime) numVal(op func(float64) interface{}, vs parser.Scope,
 boolVal returns a transformed boolean value.
 */
 func (rt *operatorRuntime) boolVal(op func(bool) interface{},
-	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 
 	var ret interface{}
 
 	errorutil.AssertTrue(len(rt.node.Children) == 1,
 		fmt.Sprint("Operation requires 1 operand", rt.node))
 
-	res, err := rt.node.Children[0].Runtime.Eval(vs, is)
+	res, err := rt.node.Children[0].Runtime.Eval(vs, is, tid)
 	if err == nil {
 
 		resBool, ok := res.(bool)
@@ -284,7 +284,7 @@ func (rt *operatorRuntime) boolVal(op func(bool) interface{},
 numOp executes an operation on two number values.
 */
 func (rt *operatorRuntime) numOp(op func(float64, float64) interface{},
-	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var ok bool
 	var res1, res2 interface{}
 	var err error
@@ -292,8 +292,8 @@ func (rt *operatorRuntime) numOp(op func(float64, float64) interface{},
 	errorutil.AssertTrue(len(rt.node.Children) == 2,
 		fmt.Sprint("Operation requires 2 operands", rt.node))
 
-	if res1, err = rt.node.Children[0].Runtime.Eval(vs, is); err == nil {
-		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is); err == nil {
+	if res1, err = rt.node.Children[0].Runtime.Eval(vs, is, tid); err == nil {
+		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is, tid); err == nil {
 			var res1Num, res2Num float64
 
 			if res1Num, ok = res1.(float64); !ok {
@@ -320,18 +320,18 @@ func (rt *operatorRuntime) numOp(op func(float64, float64) interface{},
 genOp executes an operation on two general values.
 */
 func (rt *operatorRuntime) genOp(op func(interface{}, interface{}) interface{},
-	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 
 	var ret interface{}
 
 	errorutil.AssertTrue(len(rt.node.Children) == 2,
 		fmt.Sprint("Operation requires 2 operands", rt.node))
 
-	res1, err := rt.node.Children[0].Runtime.Eval(vs, is)
+	res1, err := rt.node.Children[0].Runtime.Eval(vs, is, tid)
 	if err == nil {
 		var res2 interface{}
 
-		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is); err == nil {
+		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is, tid); err == nil {
 			ret = op(res1, res2)
 		}
 	}
@@ -343,18 +343,18 @@ func (rt *operatorRuntime) genOp(op func(interface{}, interface{}) interface{},
 strOp executes an operation on two string values.
 */
 func (rt *operatorRuntime) strOp(op func(string, string) interface{},
-	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 
 	var ret interface{}
 
 	errorutil.AssertTrue(len(rt.node.Children) == 2,
 		fmt.Sprint("Operation requires 2 operands", rt.node))
 
-	res1, err := rt.node.Children[0].Runtime.Eval(vs, is)
+	res1, err := rt.node.Children[0].Runtime.Eval(vs, is, tid)
 	if err == nil {
 		var res2 interface{}
 
-		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is); err == nil {
+		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is, tid); err == nil {
 			ret = op(fmt.Sprint(res1), fmt.Sprint(res2))
 		}
 	}
@@ -366,18 +366,18 @@ func (rt *operatorRuntime) strOp(op func(string, string) interface{},
 boolOp executes an operation on two boolean values.
 */
 func (rt *operatorRuntime) boolOp(op func(bool, bool) interface{},
-	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 
 	var res interface{}
 
 	errorutil.AssertTrue(len(rt.node.Children) == 2,
 		fmt.Sprint("Operation requires 2 operands", rt.node))
 
-	res1, err := rt.node.Children[0].Runtime.Eval(vs, is)
+	res1, err := rt.node.Children[0].Runtime.Eval(vs, is, tid)
 	if err == nil {
 		var res2 interface{}
 
-		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is); err == nil {
+		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is, tid); err == nil {
 
 			res1bool, ok := res1.(bool)
 			if !ok {
@@ -402,18 +402,18 @@ func (rt *operatorRuntime) boolOp(op func(bool, bool) interface{},
 listOp executes an operation on a value and a list.
 */
 func (rt *operatorRuntime) listOp(op func(interface{}, []interface{}) interface{},
-	vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+	vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 
 	var res interface{}
 
 	errorutil.AssertTrue(len(rt.node.Children) == 2,
 		fmt.Sprint("Operation requires 2 operands", rt.node))
 
-	res1, err := rt.node.Children[0].Runtime.Eval(vs, is)
+	res1, err := rt.node.Children[0].Runtime.Eval(vs, is, tid)
 	if err == nil {
 		var res2 interface{}
 
-		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is); err == nil {
+		if res2, err = rt.node.Children[1].Runtime.Eval(vs, is, tid); err == nil {
 
 			res2list, ok := res2.([]interface{})
 			if !ok {

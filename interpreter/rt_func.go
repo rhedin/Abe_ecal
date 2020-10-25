@@ -44,14 +44,14 @@ func (rt *returnRuntime) Validate() error {
 /*
 Eval evaluate this runtime component.
 */
-func (rt *returnRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *returnRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		var res interface{}
 
-		if res, err = rt.node.Children[0].Runtime.Eval(vs, is); err == nil {
+		if res, err = rt.node.Children[0].Runtime.Eval(vs, is, tid); err == nil {
 			rerr := rt.erp.NewRuntimeError(util.ErrReturn, fmt.Sprintf("Return value: %v", res), rt.node)
 			err = &returnValue{
 				rerr.(*util.RuntimeError),
@@ -86,10 +86,10 @@ func funcRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Runt
 /*
 Eval evaluate this runtime component.
 */
-func (rt *funcRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *funcRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var fc interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		name := ""
@@ -123,7 +123,7 @@ type function struct {
 Run executes this function. The function is called with parameters and might also
 have a reference to a context state - this.
 */
-func (f *function) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (f *function) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var res interface{}
 	var err error
 
@@ -164,7 +164,7 @@ func (f *function) Run(instanceID string, vs parser.Scope, is map[string]interfa
 				if i < len(args) {
 					val = args[i]
 				} else {
-					val, err = p.Children[1].Runtime.Eval(vs, is)
+					val, err = p.Children[1].Runtime.Eval(vs, is, tid)
 				}
 			}
 
@@ -178,7 +178,7 @@ func (f *function) Run(instanceID string, vs parser.Scope, is map[string]interfa
 
 		scope.SetParentOfScope(fvs, f.declarationVS)
 
-		res, err = body.Runtime.Eval(fvs, make(map[string]interface{}))
+		res, err = body.Runtime.Eval(fvs, make(map[string]interface{}), tid)
 
 		// Check for return value (delivered as error object)
 

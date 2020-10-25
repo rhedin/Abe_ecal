@@ -33,12 +33,15 @@ type Runtime interface {
 
 	/*
 		Eval evaluate this runtime component. It gets passed the current variable
-		scope and the instance state.
+		scope an instance state and a thread ID.
 
 		The instance state is created per execution instance and can be used
-		for generator functions to store their current state.
+		for generator functions to store their current state. It gets replaced
+		by a new object in certain situations (e.g. a function call).
+
+		The thread ID can be used to identify a running process.
 	*/
-	Eval(Scope, map[string]interface{}) (interface{}, error)
+	Eval(Scope, map[string]interface{}, uint64) (interface{}, error)
 }
 
 /*

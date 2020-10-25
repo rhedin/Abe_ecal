@@ -146,6 +146,7 @@ func (s *debugTelnetServer) Run() {
 HandleConnection handles an incoming connection.
 */
 func (s *debugTelnetServer) HandleConnection(conn net.Conn) {
+	tid := s.interpreter.RuntimeProvider.NewThreadID()
 	inputReader := bufio.NewReader(conn)
 	outputTerminal := interpreter.OutputTerminal(&bufioWriterShim{bufio.NewWriter(conn)})
 
@@ -163,7 +164,7 @@ func (s *debugTelnetServer) HandleConnection(conn net.Conn) {
 				break
 			}
 
-			s.interpreter.HandleInput(outputTerminal, line)
+			s.interpreter.HandleInput(outputTerminal, line, tid)
 		}
 
 		if err != nil {

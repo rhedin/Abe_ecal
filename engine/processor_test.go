@@ -64,7 +64,7 @@ func TestProcessorSimpleCascade(t *testing.T) {
 		nil,                                    // No state match
 		2,                                      // Priority of the rule
 		[]string{"TestRule3", "TestRule3Copy"}, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			log.WriteString("TestRule1\n")
 
 			// Add another event
@@ -90,7 +90,7 @@ func TestProcessorSimpleCascade(t *testing.T) {
 		nil,                     // No state match
 		5,                       // Priority of the rule
 		nil,                     // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			log.WriteString("TestRule2\n")
 			return nil
 		},
@@ -104,7 +104,7 @@ func TestProcessorSimpleCascade(t *testing.T) {
 		nil,                     // No state match
 		0,                       // Priority of the rule
 		nil,                     // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			log.WriteString("TestRule3\n")
 			return nil
 		},
@@ -272,7 +272,7 @@ func TestProcessorSimplePriorities(t *testing.T) {
 			nil,                          // No state match
 			0,                            // Priority of the rule
 			nil,                          // List of suppressed rules by this rule
-			func(p Processor, m Monitor, e *Event) error { // Action of the rule
+			func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 				logLock.Lock()
 				log.WriteString("TestRule1\n")
 				logLock.Unlock()
@@ -289,7 +289,7 @@ func TestProcessorSimplePriorities(t *testing.T) {
 			nil,                          // No state match
 			0,                            // Priority of the rule
 			nil,                          // List of suppressed rules by this rule
-			func(p Processor, m Monitor, e *Event) error { // Action of the rule
+			func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 				logLock.Lock()
 				log.WriteString("TestRule2\n")
 				logLock.Unlock()
@@ -411,7 +411,7 @@ func TestProcessorScopeHandling(t *testing.T) {
 		nil,                     // No state match
 		0,                       // Priority of the rule
 		nil,                     // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			logLock.Lock()
 			log.WriteString("TestRule1\n")
 			logLock.Unlock()
@@ -428,7 +428,7 @@ func TestProcessorScopeHandling(t *testing.T) {
 		nil,                     // No state match
 		0,                       // Priority of the rule
 		nil,                     // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			logLock.Lock()
 			log.WriteString("TestRule2\n")
 			logLock.Unlock()
@@ -538,7 +538,7 @@ func TestProcessorStateMatching(t *testing.T) {
 		map[string]interface{}{"name": nil, "test": 1}, // Simple state match
 		0,   // Priority of the rule
 		nil, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			logLock.Lock()
 			log.WriteString("TestRule1\n")
 			logLock.Unlock()
@@ -555,7 +555,7 @@ func TestProcessorStateMatching(t *testing.T) {
 		map[string]interface{}{"name": nil, "test": "123"}, // Simple state match
 		0,   // Priority of the rule
 		nil, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			logLock.Lock()
 			log.WriteString("TestRule2\n")
 			logLock.Unlock()
@@ -623,6 +623,11 @@ func TestProcessorSimpleErrorHandling(t *testing.T) {
 
 	proc := NewProcessor(10)
 
+	if proc.ThreadPool() == nil {
+		t.Error("Should have a thread pool")
+		return
+	}
+
 	// Add rules to the processor
 
 	rule1 := &Rule{
@@ -633,7 +638,7 @@ func TestProcessorSimpleErrorHandling(t *testing.T) {
 		nil,
 		0,   // Priority of the rule
 		nil, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			p.AddEvent(&Event{
 				"event2",
 				[]string{"core", "main", "event2"},
@@ -651,7 +656,7 @@ func TestProcessorSimpleErrorHandling(t *testing.T) {
 		nil,
 		0,   // Priority of the rule
 		nil, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			p.AddEvent(&Event{
 				"event3",
 				[]string{"core", "main", "event3"},
@@ -669,7 +674,7 @@ func TestProcessorSimpleErrorHandling(t *testing.T) {
 		nil,
 		0,   // Priority of the rule
 		nil, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			return errors.New("testerror2")
 		},
 	}

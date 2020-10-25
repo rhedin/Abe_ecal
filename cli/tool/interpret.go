@@ -162,6 +162,8 @@ func (i *CLIInterpreter) Interpret(interactive bool) error {
 
 		if err = i.CreateRuntimeProvider("console"); err == nil {
 
+			tid := i.RuntimeProvider.NewThreadID()
+
 			if interactive {
 				if lll, ok := i.RuntimeProvider.Logger.(*util.LogLevelLogger); ok {
 					fmt.Print(fmt.Sprintf("Log level: %v - ", lll.Level()))
@@ -185,7 +187,7 @@ func (i *CLIInterpreter) Interpret(interactive bool) error {
 
 				if ast, err = parser.ParseWithRuntime(initFileName, string(initFile), i.RuntimeProvider); err == nil {
 					if err = ast.Runtime.Validate(); err == nil {
-						_, err = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}))
+						_, err = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}), tid)
 					}
 				}
 			}
@@ -221,7 +223,7 @@ func (i *CLIInterpreter) Interpret(interactive bool) error {
 								for err == nil && !isExitLine(line) {
 									trimmedLine := strings.TrimSpace(line)
 
-									i.HandleInput(clt, trimmedLine)
+									i.HandleInput(clt, trimmedLine, tid)
 
 									line, err = clt.NextLine()
 								}
@@ -238,9 +240,10 @@ func (i *CLIInterpreter) Interpret(interactive bool) error {
 
 /*
 HandleInput handles input to this interpreter. It parses a given input line
-and outputs on the given output terminal.
+and outputs on the given output terminal. Requires a thread ID of the executing
+thread - use the RuntimeProvider to generate a unique one.
 */
-func (i *CLIInterpreter) HandleInput(ot interpreter.OutputTerminal, line string) {
+func (i *CLIInterpreter) HandleInput(ot interpreter.OutputTerminal, line string, tid uint64) {
 
 	// Process the entered line
 
@@ -278,7 +281,7 @@ func (i *CLIInterpreter) HandleInput(ot interpreter.OutputTerminal, line string)
 
 			if ierr = ast.Runtime.Validate(); ierr == nil {
 
-				if res, ierr = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{})); ierr == nil && res != nil {
+				if res, ierr = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}), tid); ierr == nil && res != nil {
 					ot.WriteString(fmt.Sprintln(res))
 				}
 			}

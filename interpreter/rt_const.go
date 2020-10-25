@@ -29,8 +29,8 @@ func trueRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Runt
 /*
 Eval evaluate this runtime component.
 */
-func (rt *trueRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	_, err := rt.baseRuntime.Eval(vs, is)
+func (rt *trueRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 	return true, err
 }
 
@@ -51,8 +51,8 @@ func falseRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Run
 /*
 Eval evaluate this runtime component.
 */
-func (rt *falseRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	_, err := rt.baseRuntime.Eval(vs, is)
+func (rt *falseRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 	return false, err
 }
 
@@ -73,7 +73,7 @@ func nullRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Runt
 /*
 Eval evaluate this runtime component.
 */
-func (rt *nullRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	_, err := rt.baseRuntime.Eval(vs, is)
+func (rt *nullRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 	return nil, err
 }

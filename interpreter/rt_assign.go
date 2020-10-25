@@ -75,18 +75,18 @@ func (rt *assignmentRuntime) Validate() error {
 /*
 Eval evaluate this runtime component.
 */
-func (rt *assignmentRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
-	_, err := rt.baseRuntime.Eval(vs, is)
+func (rt *assignmentRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		var val interface{}
 
-		val, err = rt.node.Children[1].Runtime.Eval(vs, is)
+		val, err = rt.node.Children[1].Runtime.Eval(vs, is, tid)
 
 		if err == nil {
 			if len(rt.leftSide) == 1 {
 
-				err = rt.leftSide[0].Set(vs, is, val)
+				err = rt.leftSide[0].Set(vs, is, tid, val)
 
 			} else if valList, ok := val.([]interface{}); ok {
 
@@ -101,7 +101,7 @@ func (rt *assignmentRuntime) Eval(vs parser.Scope, is map[string]interface{}) (i
 
 					for i, v := range rt.leftSide {
 
-						if err = v.Set(vs, is, valList[i]); err != nil {
+						if err = v.Set(vs, is, tid, valList[i]); err != nil {
 							err = rt.erp.NewRuntimeError(util.ErrVarAccess,
 								err.Error(), rt.node)
 							break

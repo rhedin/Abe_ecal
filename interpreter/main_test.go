@@ -124,7 +124,7 @@ func UnitTestEvalAndASTAndImport(input string, vs parser.Scope, expectedAST stri
 		vs = scope.NewScope(scope.GlobalScope)
 	}
 
-	return ast.Runtime.Eval(vs, make(map[string]interface{}))
+	return ast.Runtime.Eval(vs, make(map[string]interface{}), 0)
 }
 
 /*
@@ -143,7 +143,7 @@ type TestLogger struct {
 	buf *datautil.RingBuffer
 }
 
-func (tl *TestLogger) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (tl *TestLogger) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	tl.buf.Add(fmt.Sprint(args...))
 	return nil, nil
 }

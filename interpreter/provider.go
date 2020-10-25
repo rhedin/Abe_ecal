@@ -193,3 +193,12 @@ NewRuntimeError creates a new RuntimeError object.
 func (erp *ECALRuntimeProvider) NewRuntimeError(t error, d string, node *parser.ASTNode) error {
 	return util.NewRuntimeError(erp.Name, t, d, node)
 }
+
+/*
+NewThreadID creates a new thread ID unique to this runtime provider instance.
+This ID can be safely used for the thread ID when calling Eval on a
+parser.Runtime instance.
+*/
+func (erp *ECALRuntimeProvider) NewThreadID() uint64 {
+	return erp.Processor.ThreadPool().NewThreadID()
+}

@@ -33,7 +33,7 @@ func TestRuleIndexSimple(t *testing.T) {
 		nil,
 		0,                      // Priority of the rule
 		[]string{"TestRule66"}, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			return nil
 		},
 	}
@@ -52,7 +52,7 @@ func TestRuleIndexSimple(t *testing.T) {
 		nil,
 		0,                      // Priority of the rule
 		[]string{"TestRule66"}, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			return nil
 		},
 	})
@@ -69,7 +69,7 @@ func TestRuleIndexSimple(t *testing.T) {
 		nil,
 		0,                      // Priority of the rule
 		[]string{"TestRule66"}, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			return nil
 		},
 	})
@@ -216,7 +216,7 @@ func TestRuleIndexStateMatch(t *testing.T) {
 		},
 		0,                      // Priority of the rule
 		[]string{"TestRule66"}, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			return nil
 		},
 	}
@@ -233,7 +233,7 @@ func TestRuleIndexStateMatch(t *testing.T) {
 		},
 		0,                      // Priority of the rule
 		[]string{"TestRule66"}, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			return nil
 		},
 	}
@@ -251,7 +251,7 @@ func TestRuleIndexStateMatch(t *testing.T) {
 		},
 		0,                      // Priority of the rule
 		[]string{"TestRule66"}, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			return nil
 		},
 	}
@@ -376,7 +376,7 @@ func TestRuleIndexStateRegexMatch(t *testing.T) {
 		},
 		0,                      // Priority of the rule
 		[]string{"TestRule66"}, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			return nil
 		},
 	}
@@ -392,7 +392,7 @@ func TestRuleIndexStateRegexMatch(t *testing.T) {
 		},
 		0,                      // Priority of the rule
 		[]string{"TestRule66"}, // List of suppressed rules by this rule
-		func(p Processor, m Monitor, e *Event) error { // Action of the rule
+		func(p Processor, m Monitor, e *Event, tid uint64) error { // Action of the rule
 			return nil
 		},
 	}

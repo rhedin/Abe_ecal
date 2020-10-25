@@ -33,10 +33,10 @@ func plusOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Ru
 /*
 Eval evaluate this runtime component.
 */
-func (rt *plusOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *plusOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		// Use as prefix
@@ -44,14 +44,14 @@ func (rt *plusOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (inter
 		if len(rt.node.Children) == 1 {
 			return rt.numVal(func(n float64) interface{} {
 				return n
-			}, vs, is)
+			}, vs, is, tid)
 		}
 
 		// Use as operation
 
 		res, err = rt.numOp(func(n1 float64, n2 float64) interface{} {
 			return n1 + n2
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -71,10 +71,10 @@ func minusOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.R
 /*
 Eval evaluate this runtime component.
 */
-func (rt *minusOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *minusOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
@@ -83,14 +83,14 @@ func (rt *minusOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (inte
 		if len(rt.node.Children) == 1 {
 			return rt.numVal(func(n float64) interface{} {
 				return -n
-			}, vs, is)
+			}, vs, is, tid)
 		}
 
 		// Use as operation
 
 		res, err = rt.numOp(func(n1 float64, n2 float64) interface{} {
 			return n1 - n2
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -110,16 +110,16 @@ func timesOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.R
 /*
 Eval evaluate this runtime component.
 */
-func (rt *timesOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *timesOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.numOp(func(n1 float64, n2 float64) interface{} {
 			return n1 * n2
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -139,16 +139,16 @@ func divOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Run
 /*
 Eval evaluate this runtime component.
 */
-func (rt *divOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *divOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.numOp(func(n1 float64, n2 float64) interface{} {
 			return n1 / n2
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -168,16 +168,16 @@ func divintOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.
 /*
 Eval evaluate this runtime component.
 */
-func (rt *divintOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *divintOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.numOp(func(n1 float64, n2 float64) interface{} {
 			return math.Floor(n1 / n2)
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -197,16 +197,16 @@ func modintOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.
 /*
 Eval evaluate this runtime component.
 */
-func (rt *modintOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *modintOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.numOp(func(n1 float64, n2 float64) interface{} {
 			return float64(int64(n1) % int64(n2))
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err

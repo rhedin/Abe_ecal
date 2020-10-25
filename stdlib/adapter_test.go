@@ -249,7 +249,7 @@ func TestECALFunctionAdapter(t *testing.T) {
 
 func runAdapterTest(afunc reflect.Value, args []interface{}) (interface{}, error) {
 	afuncEcal := &ECALFunctionAdapter{afunc, ""}
-	return afuncEcal.Run("test", scope.NewScope(""), make(map[string]interface{}), args)
+	return afuncEcal.Run("test", scope.NewScope(""), make(map[string]interface{}), 0, args)
 
 }
 

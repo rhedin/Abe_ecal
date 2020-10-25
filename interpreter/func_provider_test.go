@@ -455,12 +455,12 @@ func TestErrorConditions(t *testing.T) {
 
 	rf := &rangeFunc{&inbuildBaseFunc{}}
 
-	if _, err := rf.Run("", nil, nil, nil); err == nil || err.Error() != "Need at least an end range as first parameter" {
+	if _, err := rf.Run("", nil, nil, 0, nil); err == nil || err.Error() != "Need at least an end range as first parameter" {
 		t.Error("Unexpected result:", err)
 		return
 	}
 
-	if _, err := rf.Run("", nil, nil, []interface{}{"bob"}); err == nil || err.Error() != "Parameter 1 should be a number" {
+	if _, err := rf.Run("", nil, nil, 0, []interface{}{"bob"}); err == nil || err.Error() != "Parameter 1 should be a number" {
 		t.Error("Unexpected result:", err)
 		return
 	}

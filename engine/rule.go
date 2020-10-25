@@ -72,9 +72,10 @@ func (r *Rule) String() string {
 }
 
 /*
-RuleAction is an action which is executed by a matching rule.
+RuleAction is an action which is executed by a matching rule. The action gets
+a unique thread ID from the executing thread.
 */
-type RuleAction func(p Processor, m Monitor, e *Event) error
+type RuleAction func(p Processor, m Monitor, e *Event, tid uint64) error
 
 /*
 RuleIndex is an index for rules. It takes the form of a tree structure in which

@@ -36,21 +36,21 @@ func greaterequalOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) p
 /*
 Eval evaluate this runtime component.
 */
-func (rt *greaterequalOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *greaterequalOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.numOp(func(n1 float64, n2 float64) interface{} {
 			return n1 >= n2
-		}, vs, is)
+		}, vs, is, tid)
 
 		if err != nil {
 			res, err = rt.strOp(func(n1 string, n2 string) interface{} {
 				return n1 >= n2
-			}, vs, is)
+			}, vs, is, tid)
 		}
 	}
 
@@ -71,21 +71,21 @@ func greaterOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser
 /*
 Eval evaluate this runtime component.
 */
-func (rt *greaterOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *greaterOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.numOp(func(n1 float64, n2 float64) interface{} {
 			return n1 > n2
-		}, vs, is)
+		}, vs, is, tid)
 
 		if err != nil {
 			res, err = rt.strOp(func(n1 string, n2 string) interface{} {
 				return n1 > n2
-			}, vs, is)
+			}, vs, is, tid)
 		}
 	}
 
@@ -106,21 +106,21 @@ func lessequalOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) pars
 /*
 Eval evaluate this runtime component.
 */
-func (rt *lessequalOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *lessequalOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.numOp(func(n1 float64, n2 float64) interface{} {
 			return n1 <= n2
-		}, vs, is)
+		}, vs, is, tid)
 
 		if err != nil {
 			res, err = rt.strOp(func(n1 string, n2 string) interface{} {
 				return n1 <= n2
-			}, vs, is)
+			}, vs, is, tid)
 		}
 	}
 
@@ -141,21 +141,21 @@ func lessOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Ru
 /*
 Eval evaluate this runtime component.
 */
-func (rt *lessOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *lessOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.numOp(func(n1 float64, n2 float64) interface{} {
 			return n1 < n2
-		}, vs, is)
+		}, vs, is, tid)
 
 		if err != nil {
 			res, err = rt.strOp(func(n1 string, n2 string) interface{} {
 				return n1 < n2
-			}, vs, is)
+			}, vs, is, tid)
 		}
 	}
 
@@ -176,16 +176,16 @@ func equalOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.R
 /*
 Eval evaluate this runtime component.
 */
-func (rt *equalOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *equalOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.genOp(func(n1 interface{}, n2 interface{}) interface{} {
 			return n1 == n2
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -205,16 +205,16 @@ func notequalOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parse
 /*
 Eval evaluate this runtime component.
 */
-func (rt *notequalOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *notequalOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.genOp(func(n1 interface{}, n2 interface{}) interface{} {
 			return n1 != n2
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -234,16 +234,16 @@ func andOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Run
 /*
 Eval evaluate this runtime component.
 */
-func (rt *andOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *andOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.boolOp(func(b1 bool, b2 bool) interface{} {
 			return b1 && b2
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -263,16 +263,16 @@ func orOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Runt
 /*
 Eval evaluate this runtime component.
 */
-func (rt *orOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *orOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.boolOp(func(b1 bool, b2 bool) interface{} {
 			return b1 || b2
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -292,16 +292,16 @@ func notOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Run
 /*
 Eval evaluate this runtime component.
 */
-func (rt *notOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *notOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 
 		res, err = rt.boolVal(func(b bool) interface{} {
 			return !b
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -329,20 +329,20 @@ func likeOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Ru
 /*
 Eval evaluate this runtime component.
 */
-func (rt *likeOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *likeOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		errorutil.AssertTrue(len(rt.node.Children) == 2,
 			fmt.Sprint("Operation requires 2 operands", rt.node))
 
-		str, err := rt.node.Children[0].Runtime.Eval(vs, is)
+		str, err := rt.node.Children[0].Runtime.Eval(vs, is, tid)
 		if err == nil {
 			var pattern interface{}
 
-			pattern, err = rt.node.Children[1].Runtime.Eval(vs, is)
+			pattern, err = rt.node.Children[1].Runtime.Eval(vs, is, tid)
 			if err == nil {
 				var re *regexp.Regexp
 
@@ -372,15 +372,15 @@ func beginswithOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) par
 /*
 Eval evaluate this runtime component.
 */
-func (rt *beginswithOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *beginswithOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		res, err = rt.strOp(func(s1 string, s2 string) interface{} {
 			return strings.HasPrefix(s1, s2)
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -400,15 +400,15 @@ func endswithOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parse
 /*
 Eval evaluate this runtime component.
 */
-func (rt *endswithOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *endswithOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		res, err = rt.strOp(func(s1 string, s2 string) interface{} {
 			return strings.HasSuffix(s1, s2)
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -428,10 +428,10 @@ func inOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.Runt
 /*
 Eval evaluate this runtime component.
 */
-func (rt *inOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *inOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
 		res, err = rt.listOp(func(val interface{}, list []interface{}) interface{} {
@@ -441,7 +441,7 @@ func (rt *inOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interfa
 				}
 			}
 			return false
-		}, vs, is)
+		}, vs, is, tid)
 	}
 
 	return res, err
@@ -461,13 +461,13 @@ func notinOpRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parser.R
 /*
 Eval evaluate this runtime component.
 */
-func (rt *notinOpRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *notinOpRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
 
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 
 	if err == nil {
-		if res, err = rt.inOpRuntime.Eval(vs, is); err == nil {
+		if res, err = rt.inOpRuntime.Eval(vs, is, tid); err == nil {
 			res = !res.(bool)
 		}
 	}

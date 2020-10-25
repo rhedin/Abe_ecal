@@ -38,11 +38,11 @@ func identifierRuntimeInst(erp *ECALRuntimeProvider, node *parser.ASTNode) parse
 /*
 Eval evaluate this runtime component.
 */
-func (rt *identifierRuntime) Eval(vs parser.Scope, is map[string]interface{}) (interface{}, error) {
+func (rt *identifierRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
 	var res interface{}
-	_, err := rt.baseRuntime.Eval(vs, is)
+	_, err := rt.baseRuntime.Eval(vs, is, tid)
 	if err == nil {
-		res, err = rt.resolveValue(vs, is, rt.node)
+		res, err = rt.resolveValue(vs, is, tid, rt.node)
 	}
 	return res, err
 }
@@ -50,7 +50,7 @@ func (rt *identifierRuntime) Eval(vs parser.Scope, is map[string]interface{}) (i
 /*
 resolveValue resolves the value of this identifier.
 */
-func (rt *identifierRuntime) resolveValue(vs parser.Scope, is map[string]interface{}, node *parser.ASTNode) (interface{}, error) {
+func (rt *identifierRuntime) resolveValue(vs parser.Scope, is map[string]interface{}, tid uint64, node *parser.ASTNode) (interface{}, error) {
 	var anode *parser.ASTNode
 	var astring string
 	var result interface{}
@@ -80,7 +80,7 @@ func (rt *identifierRuntime) resolveValue(vs parser.Scope, is map[string]interfa
 		return res
 	}
 
-	anode, astring, err = buildAccessString(rt.erp, vs, is, node, node.Token.Val)
+	anode, astring, err = buildAccessString(rt.erp, vs, is, tid, node, node.Token.Val)
 
 	if len(node.Children) == 0 {
 
@@ -101,7 +101,7 @@ func (rt *identifierRuntime) resolveValue(vs parser.Scope, is map[string]interfa
 
 				if funcCallInAccessStringExecuted {
 
-					result, err = rt.resolveFunction(astring, vs, is, rerr.Node, result, err)
+					result, err = rt.resolveFunction(astring, vs, is, tid, rerr.Node, result, err)
 
 					node = functionResolved(astring, anode)
 
@@ -112,11 +112,11 @@ func (rt *identifierRuntime) resolveValue(vs parser.Scope, is map[string]interfa
 						vs = scope.NewScope("funcresult")
 						vs.SetValue(node.Token.Val, result)
 
-						result, err = rt.resolveValue(vs, is, node)
+						result, err = rt.resolveValue(vs, is, tid, node)
 					}
 				} else {
 
-					result, err = rt.resolveFunction(astring, vs, is, node, result, err)
+					result, err = rt.resolveFunction(astring, vs, is, tid, node, result, err)
 				}
 			}
 		}
@@ -129,7 +129,7 @@ func (rt *identifierRuntime) resolveValue(vs parser.Scope, is map[string]interfa
 resolveFunction execute function calls and return the result.
 */
 func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is map[string]interface{},
-	node *parser.ASTNode, result interface{}, err error) (interface{}, error) {
+	tid uint64, node *parser.ASTNode, result interface{}, err error) (interface{}, error) {
 
 	is["erp"] = rt.erp      // All functions have access to the ECAL Runtime Provider
 	is["astnode"] = rt.node // ... and the AST node
@@ -169,7 +169,7 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 					var val interface{}
 
 					if err == nil {
-						val, err = c.Runtime.Eval(vs, make(map[string]interface{}))
+						val, err = c.Runtime.Eval(vs, make(map[string]interface{}), tid)
 						args = append(args, val)
 					}
 				}
@@ -198,7 +198,7 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 
 						// Execute the function and
 
-						result, err = funcObj.Run(rt.instanceID, vs, is, args)
+						result, err = funcObj.Run(rt.instanceID, vs, is, tid, args)
 
 						_, ok1 := err.(*util.RuntimeErrorWithDetail)
 						_, ok2 := err.(*util.RuntimeErrorWithDetail)
@@ -235,7 +235,7 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 /*
 Set sets a value to this identifier.
 */
-func (rt *identifierRuntime) Set(vs parser.Scope, is map[string]interface{}, value interface{}) error {
+func (rt *identifierRuntime) Set(vs parser.Scope, is map[string]interface{}, tid uint64, value interface{}) error {
 	var err error
 
 	if len(rt.node.Children) == 0 {
@@ -247,7 +247,7 @@ func (rt *identifierRuntime) Set(vs parser.Scope, is map[string]interface{}, val
 	} else {
 		var as string
 
-		_, as, err = buildAccessString(rt.erp, vs, is, rt.node, rt.node.Token.Val)
+		_, as, err = buildAccessString(rt.erp, vs, is, tid, rt.node, rt.node.Token.Val)
 
 		if err == nil {
 
@@ -264,7 +264,7 @@ func (rt *identifierRuntime) Set(vs parser.Scope, is map[string]interface{}, val
 buildAccessString builds an access string using a given node and a prefix.
 */
 func buildAccessString(erp *ECALRuntimeProvider, vs parser.Scope, is map[string]interface{},
-	node *parser.ASTNode, prefix string) (*parser.ASTNode, string, error) {
+	tid uint64, node *parser.ASTNode, prefix string) (*parser.ASTNode, string, error) {
 
 	var err error
 	res := prefix
@@ -281,7 +281,7 @@ func buildAccessString(erp *ECALRuntimeProvider, vs parser.Scope, is map[string]
 
 			if c.Name == parser.NodeCOMPACCESS {
 				var val interface{}
-				val, err = c.Children[0].Runtime.Eval(vs, is)
+				val, err = c.Children[0].Runtime.Eval(vs, is, tid)
 				res = fmt.Sprintf("%v.%v", res, val)
 
 				if len(node.Children) > i+1 && node.Children[i+1].Name == parser.NodeFUNCCALL {
@@ -303,7 +303,7 @@ func buildAccessString(erp *ECALRuntimeProvider, vs parser.Scope, is map[string]
 					break
 				}
 
-				node, res, err = buildAccessString(erp, vs, is, c, res)
+				node, res, err = buildAccessString(erp, vs, is, tid, c, res)
 			}
 		}
 	}

@@ -23,7 +23,7 @@ type testTask struct {
 	errorHandler func(e error)
 }
 
-func (t *testTask) Run() error {
+func (t *testTask) Run(tid uint64) error {
 	return t.task()
 }
 
@@ -77,21 +77,21 @@ func TestDefaultTaskQueue(t *testing.T) {
 
 	// Execute the functions
 
-	tq.Pop().Run()
+	tq.Pop().Run(0)
 
 	if res := tq.Size(); res != 2 {
 		t.Error("Unexpected result: ", res)
 		return
 	}
 
-	tq.Pop().Run()
+	tq.Pop().Run(0)
 
 	if res := tq.Size(); res != 1 {
 		t.Error("Unexpected result: ", res)
 		return
 	}
 
-	tq.Pop().Run()
+	tq.Pop().Run(0)
 
 	if res := tq.Size(); res != 0 {
 		t.Error("Unexpected result: ", res)

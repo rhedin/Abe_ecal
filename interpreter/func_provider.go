@@ -112,7 +112,7 @@ type rangeFunc struct {
 /*
 Run executes this function.
 */
-func (rf *rangeFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *rangeFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var currVal, to float64
 	var err error
 
@@ -195,7 +195,7 @@ type newFunc struct {
 /*
 Run executes this function.
 */
-func (rf *newFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *newFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var res interface{}
 
 	err := fmt.Errorf("Need a map as first parameter")
@@ -214,7 +214,7 @@ func (rf *newFunc) Run(instanceID string, vs parser.Scope, is map[string]interfa
 					initvs := scope.NewScope(fmt.Sprintf("newfunc: %v", instanceID))
 					initis := make(map[string]interface{})
 
-					_, err = initFunc.Run(instanceID, initvs, initis, args[1:])
+					_, err = initFunc.Run(instanceID, initvs, initis, tid, args[1:])
 				}
 			}
 		}
@@ -292,7 +292,7 @@ type lenFunc struct {
 /*
 Run executes this function.
 */
-func (rf *lenFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *lenFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var res float64
 
 	err := fmt.Errorf("Need a list or a map as first parameter")
@@ -333,7 +333,7 @@ type delFunc struct {
 /*
 Run executes this function.
 */
-func (rf *delFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *delFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var res interface{}
 
 	err := fmt.Errorf("Need a list or a map as first parameter and an index or key as second parameter")
@@ -380,7 +380,7 @@ type addFunc struct {
 /*
 Run executes this function.
 */
-func (rf *addFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *addFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var res interface{}
 
 	err := fmt.Errorf("Need a list as first parameter and a value as second parameter")
@@ -427,7 +427,7 @@ type concatFunc struct {
 /*
 Run executes this function.
 */
-func (rf *concatFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *concatFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var res interface{}
 
 	err := fmt.Errorf("Need at least two lists as parameters")
@@ -474,7 +474,7 @@ type dumpenvFunc struct {
 /*
 Run executes this function.
 */
-func (rf *dumpenvFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *dumpenvFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	return vs.String(), nil
 }
 
@@ -498,7 +498,7 @@ type docFunc struct {
 /*
 Run executes this function.
 */
-func (rf *docFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *docFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var res interface{}
 	err := fmt.Errorf("Need a function as parameter")
 
@@ -555,7 +555,7 @@ type sleepFunc struct {
 /*
 Run executes this function.
 */
-func (rf *sleepFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *sleepFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var res interface{}
 	err := fmt.Errorf("Need number of micro seconds as parameter")
 
@@ -595,7 +595,7 @@ type raise struct {
 /*
 Run executes this function.
 */
-func (rf *raise) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *raise) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var err error
 	var detailMsg string
 	var detail interface{}
@@ -644,7 +644,7 @@ type addevent struct {
 /*
 Run executes this function.
 */
-func (rf *addevent) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *addevent) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	return rf.addEvent(func(proc engine.Processor, event *engine.Event, scope *engine.RuleScope) (interface{}, error) {
 		var monitor engine.Monitor
 
@@ -735,7 +735,7 @@ type addeventandwait struct {
 /*
 Run executes this function.
 */
-func (rf *addeventandwait) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (rf *addeventandwait) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	return rf.addEvent(func(proc engine.Processor, event *engine.Event, scope *engine.RuleScope) (interface{}, error) {
 		var res []interface{}
 		rm := proc.NewRootMonitor(nil, scope)
@@ -800,7 +800,7 @@ type setCronTrigger struct {
 /*
 Run executes this function.
 */
-func (ct *setCronTrigger) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (ct *setCronTrigger) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	var res interface{}
 	err := fmt.Errorf("Need a cronspec, an event name and an event scope as parameters")
 
@@ -863,7 +863,7 @@ type setPulseTrigger struct {
 /*
 Run executes this function.
 */
-func (pt *setPulseTrigger) Run(instanceID string, vs parser.Scope, is map[string]interface{}, args []interface{}) (interface{}, error) {
+func (pt *setPulseTrigger) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
 	err := fmt.Errorf("Need micro second interval, an event name and an event scope as parameters")
 
 	if len(args) > 2 {

@@ -36,7 +36,7 @@ func NewECALFunctionAdapter(funcval reflect.Value, docstring string) *ECALFuncti
 Run executes this function.
 */
 func (ea *ECALFunctionAdapter) Run(instanceID string, vs parser.Scope,
-	is map[string]interface{}, args []interface{}) (ret interface{}, err error) {
+	is map[string]interface{}, tid uint64, args []interface{}) (ret interface{}, err error) {
 
 	defer func() {
 		if r := recover(); r != nil {

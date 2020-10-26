@@ -181,7 +181,7 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 						// Convert non-string structures
 
 						for i, a := range args {
-							if _, ok := args[i].(string); !ok {
+							if _, ok := a.(string); !ok {
 								args[i] = stringutil.ConvertToPrettyString(a)
 							}
 						}
@@ -196,11 +196,19 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 
 					} else {
 
-						// Execute the function and
+						if rt.erp.Debugger != nil {
+							rt.erp.Debugger.VisitStepInState(node, vs, tid)
+						}
+
+						// Execute the function
 
 						result, err = funcObj.Run(rt.instanceID, vs, is, tid, args)
 
-						_, ok1 := err.(*util.RuntimeErrorWithDetail)
+						if rt.erp.Debugger != nil {
+							rt.erp.Debugger.VisitStepOutState(node, vs, tid)
+						}
+
+						_, ok1 := err.(*util.RuntimeError)
 						_, ok2 := err.(*util.RuntimeErrorWithDetail)
 
 						if err != nil && !ok1 && !ok2 {
@@ -215,6 +223,13 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 							}
 
 							err = rerr
+						}
+
+						if tr, ok := err.(util.TraceableRuntimeError); ok {
+
+							// Add tracing information to the error
+
+							tr.AddTrace(rt.node)
 						}
 					}
 				}

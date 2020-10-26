@@ -29,7 +29,7 @@ foobar.doSomething()
 
 Event Sinks
 --
-Event sinks are the core constructs of ECAL which provide concurrency and the means to respond to events of an external system. Sinks provide ECAL with an interface to an [event condition action engine](engine.md) which coordinates the parallel execution of code. Sinks cannot be scoped into modules or objects and are usually declared at the top level. They have the following form:
+Event sinks are the core constructs of ECAL which provide concurrency and the means to respond to events of an external system. Sinks provide ECAL with an interface to an [event condition action engine](engine.md) which coordinates the parallel execution of code. Sinks cannot be scoped into modules or objects and are usually declared at the top level. Sinks must not write to top level variables. They have the following form:
 ```
 sink mysink
     kindmatch [ "foo.bar.*" ],
@@ -357,7 +357,7 @@ Build-in Functions
 --
 ECAL has a number of function which are build-in that are always available:
 
-#### `raise([error type], [error detail], [data) : error`
+#### `raise([error type], [error detail], [data]) : error`
 Raise returns a runtime error. Outside of sinks this will stop the code execution
 if the error is not handled by try / except. Inside a sink only the specific sink
 will fail.

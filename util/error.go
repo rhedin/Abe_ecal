@@ -21,15 +21,38 @@ import (
 )
 
 /*
+TraceableRuntimeError can record and show a stack trace.
+*/
+type TraceableRuntimeError interface {
+	error
+
+	/*
+		AddTrace adds a trace step.
+	*/
+	AddTrace(*parser.ASTNode)
+
+	/*
+		GetTrace returns the current stacktrace.
+	*/
+	GetTrace() []*parser.ASTNode
+
+	/*
+		GetTrace returns the current stacktrace as a string.
+	*/
+	GetTraceString() []string
+}
+
+/*
 RuntimeError is a runtime related error.
 */
 type RuntimeError struct {
-	Source string          // Name of the source which was given to the parser
-	Type   error           // Error type (to be used for equal checks)
-	Detail string          // Details of this error
-	Node   *parser.ASTNode // AST Node where the error occurred
-	Line   int             // Line of the error
-	Pos    int             // Position of the error
+	Source string            // Name of the source which was given to the parser
+	Type   error             // Error type (to be used for equal checks)
+	Detail string            // Details of this error
+	Node   *parser.ASTNode   // AST Node where the error occurred
+	Line   int               // Line of the error
+	Pos    int               // Position of the error
+	Trace  []*parser.ASTNode // Stacktrace
 }
 
 /*
@@ -62,9 +85,9 @@ NewRuntimeError creates a new RuntimeError object.
 */
 func NewRuntimeError(source string, t error, d string, node *parser.ASTNode) error {
 	if node.Token != nil {
-		return &RuntimeError{source, t, d, node, node.Token.Lline, node.Token.Lpos}
+		return &RuntimeError{source, t, d, node, node.Token.Lline, node.Token.Lpos, nil}
 	}
-	return &RuntimeError{source, t, d, node, 0, 0}
+	return &RuntimeError{source, t, d, node, 0, 0, nil}
 }
 
 /*
@@ -81,6 +104,32 @@ func (re *RuntimeError) Error() string {
 	}
 
 	return ret
+}
+
+/*
+AddTrace adds a trace step.
+*/
+func (re *RuntimeError) AddTrace(n *parser.ASTNode) {
+	re.Trace = append(re.Trace, n)
+}
+
+/*
+GetTrace returns the current stacktrace.
+*/
+func (re *RuntimeError) GetTrace() []*parser.ASTNode {
+	return re.Trace
+}
+
+/*
+GetTrace returns the current stacktrace as a string.
+*/
+func (re *RuntimeError) GetTraceString() []string {
+	res := []string{}
+	for _, t := range re.GetTrace() {
+		pp, _ := parser.PrettyPrint(t)
+		res = append(res, fmt.Sprintf("%v (%v:%v)", pp, t.Token.Lsource, t.Token.Lline))
+	}
+	return res
 }
 
 /*

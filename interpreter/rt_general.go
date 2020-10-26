@@ -29,6 +29,7 @@ type baseRuntime struct {
 	instanceID string               // Unique identifier (should be used when instance state is stored)
 	erp        *ECALRuntimeProvider // Runtime provider
 	node       *parser.ASTNode      // AST node which this runtime component is servicing
+	validated  bool
 }
 
 var instanceCounter uint64 // Global instance counter to create unique identifiers for every runtime component instance
@@ -37,6 +38,7 @@ var instanceCounter uint64 // Global instance counter to create unique identifie
 Validate this node and all its child nodes.
 */
 func (rt *baseRuntime) Validate() error {
+	rt.validated = true
 
 	// Validate all children
 
@@ -53,7 +55,15 @@ func (rt *baseRuntime) Validate() error {
 Eval evaluate this runtime component.
 */
 func (rt *baseRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint64) (interface{}, error) {
-	return nil, nil
+	var err error
+
+	errorutil.AssertTrue(rt.validated, "Runtime component has not been validated - please call Validate() before Eval()")
+
+	if rt.erp.Debugger != nil {
+		err = rt.erp.Debugger.VisitState(rt.node, vs, tid)
+	}
+
+	return nil, err
 }
 
 /*
@@ -61,7 +71,7 @@ newBaseRuntime returns a new instance of baseRuntime.
 */
 func newBaseRuntime(erp *ECALRuntimeProvider, node *parser.ASTNode) *baseRuntime {
 	instanceCounter++
-	return &baseRuntime{fmt.Sprint(instanceCounter), erp, node}
+	return &baseRuntime{fmt.Sprint(instanceCounter), erp, node, false}
 }
 
 // Void Runtime

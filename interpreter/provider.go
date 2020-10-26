@@ -140,7 +140,7 @@ type ECALRuntimeProvider struct {
 	Logger        util.Logger            // Logger object for log messages
 	Processor     engine.Processor       // Processor of the ECA engine
 	Cron          *timeutil.Cron         // Cron object for scheduled execution
-	Debugger      Debugger               // Optional: Debugger object
+	Debugger      util.ECALDebugger      // Optional: ECAL Debugger object
 }
 
 /*

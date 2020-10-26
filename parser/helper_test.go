@@ -16,13 +16,13 @@ import (
 
 func TestASTNode(t *testing.T) {
 
-	n, err := ParseWithRuntime("", "- 1", &DummyRuntimeProvider{})
+	n, err := ParseWithRuntime("test1", "- 1", &DummyRuntimeProvider{})
 	if err != nil {
 		t.Error("Cannot parse test AST:", err)
 		return
 	}
 
-	n2, err := ParseWithRuntime("", "-2", &DummyRuntimeProvider{})
+	n2, err := ParseWithRuntime("test2", "-2", &DummyRuntimeProvider{})
 	if err != nil {
 		t.Error("Cannot parse test AST:", err)
 		return
@@ -40,6 +40,7 @@ Lpos is different 3 vs 2
   "Val": "1",
   "Identifier": false,
   "AllowEscapes": false,
+  "Lsource": "test1",
   "Lline": 1,
   "Lpos": 3
 }
@@ -50,6 +51,7 @@ vs
   "Val": "2",
   "Identifier": false,
   "AllowEscapes": false,
+  "Lsource": "test2",
   "Lline": 1,
   "Lpos": 2
 }
@@ -63,13 +65,13 @@ number: 2
 		return
 	}
 
-	n, err = ParseWithRuntime("", "-1", &DummyRuntimeProvider{})
+	n, err = ParseWithRuntime("test1", "-1", &DummyRuntimeProvider{})
 	if err != nil {
 		t.Error("Cannot parse test AST:", err)
 		return
 	}
 
-	n2, err = ParseWithRuntime("", "-a", &DummyRuntimeProvider{})
+	n2, err = ParseWithRuntime("test2", "-a", &DummyRuntimeProvider{})
 	if err != nil {
 		t.Error("Cannot parse test AST:", err)
 		return
@@ -88,6 +90,7 @@ Identifier is different false vs true
   "Val": "1",
   "Identifier": false,
   "AllowEscapes": false,
+  "Lsource": "test1",
   "Lline": 1,
   "Lpos": 2
 }
@@ -98,6 +101,7 @@ vs
   "Val": "a",
   "Identifier": true,
   "AllowEscapes": false,
+  "Lsource": "test2",
   "Lline": 1,
   "Lpos": 2
 }
@@ -212,6 +216,7 @@ Lpos is different 1 vs 10
   "Val": "1",
   "Identifier": false,
   "AllowEscapes": false,
+  "Lsource": "",
   "Lline": 1,
   "Lpos": 1
 }
@@ -222,6 +227,7 @@ vs
   "Val": "1",
   "Identifier": false,
   "AllowEscapes": false,
+  "Lsource": "",
   "Lline": 1,
   "Lpos": 10
 }

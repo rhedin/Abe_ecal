@@ -243,7 +243,7 @@ HandleInput handles input to this interpreter. It parses a given input line
 and outputs on the given output terminal. Requires a thread ID of the executing
 thread - use the RuntimeProvider to generate a unique one.
 */
-func (i *CLIInterpreter) HandleInput(ot interpreter.OutputTerminal, line string, tid uint64) {
+func (i *CLIInterpreter) HandleInput(ot OutputTerminal, line string, tid uint64) {
 
 	// Process the entered line
 
@@ -270,7 +270,7 @@ func (i *CLIInterpreter) HandleInput(ot interpreter.OutputTerminal, line string,
 		i.displayPackage(ot, strings.Split(line, " ")[1:])
 
 	} else if i.CustomHandler != nil && i.CustomHandler.CanHandle(line) {
-		i.CustomHandler.Handle(ot, strings.Split(line, " ")[1:])
+		i.CustomHandler.Handle(ot, line)
 
 	} else {
 		var ierr error
@@ -296,7 +296,7 @@ func (i *CLIInterpreter) HandleInput(ot interpreter.OutputTerminal, line string,
 /*
 displaySymbols lists all available inbuild functions and available stdlib packages of ECAL.
 */
-func (i *CLIInterpreter) displaySymbols(ot interpreter.OutputTerminal, args []string) {
+func (i *CLIInterpreter) displaySymbols(ot OutputTerminal, args []string) {
 
 	tabData := []string{"Inbuild function", "Description"}
 
@@ -338,7 +338,7 @@ func (i *CLIInterpreter) displaySymbols(ot interpreter.OutputTerminal, args []st
 /*
 displayPackage list all available constants and functions of a stdlib package.
 */
-func (i *CLIInterpreter) displayPackage(ot interpreter.OutputTerminal, args []string) {
+func (i *CLIInterpreter) displayPackage(ot OutputTerminal, args []string) {
 
 	_, constSymbols, funcSymbols := stdlib.GetStdlibSymbols()
 

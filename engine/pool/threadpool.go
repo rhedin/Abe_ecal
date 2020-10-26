@@ -159,7 +159,7 @@ NewThreadPoolWithQueue creates a new thread pool with a specific task queue.
 */
 func NewThreadPoolWithQueue(q TaskQueue) *ThreadPool {
 	return &ThreadPool{q, &sync.Mutex{},
-		0, &sync.Mutex{}, make(map[uint64]*ThreadPoolWorker),
+		1, &sync.Mutex{}, make(map[uint64]*ThreadPoolWorker),
 		make(map[uint64]*ThreadPoolWorker), &sync.Mutex{},
 		0, sync.NewCond(&sync.Mutex{}), &sync.Mutex{},
 		math.MaxInt32, func() {}, false, 0, func() {}, false}

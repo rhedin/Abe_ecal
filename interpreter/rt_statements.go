@@ -579,6 +579,13 @@ func (rt *tryRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint6
 				errObj["data"] = rtError.Data
 			}
 
+			if te, ok := err.(util.TraceableRuntimeError); ok {
+
+				if ts := te.GetTraceString(); ts != nil {
+					errObj["trace"] = ts
+				}
+			}
+
 			res = nil
 
 			for i := 1; i < len(rt.node.Children); i++ {

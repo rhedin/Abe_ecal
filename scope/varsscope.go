@@ -12,6 +12,7 @@ package scope
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -29,7 +30,7 @@ type varsScope struct {
 	parent   parser.Scope           // Parent scope
 	children []*varsScope           // Children of this scope (only if tracking is enabled)
 	storage  map[string]interface{} // Storage for variables
-	lock     sync.RWMutex           // Lock for this scope
+	lock     *sync.RWMutex          // Lock for this scope
 }
 
 /*
@@ -44,7 +45,7 @@ NewScopeWithParent creates a new variable scope with a parent. This can be
 used to create scope structures without children links.
 */
 func NewScopeWithParent(name string, parent parser.Scope) parser.Scope {
-	res := &varsScope{name, nil, nil, make(map[string]interface{}), sync.RWMutex{}}
+	res := &varsScope{name, nil, nil, make(map[string]interface{}), &sync.RWMutex{}}
 	SetParentOfScope(res, parent)
 	return res
 }
@@ -54,8 +55,17 @@ SetParentOfScope sets the parent of a given scope. This assumes that the given s
 is a varsScope.
 */
 func SetParentOfScope(scope parser.Scope, parent parser.Scope) {
-	if vs, ok := scope.(*varsScope); ok {
-		vs.parent = parent
+	if pvs, ok := parent.(*varsScope); ok {
+		if vs, ok := scope.(*varsScope); ok {
+
+			vs.lock.Lock()
+			defer vs.lock.Unlock()
+			pvs.lock.Lock()
+			defer pvs.lock.Unlock()
+
+			vs.parent = parent
+			vs.lock = pvs.lock
+		}
 	}
 }
 
@@ -65,6 +75,9 @@ by the parent scope. This means it should not be used for global scopes with
 many children.
 */
 func (s *varsScope) NewChild(name string) parser.Scope {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
 	for _, c := range s.children {
 		if c.name == name {
 			return c
@@ -73,6 +86,7 @@ func (s *varsScope) NewChild(name string) parser.Scope {
 
 	child := NewScope(name).(*varsScope)
 	child.parent = s
+	child.lock = s.lock
 	s.children = append(s.children, child)
 
 	return child
@@ -342,6 +356,21 @@ func (s *varsScope) String() string {
 	defer s.lock.RUnlock()
 
 	return s.scopeStringParents(s.scopeStringChildren())
+}
+
+/*
+ToJSONObject returns this ASTNode and all its children as a JSON object.
+*/
+func (s *varsScope) ToJSONObject() map[string]interface{} {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var ret map[string]interface{}
+
+	bytes, _ := json.Marshal(s.storage)
+	json.Unmarshal(bytes, &ret)
+
+	return ret
 }
 
 /*

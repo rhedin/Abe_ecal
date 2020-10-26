@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 
 	"devt.de/krotik/common/datautil"
@@ -50,6 +51,11 @@ func TestMain(m *testing.M) {
 var usedNodes = map[string]bool{
 	parser.NodeEOF: true,
 }
+var usedNodesLock = &sync.Mutex{}
+
+// Debuggger to be used
+//
+var testDebugger util.ECALDebugger
 
 // Last used logger
 //
@@ -70,7 +76,19 @@ func UnitTestEvalAndAST(input string, vs parser.Scope, expectedAST string) (inte
 	return UnitTestEvalAndASTAndImport(input, vs, expectedAST, nil)
 }
 
-func UnitTestEvalAndASTAndImport(input string, vs parser.Scope, expectedAST string, importLocator util.ECALImportLocator) (interface{}, error) {
+func UnitTestEvalWithRuntimeProvider(input string, vs parser.Scope,
+	erp *ECALRuntimeProvider) (interface{}, error) {
+	return UnitTestEvalAndASTAndImportAndRuntimeProvider(input, vs, "", nil, erp)
+}
+
+func UnitTestEvalAndASTAndImport(input string, vs parser.Scope, expectedAST string,
+	importLocator util.ECALImportLocator) (interface{}, error) {
+	return UnitTestEvalAndASTAndImportAndRuntimeProvider(input, vs, expectedAST, importLocator, nil)
+}
+
+func UnitTestEvalAndASTAndImportAndRuntimeProvider(input string, vs parser.Scope, expectedAST string,
+	importLocator util.ECALImportLocator, erp *ECALRuntimeProvider) (interface{}, error) {
+
 	var traverseAST func(n *parser.ASTNode)
 
 	traverseAST = func(n *parser.ASTNode) {
@@ -78,7 +96,9 @@ func UnitTestEvalAndASTAndImport(input string, vs parser.Scope, expectedAST stri
 			panic(fmt.Sprintf("Node found with empty string name: %s", n))
 		}
 
+		usedNodesLock.Lock()
 		usedNodes[n.Name] = true
+		usedNodesLock.Unlock()
 		for _, cn := range n.Children {
 			traverseAST(cn)
 		}
@@ -86,7 +106,13 @@ func UnitTestEvalAndASTAndImport(input string, vs parser.Scope, expectedAST stri
 
 	// Parse the input
 
-	erp := NewECALRuntimeProvider("ECALTestRuntime", importLocator, nil)
+	if erp == nil {
+		erp = NewECALRuntimeProvider("ECALTestRuntime", importLocator, nil)
+	}
+
+	// Set debugger
+
+	erp.Debugger = testDebugger
 
 	testlogger = erp.Logger.(*util.MemoryLogger)
 
@@ -124,7 +150,7 @@ func UnitTestEvalAndASTAndImport(input string, vs parser.Scope, expectedAST stri
 		vs = scope.NewScope(scope.GlobalScope)
 	}
 
-	return ast.Runtime.Eval(vs, make(map[string]interface{}), 0)
+	return ast.Runtime.Eval(vs, make(map[string]interface{}), erp.NewThreadID())
 }
 
 /*

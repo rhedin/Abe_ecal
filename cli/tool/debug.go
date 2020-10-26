@@ -12,12 +12,14 @@ package tool
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
 	"strings"
 	"time"
 
+	"devt.de/krotik/common/stringutil"
 	"devt.de/krotik/ecal/interpreter"
 	"devt.de/krotik/ecal/util"
 )
@@ -67,16 +69,26 @@ func (i *CLIDebugInterpreter) Interpret() error {
 		return nil
 	}
 
-	i.CLIInterpreter.CustomWelcomeMessage = "Running in debug mode - "
-	if *i.RunDebugServer {
-		i.CLIInterpreter.CustomWelcomeMessage += fmt.Sprintf("with debug server on %v - ", *i.DebugServerAddr)
-	}
-	i.CLIInterpreter.CustomWelcomeMessage += "prefix debug commands with ##"
-	i.CustomHelpString = "    @dbg [glob] - List all available debug commands.\n"
-
 	err := i.CreateRuntimeProvider("debug console")
 
 	if err == nil {
+
+		// Set custom messages
+
+		i.CLIInterpreter.CustomWelcomeMessage = "Running in debug mode - "
+		if *i.RunDebugServer {
+			i.CLIInterpreter.CustomWelcomeMessage += fmt.Sprintf("with debug server on %v - ", *i.DebugServerAddr)
+		}
+		i.CLIInterpreter.CustomWelcomeMessage += "prefix debug commands with ##"
+		i.CustomHelpString = "    @dbg [glob] - List all available debug commands.\n"
+
+		// Set debug object on the runtime provider
+
+		i.RuntimeProvider.Debugger = interpreter.NewECALDebugger(i.GlobalVS)
+
+		// Set this object as a custom handler to deal with input.
+
+		i.CustomHandler = i
 
 		if *i.RunDebugServer {
 			debugServer := &debugTelnetServer{*i.DebugServerAddr, "ECALDebugServer: ",
@@ -95,6 +107,56 @@ func (i *CLIDebugInterpreter) Interpret() error {
 	}
 
 	return err
+}
+
+/*
+CanHandle checks if a given string can be handled by this handler.
+*/
+func (i *CLIDebugInterpreter) CanHandle(s string) bool {
+	return strings.HasPrefix(s, "##") || strings.HasPrefix(s, "@dbg")
+}
+
+/*
+Handle handles a given input string.
+*/
+func (i *CLIDebugInterpreter) Handle(ot OutputTerminal, line string) {
+
+	if strings.HasPrefix(line, "@dbg") {
+
+		args := strings.Fields(line)[1:]
+
+		tabData := []string{"Debug command", "Description"}
+
+		for name, f := range interpreter.DebugCommandsMap {
+			ds := f.DocString()
+
+			if len(args) > 0 && !matchesFulltextSearch(ot, fmt.Sprintf("%v %v", name, ds), args[0]) {
+				continue
+			}
+
+			tabData = fillTableRow(tabData, name, ds)
+		}
+
+		if len(tabData) > 2 {
+			ot.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
+				stringutil.SingleDoubleLineTable))
+		}
+
+	} else {
+		res, err := i.RuntimeProvider.Debugger.HandleInput(strings.TrimSpace(line[2:]))
+
+		if err == nil {
+			var outBytes []byte
+			outBytes, err = json.MarshalIndent(res, "", "  ")
+			if err == nil {
+				ot.WriteString(fmt.Sprintln(string(outBytes)))
+			}
+		}
+
+		if err != nil {
+			ot.WriteString(fmt.Sprintf("Debugger Error: %v", err.Error()))
+		}
+	}
 }
 
 /*
@@ -148,7 +210,7 @@ HandleConnection handles an incoming connection.
 func (s *debugTelnetServer) HandleConnection(conn net.Conn) {
 	tid := s.interpreter.RuntimeProvider.NewThreadID()
 	inputReader := bufio.NewReader(conn)
-	outputTerminal := interpreter.OutputTerminal(&bufioWriterShim{bufio.NewWriter(conn)})
+	outputTerminal := OutputTerminal(&bufioWriterShim{bufio.NewWriter(conn)})
 
 	line := ""
 

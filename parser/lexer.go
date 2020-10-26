@@ -21,8 +21,8 @@ import (
 	"unicode/utf8"
 )
 
-var namePattern = regexp.MustCompile("^[A-Za-z][A-Za-z0-9]*$")
-var numberPattern = regexp.MustCompile("^[0-9].*$")
+var NamePattern = regexp.MustCompile("^[A-Za-z][A-Za-z0-9]*$")
+var NumberPattern = regexp.MustCompile("^[0-9].*$")
 
 /*
 LexToken represents a token which is returned by the lexer.
@@ -33,6 +33,7 @@ type LexToken struct {
 	Val          string     // Token value
 	Identifier   bool       // Flag if the value is an identifier (not quoted and not a number)
 	AllowEscapes bool       // Flag if the value did interpret escape charaters
+	Lsource      string     // Input source label (e.g. filename)
 	Lline        int        // Line in the input this token appears
 	Lpos         int        // Position in the input line this token appears
 }
@@ -47,6 +48,7 @@ func NewLexTokenInstance(t LexToken) *LexToken {
 		t.Val,
 		t.Identifier,
 		t.AllowEscapes,
+		t.Lsource,
 		t.Lline,
 		t.Lpos,
 	}
@@ -411,7 +413,7 @@ func (l *lexer) emitToken(t LexTokenID) {
 	}
 
 	if l.tokens != nil {
-		l.tokens <- LexToken{t, l.start, l.input[l.start:l.pos], false, false,
+		l.tokens <- LexToken{t, l.start, l.input[l.start:l.pos], false, false, l.name,
 			l.line + 1, l.start - l.lastnl + 1}
 	}
 }
@@ -421,7 +423,7 @@ emitTokenAndValue passes a token with a given value back to the client.
 */
 func (l *lexer) emitTokenAndValue(t LexTokenID, val string, identifier bool, allowEscapes bool) {
 	if l.tokens != nil {
-		l.tokens <- LexToken{t, l.start, val, identifier, allowEscapes, l.line + 1, l.start - l.lastnl + 1}
+		l.tokens <- LexToken{t, l.start, val, identifier, allowEscapes, l.name, l.line + 1, l.start - l.lastnl + 1}
 	}
 }
 
@@ -430,7 +432,7 @@ emitError passes an error token back to the client.
 */
 func (l *lexer) emitError(msg string) {
 	if l.tokens != nil {
-		l.tokens <- LexToken{TokenError, l.start, msg, false, false, l.line + 1, l.start - l.lastnl + 1}
+		l.tokens <- LexToken{TokenError, l.start, msg, false, false, l.name, l.line + 1, l.start - l.lastnl + 1}
 	}
 }
 
@@ -578,7 +580,7 @@ func lexToken(l *lexer) lexFunc {
 
 	// Check for number
 
-	if numberPattern.MatchString(keywordCandidate) {
+	if NumberPattern.MatchString(keywordCandidate) {
 		_, err := strconv.ParseFloat(keywordCandidate, 64)
 
 		if err == nil {
@@ -613,7 +615,7 @@ func lexToken(l *lexer) lexFunc {
 
 	} else {
 
-		if !namePattern.MatchString(keywordCandidate) {
+		if !NamePattern.MatchString(keywordCandidate) {
 			l.emitError(fmt.Sprintf("Cannot parse identifier '%v'. Identifies may only contain [a-zA-Z] and [a-zA-Z0-9] from the second character", keywordCandidate))
 			return nil
 		}

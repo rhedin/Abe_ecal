@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"devt.de/krotik/common/stringutil"
-	"devt.de/krotik/ecal/interpreter"
 )
 
 /*
@@ -32,14 +31,25 @@ type CLIInputHandler interface {
 	/*
 	   Handle handles a given input string.
 	*/
-	Handle(ot interpreter.OutputTerminal, args []string)
+	Handle(ot OutputTerminal, input string)
+}
+
+/*
+OutputTerminal is a generic output terminal which can write strings.
+*/
+type OutputTerminal interface {
+
+	/*
+	   WriteString write a string on this terminal.
+	*/
+	WriteString(s string)
 }
 
 /*
 matchesFulltextSearch checks if a given text matches a given glob expression. Returns
 true if an error occurs.
 */
-func matchesFulltextSearch(ot interpreter.OutputTerminal, text string, glob string) bool {
+func matchesFulltextSearch(ot OutputTerminal, text string, glob string) bool {
 	var res bool
 
 	re, err := stringutil.GlobToRegex(glob)

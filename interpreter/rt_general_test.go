@@ -59,6 +59,7 @@ func TestGeneralCases(t *testing.T) {
 	n, _ = parser.Parse("a", "a")
 	void := &voidRuntime{newBaseRuntime(NewECALRuntimeProvider("a", nil, nil), n)}
 	n.Runtime = void
+	void.Validate()
 
 	if res, err := void.Eval(nil, nil, 0); err != nil || res != nil {
 		t.Error("Unexpected result:", res, err)
@@ -103,6 +104,7 @@ statements
 	n.Runtime = imp
 	imp.erp = NewECALRuntimeProvider("ECALTestRuntime", nil, nil)
 	imp.erp.ImportLocator = nil
+	imp.Validate()
 
 	if res, err := imp.Eval(nil, nil, 0); err == nil || err.Error() != "ECAL error in ECALTestRuntime: Runtime error (No import locator was specified) (Line:1 Pos:1)" {
 		t.Error("Unexpected result:", res, err)

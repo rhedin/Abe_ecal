@@ -73,4 +73,9 @@ type Scope interface {
 	   String returns a string representation of this scope.
 	*/
 	String() string
+
+	/*
+		ToJSONObject returns this ASTNode and all its children as a JSON object.
+	*/
+	ToJSONObject() map[string]interface{}
 }

@@ -261,6 +261,7 @@ func (n *ASTNode) ToJSONObject() map[string]interface{} {
 		ret["identifier"] = n.Token.Identifier
 		ret["allowescapes"] = n.Token.AllowEscapes
 		ret["pos"] = n.Token.Pos
+		ret["source"] = n.Token.Lsource
 		ret["line"] = n.Token.Lline
 		ret["linepos"] = n.Token.Lpos
 	}
@@ -334,6 +335,11 @@ func ASTFromJSONObject(jsonAST map[string]interface{}) (*ASTNode, error) {
 		linepos = 0
 	}
 
+	source, ok := jsonAST["source"]
+	if !ok {
+		source = ""
+	}
+
 	// Create meta data
 
 	if meta, ok := jsonAST["meta"]; ok {
@@ -391,6 +397,7 @@ func ASTFromJSONObject(jsonAST map[string]interface{}) (*ASTNode, error) {
 		fmt.Sprint(value),    // Val
 		identifier == true,   // Identifier
 		allowescapes == true, // AllowEscapes
+		fmt.Sprint(source),   // Lsource
 		line,                 // Lline
 		linepos,              // Lpos
 	}

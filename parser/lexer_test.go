@@ -82,6 +82,7 @@ Lpos is different 1 vs 2
   "Val": "not",
   "Identifier": false,
   "AllowEscapes": false,
+  "Lsource": "mytest",
   "Lline": 1,
   "Lpos": 1
 }
@@ -92,6 +93,7 @@ vs
   "Val": "test",
   "Identifier": true,
   "AllowEscapes": false,
+  "Lsource": "mytest",
   "Lline": 2,
   "Lpos": 2
 }` {

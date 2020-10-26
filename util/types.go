@@ -10,7 +10,9 @@
 
 package util
 
-import "devt.de/krotik/ecal/parser"
+import (
+	"devt.de/krotik/ecal/parser"
+)
 
 /*
 Processor models a top level execution instance for ECAL.
@@ -68,4 +70,111 @@ type Logger interface {
 	   LogDebug adds a new debug log message.
 	*/
 	LogDebug(v ...interface{})
+}
+
+/*
+ContType represents a way how to resume code execution of a suspended thread.
+*/
+type ContType int
+
+/*
+Available lexer token types
+*/
+const (
+	Resume   ContType = iota // Resume code execution until the next breakpoint or the end
+	StepIn                   // Step into a function call or over the next non-function call
+	StepOver                 // Step over the current statement onto the next line
+	StepOut                  // Step out of the current function call
+)
+
+/*
+ECALDebugger is a debugging object which can be used to inspect and modify a running
+ECAL environment.
+*/
+type ECALDebugger interface {
+
+	/*
+		HandleInput handles a given debug instruction. It must be possible to
+		convert the output data into a JSON string.
+	*/
+	HandleInput(input string) (interface{}, error)
+
+	/*
+	   Break on the start of the next execution.
+	*/
+	BreakOnStart(flag bool)
+
+	/*
+	   VisitState is called for every state during the execution of a program.
+	*/
+	VisitState(node *parser.ASTNode, vs parser.Scope, tid uint64) TraceableRuntimeError
+
+	/*
+	   VisitStepInState is called before entering a function call.
+	*/
+	VisitStepInState(node *parser.ASTNode, vs parser.Scope, tid uint64) TraceableRuntimeError
+
+	/*
+	   VisitStepOutState is called after returning from a function call.
+	*/
+	VisitStepOutState(node *parser.ASTNode, vs parser.Scope, tid uint64) TraceableRuntimeError
+
+	/*
+	   SetBreakPoint sets a break point.
+	*/
+	SetBreakPoint(source string, line int)
+
+	/*
+	   DisableBreakPoint disables a break point but keeps the code reference.
+	*/
+	DisableBreakPoint(source string, line int)
+
+	/*
+	   RemoveBreakPoint removes a break point.
+	*/
+	RemoveBreakPoint(source string, line int)
+
+	/*
+		ExtractValue copies a value from a suspended thread into the
+		global variable scope.
+	*/
+	ExtractValue(threadId uint64, varName string, destVarName string) error
+
+	/*
+		InjectValue copies a value from an expression (using the global
+		variable scope) into a suspended thread.
+	*/
+	InjectValue(threadId uint64, varName string, expression string) error
+
+	/*
+	   Continue will continue a suspended thread.
+	*/
+	Continue(threadId uint64, contType ContType)
+
+	/*
+		Status returns the current status of the debugger.
+	*/
+	Status() interface{}
+
+	/*
+	   Describe decribes a thread currently observed by the debugger.
+	*/
+	Describe(threadId uint64) interface{}
+}
+
+/*
+DebugCommand is command which can modify and interrogate the debugger.
+*/
+type DebugCommand interface {
+
+	/*
+		Execute the debug command and return its result. It must be possible to
+		convert the output data into a JSON string.
+	*/
+	Run(debugger ECALDebugger, args []string) (interface{}, error)
+
+	/*
+	   DocString returns a descriptive text about this command.
+	*/
+	DocString() string
 }

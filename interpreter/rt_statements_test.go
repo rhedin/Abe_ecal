@@ -955,6 +955,9 @@ error: Something happened: {
   "line": 4,
   "pos": 5,
   "source": "ECALTestRuntime",
+  "trace": [
+    "raise(\"test 12\", null, [1, 2, 3]) (ECALEvalTest:4)"
+  ],
   "type": "test 12"
 }
 Cleanup`[1:] {
@@ -1001,6 +1004,9 @@ error: Something else happened: {
   "line": 4,
   "pos": 5,
   "source": "ECALTestRuntime",
+  "trace": [
+    "raise(\"test 13\", null, [1, 2, 3]) (ECALEvalTest:4)"
+  ],
   "type": "test 13"
 }
 Runtime error: {
@@ -1009,6 +1015,7 @@ Runtime error: {
   "line": 11,
   "pos": 12,
   "source": "ECALTestRuntime",
+  "trace": [],
   "type": "Operand is not a number"
 }
 Cleanup`[1:] {

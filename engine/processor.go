@@ -347,8 +347,8 @@ func (p *eventProcessor) AddEvent(event *Event, eventMonitor Monitor) (Monitor, 
 
 	// Check that the thread pool is running
 
-	if p.pool.Status() == pool.StatusStopped {
-		return nil, fmt.Errorf("Cannot add event if the processor is not running")
+	if s := p.pool.Status(); s == pool.StatusStopped || s == pool.StatusStopping {
+		return nil, fmt.Errorf("Cannot add event if the processor is stopping or not running")
 	}
 
 	EventTracer.record(event, "eventProcessor.AddEvent", "Event added to the processor")

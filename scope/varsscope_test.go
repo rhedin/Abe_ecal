@@ -11,6 +11,7 @@
 package scope
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 )
@@ -315,6 +316,12 @@ func TestVarScopeDump(t *testing.T) {
         }
     }
 }` {
+		t.Error("Unexpected result:", res)
+		return
+	}
+
+	bytes, _ := json.Marshal(sinkVs1.ToJSONObject())
+	if res := string(bytes); res != `{"b":2}` {
 		t.Error("Unexpected result:", res)
 		return
 	}

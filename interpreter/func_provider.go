@@ -832,10 +832,14 @@ func (ct *setCronTrigger) Run(instanceID string, vs parser.Scope, is map[string]
 					"tick":      float64(tick),
 				})
 				monitor := proc.NewRootMonitor(nil, nil)
+
 				_, err := proc.AddEvent(event, monitor)
-				errorutil.AssertTrue(err == nil,
-					fmt.Sprintf("Could not add cron event for trigger %v %v %v: %v",
-						cronspec, eventname, eventkind, err))
+
+				if status := proc.Status(); status != "Stopped" && status != "Stopping" {
+					errorutil.AssertTrue(err == nil,
+						fmt.Sprintf("Could not add cron event for trigger %v %v %v: %v",
+							cronspec, eventname, eventkind, err))
+				}
 			})
 		}
 	}
@@ -904,7 +908,7 @@ func (pt *setPulseTrigger) Run(instanceID string, vs parser.Scope, is map[string
 					monitor := proc.NewRootMonitor(nil, nil)
 					_, err := proc.AddEvent(event, monitor)
 
-					if proc.Stopped() {
+					if status := proc.Status(); status == "Stopped" || status == "Stopping" {
 						break
 					}
 

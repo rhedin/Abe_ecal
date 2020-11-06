@@ -140,7 +140,7 @@ convert the output data into a JSON string.
 */
 func (c *rmBreakpointCommand) Run(debugger util.ECALDebugger, args []string) (interface{}, error) {
 	if len(args) == 0 {
-		return nil, fmt.Errorf("Need a break target (<source>:<line>) as first parameter")
+		return nil, fmt.Errorf("Need a break target (<source>[:<line>]) as first parameter")
 	}
 
 	targetSplit := strings.Split(args[0], ":")
@@ -153,9 +153,13 @@ func (c *rmBreakpointCommand) Run(debugger util.ECALDebugger, args []string) (in
 
 			return nil, nil
 		}
+
+	} else {
+
+		debugger.RemoveBreakPoint(args[0], -1)
 	}
 
-	return nil, fmt.Errorf("Invalid break target - should be <source>:<line>")
+	return nil, nil
 }
 
 /*

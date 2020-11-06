@@ -176,6 +176,37 @@ test3`[1:] {
 		t.Error("Unexpected result:", outString, err)
 		return
 	}
+
+	if _, err = testDebugger.HandleInput("break ECALEvalTest:4"); err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	if _, err = testDebugger.HandleInput("rmbreak ECALEvalTest"); err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	out, err = testDebugger.HandleInput(fmt.Sprintf("status"))
+
+	outBytes, _ = json.MarshalIndent(out, "", "  ")
+	outString = string(outBytes)
+
+	if err != nil || outString != `{
+  "breakonstart": false,
+  "breakpoints": {},
+  "sources": [
+    "ECALEvalTest"
+  ],
+  "threads": {
+    "1": {
+      "callStack": []
+    }
+  }
+}` {
+		t.Error("Unexpected result:", outString, err)
+		return
+	}
 }
 
 func TestConcurrentDebugging(t *testing.T) {
@@ -1076,13 +1107,7 @@ func TestDebuggingErrorInput(t *testing.T) {
 	}
 
 	if _, err = testDebugger.HandleInput("rmbreak"); err == nil ||
-		err.Error() != `Need a break target (<source>:<line>) as first parameter` {
-		t.Error("Unexpected result:", err)
-		return
-	}
-
-	if _, err = testDebugger.HandleInput("rmbreak foo"); err == nil ||
-		err.Error() != `Invalid break target - should be <source>:<line>` {
+		err.Error() != `Need a break target (<source>[:<line>]) as first parameter` {
 		t.Error("Unexpected result:", err)
 		return
 	}

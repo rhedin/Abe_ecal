@@ -24,11 +24,14 @@
         "compile": "tsc",
         "watch": "tsc -w",
         "package": "vsce package",
-        "pretty": "eslint 'src/**/*.{js,ts,tsx}' --quiet --fix"
+        "lint": "eslint 'src/**/*.{js,ts,tsx}' --quiet --fix"
     },
     "dependencies": {
         "@jpwilliams/waitgroup": "1.0.1",
-        "vscode-debugadapter": "^1.42.1"
+        "vscode-debugadapter": "^1.42.1",
+        "promise-socket": "^7.0.0",
+        "readline-promise": "^1.0.4",
+        "async-lock": "^1.2.4"
     },
     "devDependencies": {
         "@types/node": "^14.14.2",
@@ -83,13 +86,19 @@
                 "configurationAttributes": {
                     "launch": {
                         "required": [
-                            "serverURL",
+                            "host",
+                            "port",
                             "dir"
                         ],
                         "properties": {
-                            "serverURL": {
+                            "host": {
                                 "type": "string",
-                                "description": "URL of the ECAL debug server.",
+                                "description": "Host of the ECAL debug server.",
+                                "default": "localhost:43806"
+                            },
+                            "port": {
+                                "type": "number",
+                                "description": "Port of the ECAL debug server.",
                                 "default": "localhost:43806"
                             },
                             "dir": {
@@ -99,7 +108,7 @@
                             },
                             "executeOnEntry": {
                                 "type": "boolean",
-                                "description": "Execute the ECAL script on entry. If this is set to false then code needs to be manually started from the ECAL debug server console.",
+                                "description": "Execute the current edited ECAL script on entry. If this is set to false then code needs to be manually started from the ECAL debug server console.",
                                 "default": true
                             },
                             "trace": {
@@ -115,7 +124,8 @@
                         "type": "ecaldebug",
                         "request": "launch",
                         "name": "Debug ECAL script with ECAL Debug Server",
-                        "serverURL": "localhost:43806",
+                        "host": "localhost",
+                        "port": 33274,
                         "dir": "${workspaceFolder}",
                         "executeOnEntry": true,
                         "trace": false

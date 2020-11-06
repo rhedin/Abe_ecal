@@ -15,5 +15,10 @@ module.exports = {
     '@typescript-eslint'
   ],
   rules: {
+    "eqeqeq": [2, "allow-null"],
+    "indent": [2, 4],
+    "quotes": [2, "single"],
+    "semi": [2, "always"],
+    "no-console": 0
   }
 }

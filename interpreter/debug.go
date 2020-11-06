@@ -317,7 +317,15 @@ RemoveBreakPoint removes a break point.
 func (ed *ecalDebugger) RemoveBreakPoint(source string, line int) {
 	ed.lock.Lock()
 	defer ed.lock.Unlock()
-	delete(ed.breakPoints, fmt.Sprintf("%v:%v", source, line))
+	if line > 0 {
+		delete(ed.breakPoints, fmt.Sprintf("%v:%v", source, line))
+	} else {
+		for k := range ed.breakPoints {
+			if ksource := strings.Split(k, ":")[0]; ksource == source {
+				delete(ed.breakPoints, k)
+			}
+		}
+	}
 }
 
 /*

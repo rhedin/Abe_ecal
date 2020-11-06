@@ -282,7 +282,7 @@ func (i *CLIInterpreter) HandleInput(ot OutputTerminal, line string, tid uint64)
 			if ierr = ast.Runtime.Validate(); ierr == nil {
 
 				if res, ierr = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}), tid); ierr == nil && res != nil {
-					ot.WriteString(fmt.Sprintln(res))
+					ot.WriteString(fmt.Sprintln(stringutil.ConvertToString(res)))
 				}
 			}
 		}

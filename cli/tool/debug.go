@@ -12,6 +12,8 @@ package tool
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -19,6 +21,7 @@ import (
 	"strings"
 	"time"
 
+	"devt.de/krotik/common/errorutil"
 	"devt.de/krotik/common/stringutil"
 	"devt.de/krotik/ecal/interpreter"
 	"devt.de/krotik/ecal/util"
@@ -34,6 +37,7 @@ type CLIDebugInterpreter struct {
 
 	DebugServerAddr *string // Debug server address
 	RunDebugServer  *bool   // Run a debug server
+	EchoDebugServer *bool   // Echo all input and output of the debug server
 	Interactive     *bool   // Flag if the interpreter should open a console in the current tty.
 }
 
@@ -41,7 +45,7 @@ type CLIDebugInterpreter struct {
 NewCLIDebugInterpreter wraps an existing CLIInterpreter object and adds capabilities.
 */
 func NewCLIDebugInterpreter(i *CLIInterpreter) *CLIDebugInterpreter {
-	return &CLIDebugInterpreter{i, nil, nil, nil}
+	return &CLIDebugInterpreter{i, nil, nil, nil, nil}
 }
 
 /*
@@ -55,6 +59,7 @@ func (i *CLIDebugInterpreter) ParseArgs() bool {
 
 	i.DebugServerAddr = flag.String("serveraddr", "localhost:33274", "Debug server address") // Think BERTA
 	i.RunDebugServer = flag.Bool("server", false, "Run a debug server")
+	i.EchoDebugServer = flag.Bool("echo", false, "Echo all i/o of the debug server")
 	i.Interactive = flag.Bool("interactive", true, "Run interactive console")
 
 	return i.CLIInterpreter.ParseArgs()
@@ -92,7 +97,7 @@ func (i *CLIDebugInterpreter) Interpret() error {
 
 		if *i.RunDebugServer {
 			debugServer := &debugTelnetServer{*i.DebugServerAddr, "ECALDebugServer: ",
-				nil, true, i, i.RuntimeProvider.Logger}
+				nil, true, *i.EchoDebugServer, i, i.RuntimeProvider.Logger}
 			go debugServer.Run()
 			time.Sleep(500 * time.Millisecond) // Too lazy to do proper signalling
 			defer func() {
@@ -141,6 +146,7 @@ func (i *CLIDebugInterpreter) Handle(ot OutputTerminal, line string) {
 			ot.WriteString(stringutil.PrintGraphicStringTable(tabData, 2, 1,
 				stringutil.SingleDoubleLineTable))
 		}
+		ot.WriteString(fmt.Sprintln(fmt.Sprintln()))
 
 	} else {
 		res, err := i.RuntimeProvider.Debugger.HandleInput(strings.TrimSpace(line[2:]))
@@ -149,12 +155,17 @@ func (i *CLIDebugInterpreter) Handle(ot OutputTerminal, line string) {
 			var outBytes []byte
 			outBytes, err = json.MarshalIndent(res, "", "  ")
 			if err == nil {
-				ot.WriteString(fmt.Sprintln(string(outBytes)))
+				ot.WriteString(fmt.Sprintln(fmt.Sprintln(string(outBytes))))
 			}
 		}
 
 		if err != nil {
-			ot.WriteString(fmt.Sprintf("Debugger Error: %v", err.Error()))
+			var outBytes []byte
+			outBytes, err = json.MarshalIndent(map[string]interface{}{
+				"DebuggerError": err.Error(),
+			}, "", "  ")
+			errorutil.AssertOk(err)
+			ot.WriteString(fmt.Sprintln(fmt.Sprintln(string(outBytes))))
 		}
 	}
 }
@@ -167,6 +178,7 @@ type debugTelnetServer struct {
 	logPrefix   string
 	listener    *net.TCPListener
 	listen      bool
+	echo        bool
 	interpreter *CLIDebugInterpreter
 	logger      util.Logger
 }
@@ -210,26 +222,67 @@ HandleConnection handles an incoming connection.
 func (s *debugTelnetServer) HandleConnection(conn net.Conn) {
 	tid := s.interpreter.RuntimeProvider.NewThreadID()
 	inputReader := bufio.NewReader(conn)
-	outputTerminal := OutputTerminal(&bufioWriterShim{bufio.NewWriter(conn)})
+	outputTerminal := OutputTerminal(&bufioWriterShim{fmt.Sprint(conn.RemoteAddr()), bufio.NewWriter(conn), s.echo})
 
 	line := ""
 
 	s.logger.LogDebug(s.logPrefix, "Connect ", conn.RemoteAddr())
+	if s.echo {
+		fmt.Println(fmt.Sprintf("%v : Connected", conn.RemoteAddr()))
+	}
 
 	for {
+		var outBytes []byte
 		var err error
 
 		if line, err = inputReader.ReadString('\n'); err == nil {
 			line = strings.TrimSpace(line)
 
+			if s.echo {
+				fmt.Println(fmt.Sprintf("%v > %v", conn.RemoteAddr(), line))
+			}
+
 			if line == "exit" || line == "q" || line == "quit" || line == "bye" || line == "\x04" {
 				break
 			}
 
-			s.interpreter.HandleInput(outputTerminal, line, tid)
+			isHelpTable := strings.HasPrefix(line, "@")
+
+			if !s.interpreter.CanHandle(line) || isHelpTable {
+				buffer := bytes.NewBuffer(nil)
+
+				s.interpreter.HandleInput(&bufioWriterShim{"tmpbuffer", bufio.NewWriter(buffer), false}, line, tid)
+
+				if isHelpTable {
+
+					// Special case we have tables which should be transformed
+
+					r := strings.NewReplacer("═", "*", "│", "*", "╪", "*", "╒", "*",
+						"╕", "*", "╘", "*", "╛", "*", "╤", "*", "╞", "*", "╡", "*", "╧", "*")
+
+					outBytes = []byte(r.Replace(buffer.String()))
+
+				} else {
+
+					outBytes = buffer.Bytes()
+				}
+
+				outBytes, err = json.MarshalIndent(map[string]interface{}{
+					"EncodedOutput": base64.StdEncoding.EncodeToString(outBytes),
+				}, "", "  ")
+				errorutil.AssertOk(err)
+				outputTerminal.WriteString(fmt.Sprintln(fmt.Sprintln(string(outBytes))))
+
+			} else {
+
+				s.interpreter.HandleInput(outputTerminal, line, tid)
+			}
 		}
 
 		if err != nil {
+			if s.echo {
+				fmt.Println(fmt.Sprintf("%v : Disconnected", conn.RemoteAddr()))
+			}
 			s.logger.LogDebug(s.logPrefix, "Disconnect ", conn.RemoteAddr(), " - ", err)
 			break
 		}
@@ -242,13 +295,18 @@ func (s *debugTelnetServer) HandleConnection(conn net.Conn) {
 bufioWriterShim is a shim to allow a bufio.Writer to be used as an OutputTerminal.
 */
 type bufioWriterShim struct {
+	id     string
 	writer *bufio.Writer
+	echo   bool
 }
 
 /*
 WriteString write a string to the writer.
 */
 func (shim *bufioWriterShim) WriteString(s string) {
+	if shim.echo {
+		fmt.Println(fmt.Sprintf("%v < %v", shim.id, s))
+	}
 	shim.writer.WriteString(s)
 	shim.writer.Flush()
 }

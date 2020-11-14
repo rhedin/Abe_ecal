@@ -50,6 +50,11 @@ Scope models an environment which stores data.
 type Scope interface {
 
 	/*
+	   Name returns the name of this scope.
+	*/
+	Name() string
+
+	/*
 	   NewChild creates a new child scope.
 	*/
 	NewChild(name string) Scope
@@ -75,7 +80,7 @@ type Scope interface {
 	String() string
 
 	/*
-		ToJSONObject returns this ASTNode and all its children as a JSON object.
+	   ToJSONObject returns this ASTNode and all its children as a JSON object.
 	*/
 	ToJSONObject() map[string]interface{}
 }

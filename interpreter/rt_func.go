@@ -136,7 +136,7 @@ func (f *function) Run(instanceID string, vs parser.Scope, is map[string]interfa
 
 	// Create varscope for the body - not a child scope but a new root
 
-	fvs := scope.NewScope(fmt.Sprintf("func: %v", f.name))
+	fvs := scope.NewScope(fmt.Sprintf("%v %v", scope.FuncPrefix, f.name))
 
 	if f.this != nil {
 		fvs.SetValue("this", f.this)

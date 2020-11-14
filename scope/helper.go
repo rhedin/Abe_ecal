@@ -25,6 +25,7 @@ Default scope names
 */
 const (
 	GlobalScope = "GlobalScope"
+	FuncPrefix  = "func:"
 )
 
 /*

@@ -411,13 +411,13 @@ func TestStepDebugging(t *testing.T) {
 
 	code := `
 log("start")
-func fa() {
+func fa(x) {
   a := 1
   log("a enter")
-  fb()
+  fb(x)
   log("a exit")
 }
-func fb() {
+func fb(x) {
   b := 2
   log("b enter")
   fc()
@@ -429,7 +429,7 @@ func fc() {
   log("c enter")
   log("c exit")
 }
-fa()
+fa(1)
 func e() {
   log("e()")
 }
@@ -495,13 +495,15 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [
-        "fa() (ECALEvalTest:21)",
-        "fb() (ECALEvalTest:6)"
+        "fa(1) (ECALEvalTest:21)",
+        "fb(x) (ECALEvalTest:6)"
       ],
       "threadRunning": false
     }
   },
-  "vs": {}
+  "vs": {
+    "x": 1
+  }
 }` {
 		t.Error("Unexpected state:", state)
 		return
@@ -524,14 +526,15 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [
-        "fa() (ECALEvalTest:21)",
-        "fb() (ECALEvalTest:6)"
+        "fa(1) (ECALEvalTest:21)",
+        "fb(x) (ECALEvalTest:6)"
       ],
       "threadRunning": false
     }
   },
   "vs": {
-    "b": 2
+    "b": 2,
+    "x": 1
   }
 }` {
 		t.Error("Unexpected state:", state)
@@ -555,14 +558,15 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [
-        "fa() (ECALEvalTest:21)",
-        "fb() (ECALEvalTest:6)"
+        "fa(1) (ECALEvalTest:21)",
+        "fb(x) (ECALEvalTest:6)"
       ],
       "threadRunning": false
     }
   },
   "vs": {
-    "b": 2
+    "b": 2,
+    "x": 1
   }
 }` {
 		t.Error("Unexpected state:", state)
@@ -586,8 +590,8 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [
-        "fa() (ECALEvalTest:21)",
-        "fb() (ECALEvalTest:6)",
+        "fa(1) (ECALEvalTest:21)",
+        "fb(x) (ECALEvalTest:6)",
         "fc() (ECALEvalTest:12)"
       ],
       "threadRunning": false
@@ -616,14 +620,15 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [
-        "fa() (ECALEvalTest:21)",
-        "fb() (ECALEvalTest:6)"
+        "fa(1) (ECALEvalTest:21)",
+        "fb(x) (ECALEvalTest:6)"
       ],
       "threadRunning": false
     }
   },
   "vs": {
-    "b": 2
+    "b": 2,
+    "x": 1
   }
 }` {
 		t.Error("Unexpected state:", state)
@@ -647,8 +652,8 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [
-        "fa() (ECALEvalTest:21)",
-        "fb() (ECALEvalTest:6)",
+        "fa(1) (ECALEvalTest:21)",
+        "fb(x) (ECALEvalTest:6)",
         "fc() (ECALEvalTest:13)"
       ],
       "threadRunning": false
@@ -674,14 +679,15 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [
-        "fa() (ECALEvalTest:21)",
-        "fb() (ECALEvalTest:6)"
+        "fa(1) (ECALEvalTest:21)",
+        "fb(x) (ECALEvalTest:6)"
       ],
       "threadRunning": false
     }
   },
   "vs": {
-    "b": 2
+    "b": 2,
+    "x": 1
   }
 }` {
 		t.Error("Unexpected state:", state)
@@ -704,13 +710,14 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [
-        "fa() (ECALEvalTest:21)"
+        "fa(1) (ECALEvalTest:21)"
       ],
       "threadRunning": false
     }
   },
   "vs": {
-    "a": 1
+    "a": 1,
+    "x": 1
   }
 }` {
 		t.Error("Unexpected state:", state)
@@ -846,6 +853,125 @@ finish`[1:] {
 	}
 }
 
+func TestStepDebuggingWithImport(t *testing.T) {
+	var err error
+	defer func() {
+		testDebugger = nil
+	}()
+
+	testDebugger = NewECALDebugger(nil)
+
+	il := &util.MemoryImportLocator{Files: make(map[string]string)}
+	il.Files["foo/bar"] = `
+func myfunc(n) {
+  if (n <= 1) {
+      return n
+  }
+  n := n + 1
+  return n
+}
+`
+	code := `
+a := 1
+import "foo/bar" as foobar
+log("start")
+a := foobar.myfunc(a)
+log("finish: ", a)
+`
+
+	if _, err = testDebugger.HandleInput("break ECALEvalTest:4"); err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	if _, err = testDebugger.HandleInput("break foo/bar:4"); err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		_, err = UnitTestEvalAndASTAndImport(code, nil, "", il)
+		if err != nil {
+			t.Error(err)
+		}
+		wg.Done()
+	}()
+
+	tid := waitForThreadSuspension(t)
+
+	if state := getDebuggerState(tid, t); state != `{
+  "breakpoints": {
+    "ECALEvalTest:4": true,
+    "foo/bar:4": true
+  },
+  "code": "log(\"start\")",
+  "threads": {
+    "1": {
+      "callStack": [],
+      "threadRunning": false
+    }
+  },
+  "vs": {
+    "a": 1,
+    "foobar": {
+      "myfunc": "ecal.function: myfunc (Line 2, Pos 1)"
+    }
+  }
+}` {
+		t.Error("Unexpected state:", state)
+		return
+	}
+
+	// Resume execution
+
+	if _, err := testDebugger.HandleInput(fmt.Sprintf("cont %v resume", tid)); err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+	tid = waitForThreadSuspension(t)
+
+	if state := getDebuggerState(tid, t); state != `{
+  "breakpoints": {
+    "ECALEvalTest:4": true,
+    "foo/bar:4": true
+  },
+  "code": "return n",
+  "threads": {
+    "1": {
+      "callStack": [
+        "myfunc(a) (ECALEvalTest:5)"
+      ],
+      "threadRunning": false
+    }
+  },
+  "vs": {
+    "n": 1
+  }
+}` {
+		t.Error("Unexpected state:", state)
+		return
+	}
+
+	// Continue until the end
+
+	if _, err := testDebugger.HandleInput(fmt.Sprintf("cont %v Resume", tid)); err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	wg.Wait()
+
+	if err != nil || testlogger.String() != `
+start
+finish: 1`[1:] {
+		t.Error("Unexpected result:", testlogger.String(), err)
+		return
+	}
+}
+
 func getDebuggerState(tid uint64, t *testing.T) string {
 	out, err := testDebugger.HandleInput(fmt.Sprintf("status"))
 	if err != nil {
@@ -860,7 +986,6 @@ func getDebuggerState(tid uint64, t *testing.T) string {
 		t.Error(err)
 		return ""
 	}
-
 	outMap2 := out.(map[string]interface{})
 
 	outMap["vs"] = outMap2["vs"]

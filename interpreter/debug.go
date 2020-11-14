@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 
+	"devt.de/krotik/common/datautil"
 	"devt.de/krotik/common/errorutil"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
@@ -104,14 +105,16 @@ func (ed *ecalDebugger) HandleInput(input string) (interface{}, error) {
 
 	args := strings.Fields(input)
 
-	if cmd, ok := DebugCommandsMap[args[0]]; ok {
-		if len(args) > 1 {
-			res, err = cmd.Run(ed, args[1:])
+	if len(args) > 0 {
+		if cmd, ok := DebugCommandsMap[args[0]]; ok {
+			if len(args) > 1 {
+				res, err = cmd.Run(ed, args[1:])
+			} else {
+				res, err = cmd.Run(ed, nil)
+			}
 		} else {
-			res, err = cmd.Run(ed, nil)
+			err = fmt.Errorf("Unknown command: %v", args[0])
 		}
-	} else {
-		err = fmt.Errorf("Unknown command: %v", args[0])
 	}
 
 	return res, err
@@ -484,16 +487,48 @@ func (ed *ecalDebugger) Describe(threadId uint64) interface{} {
 			"callStack":     ed.prettyPrintCallStack(threadCallStack),
 		}
 
+		vsValues := make(map[string]interface{})
+
+		parent := is.vs.Parent()
+		for parent != nil &&
+			parent.Name() != scope.GlobalScope &&
+			strings.HasPrefix(parent.Name(), scope.FuncPrefix) {
+
+			vsValues = datautil.MergeMaps(vsValues, parent.ToJSONObject())
+
+			parent = parent.Parent()
+		}
+
+		vsValues = ed.MergeMaps(vsValues, is.vs.ToJSONObject())
+
 		if !is.running {
 
 			codeString, _ := parser.PrettyPrint(is.node)
 			res["code"] = codeString
 			res["node"] = is.node.ToJSONObject()
-			res["vs"] = is.vs.ToJSONObject()
+			res["vs"] = vsValues
 		}
 	}
 
 	return res
+}
+
+/*
+MergeMaps merges all given maps into a new map. Contents are shallow copies
+and conflicts are resolved as first-one-wins.
+*/
+func (ed *ecalDebugger) MergeMaps(maps ...map[string]interface{}) map[string]interface{} {
+	ret := make(map[string]interface{})
+
+	for _, m := range maps {
+		for k, v := range m {
+			if _, ok := ret[k]; !ok {
+				ret[k] = v
+			}
+		}
+	}
+
+	return ret
 }
 
 /*

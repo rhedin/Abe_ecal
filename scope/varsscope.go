@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 
+	"devt.de/krotik/common/stringutil"
 	"devt.de/krotik/ecal/parser"
 )
 
@@ -90,6 +91,13 @@ func (s *varsScope) NewChild(name string) parser.Scope {
 	s.children = append(s.children, child)
 
 	return child
+}
+
+/*
+Name returns the name of this scope.
+*/
+func (s *varsScope) Name() string {
+	return s.name
 }
 
 /*
@@ -365,10 +373,24 @@ func (s *varsScope) ToJSONObject() map[string]interface{} {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	var ret map[string]interface{}
+	ret := make(map[string]interface{})
 
-	bytes, _ := json.Marshal(s.storage)
-	json.Unmarshal(bytes, &ret)
+	for k, v := range s.storage {
+		var value interface{}
+
+		value = fmt.Sprintf("ComplexDataStructure: %#v", v)
+
+		bytes, err := json.Marshal(v)
+		if err != nil {
+			bytes, err = json.Marshal(stringutil.ConvertToJSONMarshalableObject(v))
+
+		}
+		if err == nil {
+			json.Unmarshal(bytes, &value)
+		}
+
+		ret[k] = value
+	}
 
 	return ret
 }

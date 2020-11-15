@@ -2,9 +2,9 @@
 
 ## Folder content
 
-* `package.json` - manifest file
-* `syntaxes/ecal.tmLanguage.json` - Text mate grammar file
-* `language-configuration.json` - language configuration for VSCode
+- `package.json` - manifest file
+- `syntaxes/ecal.tmLanguage.json` - Text mate grammar file
+- `language-configuration.json` - language configuration for VSCode
 
 ## Build the extention
 

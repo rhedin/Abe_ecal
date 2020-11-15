@@ -23,6 +23,8 @@ import (
 TODO:
 - create executable binary (pack into single binary)
 - debug server support (vscode)
+- debug support break on start
+- debug support errors
 - pretty printer
 */
 

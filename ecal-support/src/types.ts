@@ -12,20 +12,17 @@ export interface EcalAstNode {
 }
 
 export interface ThreadInspection {
-  callstack: string[];
+  callStack: string[];
+  callStackNode?: EcalAstNode[];
+  callStackVs?: Record<string, any>[];
   threadRunning: boolean;
   code?: string;
   node?: EcalAstNode;
-  vs?: any;
-}
-
-export interface ClientBreakEvent {
-  tid: number;
-  inspection: ThreadInspection;
+  vs?: Record<string, any>;
 }
 
 export interface ThreadStatus {
-  callstack: string[];
+  callStack: string[];
   threadRunning?: boolean;
 }
 
@@ -33,7 +30,7 @@ export interface DebugStatus {
   breakonstart: boolean;
   breakpoints: Record<string, boolean>;
   sources: string[];
-  threads: Record<number, ThreadStatus>;
+  threads: Record<string, ThreadStatus>;
 }
 
 /**
@@ -42,4 +39,9 @@ export interface DebugStatus {
 export interface LogOutputStream {
   log(value: string): void;
   error(value: string): void;
+}
+
+export interface ClientBreakEvent {
+  tid: number;
+  inspection: ThreadInspection;
 }

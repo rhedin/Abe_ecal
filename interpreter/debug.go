@@ -29,13 +29,14 @@ import (
 ecalDebugger is the inbuild default debugger.
 */
 type ecalDebugger struct {
-	breakPoints         map[string]bool                // Break points (active or not)
-	interrogationStates map[uint64]*interrogationState // Collection of threads which are interrogated
-	callStacks          map[uint64][]*parser.ASTNode   // Call stacks of threads
-	sources             map[string]bool                // All known sources
-	breakOnStart        bool                           // Flag to stop at the start of the next execution
-	globalScope         parser.Scope                   // Global variable scope which can be used to transfer data
-	lock                *sync.RWMutex                  // Lock for this debugger
+	breakPoints         map[string]bool                     // Break points (active or not)
+	interrogationStates map[uint64]*interrogationState      // Collection of threads which are interrogated
+	callStacks          map[uint64][]*parser.ASTNode        // Call stack locations of threads
+	callStackVs         map[uint64][]map[string]interface{} // Variable scope snapshots of threads
+	sources             map[string]bool                     // All known sources
+	breakOnStart        bool                                // Flag to stop at the start of the next execution
+	globalScope         parser.Scope                        // Global variable scope which can be used to transfer data
+	lock                *sync.RWMutex                       // Lock for this debugger
 
 }
 
@@ -89,6 +90,7 @@ func NewECALDebugger(globalVS parser.Scope) util.ECALDebugger {
 		breakPoints:         make(map[string]bool),
 		interrogationStates: make(map[uint64]*interrogationState),
 		callStacks:          make(map[uint64][]*parser.ASTNode),
+		callStackVs:         make(map[uint64][]map[string]interface{}),
 		sources:             make(map[string]bool),
 		breakOnStart:        false,
 		globalScope:         globalVS,
@@ -144,6 +146,7 @@ func (ed *ecalDebugger) VisitState(node *parser.ASTNode, vs parser.Scope, tid ui
 
 		ed.lock.Lock()
 		ed.callStacks[tid] = make([]*parser.ASTNode, 0, 10)
+		ed.callStackVs[tid] = make([]map[string]interface{}, 0, 10)
 		ed.lock.Unlock()
 	}
 
@@ -219,6 +222,7 @@ func (ed *ecalDebugger) VisitStepInState(node *parser.ASTNode, vs parser.Scope, 
 	var err util.TraceableRuntimeError
 
 	threadCallStack := ed.callStacks[tid]
+	threadCallStackVs := ed.callStackVs[tid]
 
 	is, ok := ed.interrogationStates[tid]
 
@@ -242,12 +246,13 @@ func (ed *ecalDebugger) VisitStepInState(node *parser.ASTNode, vs parser.Scope, 
 				is.cmd = Stop
 			case StepOver:
 				is.cmd = StepOut
-				is.stepOutStack = ed.callStacks[tid]
+				is.stepOutStack = threadCallStack
 			}
 		}
 	}
 
 	ed.callStacks[tid] = append(threadCallStack, node)
+	ed.callStackVs[tid] = append(threadCallStackVs, ed.buildVsSnapshot(vs))
 
 	return err
 }
@@ -260,6 +265,7 @@ func (ed *ecalDebugger) VisitStepOutState(node *parser.ASTNode, vs parser.Scope,
 	defer ed.lock.Unlock()
 
 	threadCallStack := ed.callStacks[tid]
+	threadCallStackVs := ed.callStackVs[tid]
 	lastIndex := len(threadCallStack) - 1
 
 	ok, cerr := threadCallStack[lastIndex].Equals(node, false) // Sanity check step in node must be the same as step out node
@@ -268,6 +274,7 @@ func (ed *ecalDebugger) VisitStepOutState(node *parser.ASTNode, vs parser.Scope,
 			threadCallStack, node, cerr))
 
 	ed.callStacks[tid] = threadCallStack[:lastIndex] // Remove the last item
+	ed.callStackVs[tid] = threadCallStackVs[:lastIndex]
 
 	is, ok := ed.interrogationStates[tid]
 
@@ -481,36 +488,46 @@ func (ed *ecalDebugger) Describe(threadId uint64) interface{} {
 	threadCallStack, ok1 := ed.callStacks[threadId]
 
 	if is, ok2 := ed.interrogationStates[threadId]; ok1 && ok2 {
+		callStackNode := make([]map[string]interface{}, 0)
+
+		for _, sn := range threadCallStack {
+			callStackNode = append(callStackNode, sn.ToJSONObject())
+		}
 
 		res = map[string]interface{}{
 			"threadRunning": is.running,
 			"callStack":     ed.prettyPrintCallStack(threadCallStack),
+			"callStackNode": callStackNode,
+			"callStackVs":   ed.callStackVs[threadId],
 		}
-
-		vsValues := make(map[string]interface{})
-
-		parent := is.vs.Parent()
-		for parent != nil &&
-			parent.Name() != scope.GlobalScope &&
-			strings.HasPrefix(parent.Name(), scope.FuncPrefix) {
-
-			vsValues = datautil.MergeMaps(vsValues, parent.ToJSONObject())
-
-			parent = parent.Parent()
-		}
-
-		vsValues = ed.MergeMaps(vsValues, is.vs.ToJSONObject())
 
 		if !is.running {
 
 			codeString, _ := parser.PrettyPrint(is.node)
 			res["code"] = codeString
 			res["node"] = is.node.ToJSONObject()
-			res["vs"] = vsValues
+			res["vs"] = ed.buildVsSnapshot(is.vs)
 		}
 	}
 
 	return res
+}
+
+func (ed *ecalDebugger) buildVsSnapshot(vs parser.Scope) map[string]interface{} {
+	vsValues := make(map[string]interface{})
+
+	// Collect all parent scopes except the global scope
+
+	parent := vs.Parent()
+	for parent != nil &&
+		parent.Name() != scope.GlobalScope {
+
+		vsValues = datautil.MergeMaps(vsValues, parent.ToJSONObject())
+
+		parent = parent.Parent()
+	}
+
+	return ed.MergeMaps(vsValues, vs.ToJSONObject())
 }
 
 /*

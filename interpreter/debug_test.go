@@ -95,6 +95,8 @@ log("test3")
 
 	if err != nil || outString != `{
   "callStack": [],
+  "callStackNode": [],
+  "callStackVs": [],
   "code": "log(\"test2\")",
   "node": {
     "allowescapes": false,
@@ -1071,6 +1073,30 @@ log("test3 b=", b)
 	if err != nil || outString != `{
   "callStack": [
     "myfunc() (ECALEvalTest:8)"
+  ],
+  "callStackNode": [
+    {
+      "allowescapes": false,
+      "children": [
+        {
+          "name": "funccall"
+        }
+      ],
+      "id": 7,
+      "identifier": true,
+      "line": 8,
+      "linepos": 1,
+      "name": "identifier",
+      "pos": 69,
+      "source": "ECALEvalTest",
+      "value": "myfunc"
+    }
+  ],
+  "callStackVs": [
+    {
+      "b": 49,
+      "myfunc": "ecal.function: myfunc (Line 3, Pos 1)"
+    }
   ],
   "code": "log(\"test2 a=\", a)",
   "node": {

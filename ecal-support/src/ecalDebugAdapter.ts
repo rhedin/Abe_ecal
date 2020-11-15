@@ -15,12 +15,16 @@ import {
   InitializedEvent,
   BreakpointEvent,
   StoppedEvent,
+  StackFrame,
+  Scope,
+  Variable,
 } from "vscode-debugadapter";
 import { DebugProtocol } from "vscode-debugprotocol";
 import { WaitGroup } from "@jpwilliams/waitgroup";
 import { ECALDebugClient } from "./ecalDebugClient";
 import * as vscode from "vscode";
 import { ClientBreakEvent, DebugStatus } from "./types";
+import * as path from "path";
 
 /**
  * ECALDebugArguments are the arguments which VSCode can pass to the debug adapter.
@@ -64,9 +68,6 @@ export class ECALDebugSession extends LoggingDebugSession {
   private config: ECALDebugArguments = {} as ECALDebugArguments;
 
   private unconfirmedBreakpoints: DebugProtocol.Breakpoint[] = [];
-
-  private bpCount: number = 1;
-  private bpIds: Record<string, number> = {};
 
   public sendEvent(event: DebugProtocol.Event): void {
     super.sendEvent(event);
@@ -224,6 +225,7 @@ export class ECALDebugSession extends LoggingDebugSession {
       if (status) {
         breakpoints = (args.lines || []).map((line) => {
           const breakpointString = `${sourcePath}:${line}`;
+
           const bp: DebugProtocol.Breakpoint = new Breakpoint(
             status.breakpoints[breakpointString],
             line,
@@ -231,11 +233,13 @@ export class ECALDebugSession extends LoggingDebugSession {
             new Source(breakpointString, args.source.path)
           );
           bp.id = this.getBreakPointId(breakpointString);
+
           return bp;
         });
       } else {
-        for (const sbp of args.breakpoints || []) {
+        breakpoints = (args.breakpoints || []).map((sbp) => {
           const breakpointString = `${sourcePath}:${sbp.line}`;
+
           const bp: DebugProtocol.Breakpoint = new Breakpoint(
             false,
             sbp.line,
@@ -243,13 +247,11 @@ export class ECALDebugSession extends LoggingDebugSession {
             new Source(breakpointString, args.source.path)
           );
           bp.id = this.getBreakPointId(breakpointString);
-          breakpoints.push(bp);
-        }
+
+          return bp;
+        });
+
         this.unconfirmedBreakpoints = breakpoints;
-        console.log(
-          "Breakpoints to be confirmed:",
-          this.unconfirmedBreakpoints
-        );
       }
     }
 
@@ -319,17 +321,72 @@ export class ECALDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
 
-  protected stackTraceRequest(
+  private frameVariableScopes: Record<number, Record<string, any>> = {};
+
+  protected async stackTraceRequest(
     response: DebugProtocol.StackTraceResponse,
     args: DebugProtocol.StackTraceArguments
-  ): void {
-    console.error("##### stackTraceRequest:", args);
+  ) {
+    const stackFrames: StackFrame[] = [];
+    console.log("##### stackTraceRequest:", args);
+
+    const status = await this.client.status();
+    const threadStatus = status?.threads[String(args.threadId)];
+
+    if (threadStatus?.threadRunning === false) {
+      const ins = await this.client.describe(args.threadId);
+
+      if (ins) {
+        // Update the global variable scope
+
+        this.frameVariableScopes[1] = ins.callStackVs![0];
+
+        for (const [i, sf] of ins.callStack.entries()) {
+          const sfNode = ins.callStackNode![i];
+          const frameId = this.getStackFrameId(args.threadId, sf, i);
+          const breakpointString = `${sfNode.source}:${sfNode.line}`;
+
+          stackFrames.unshift(
+            new StackFrame(
+              frameId,
+              sf,
+              new Source(
+                breakpointString,
+                path.join(this.config.dir, sfNode.source)
+              ),
+              sfNode.line
+            )
+          );
+          this.frameVariableScopes[frameId] = ins.callStackVs![i];
+        }
+
+        const frameId = this.getStackFrameId(args.threadId, ins.code!, ins.callStack.length);
+        const breakpointString = `${ins.node!.source}:${ins.node!.line}`;
+
+        stackFrames.unshift(
+          new StackFrame(
+            frameId,
+            ins.code!,
+            new Source(
+              breakpointString,
+              path.join(this.config.dir, ins.node!.source)
+            ),
+            ins.node!.line
+          )
+        );
+        this.frameVariableScopes[frameId] = ins.vs!;
+      }
+    }
+
+    console.log("##### stackTraceRequest response", stackFrames);
 
     response.body = {
-      stackFrames: [],
+      stackFrames,
     };
     this.sendResponse(response);
   }
+
+  // TODO ############################
 
   protected scopesRequest(
     response: DebugProtocol.ScopesResponse,
@@ -338,20 +395,29 @@ export class ECALDebugSession extends LoggingDebugSession {
     console.error("##### scopesRequest:", args);
 
     response.body = {
-      scopes: [],
+      scopes: [new Scope("Local", args.frameId), new Scope("Global", 1)],
     };
+
     this.sendResponse(response);
   }
 
   protected async variablesRequest(
     response: DebugProtocol.VariablesResponse,
-    args: DebugProtocol.VariablesArguments,
-    request?: DebugProtocol.Request
+    args: DebugProtocol.VariablesArguments
   ) {
-    console.error("##### variablesRequest", args, request);
+    console.error("##### variablesRequest", args);
+
+    let variables: Variable[] = [];
+    const vs = this.frameVariableScopes[args.variablesReference];
+
+    if (vs) {
+      for (const [name, val] of Object.entries(vs)) {
+        variables.push(new Variable(name, String(val)));
+      }
+    }
 
     response.body = {
-      variables: [],
+      variables,
     };
     this.sendResponse(response);
   }
@@ -540,6 +606,12 @@ export class ECALDebugSession extends LoggingDebugSession {
       });
   }
 
+  // Id functions
+  // ============
+
+  private bpCount: number = 1;
+  private bpIds: Record<string, number> = {};
+
   /**
    * Map a given breakpoint string to a breakpoint ID.
    */
@@ -548,6 +620,26 @@ export class ECALDebugSession extends LoggingDebugSession {
     if (!id) {
       id = this.bpCount++;
       this.bpIds[breakpointString] = id;
+    }
+    return id;
+  }
+
+  private sfCount: number = 2;
+  private sfIds: Record<string, number> = {};
+
+  /**
+   * Map a given breakpoint string to a breakpoint ID.
+   */
+  private getStackFrameId(
+    threadId: string | number,
+    frameString: string,
+    frameIndex: number,
+  ): number {
+    const storageString = `${threadId}###${frameString}###${frameIndex}`;
+    let id = this.sfIds[storageString];
+    if (!id) {
+      id = this.sfCount++;
+      this.sfIds[storageString] = id;
     }
     return id;
   }

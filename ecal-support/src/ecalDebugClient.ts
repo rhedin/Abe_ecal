@@ -54,9 +54,9 @@ export class ECALDebugClient extends EventEmitter {
     }
   }
 
-  public async inspect(tid: number): Promise<ThreadInspection | null> {
+  public async describe(tid: number): Promise<ThreadInspection | null> {
     try {
-      return (await this.sendCommand("inspect", [
+      return (await this.sendCommand("describe", [
         String(tid),
       ])) as ThreadInspection;
     } catch (e) {
@@ -105,7 +105,7 @@ export class ECALDebugClient extends EventEmitter {
           // A thread was stopped inspect it
 
           let inspection: ThreadInspection = {
-            callstack: [],
+            callStack: [],
             threadRunning: false,
           };
 

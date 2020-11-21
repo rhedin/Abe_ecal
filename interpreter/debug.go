@@ -29,14 +29,15 @@ import (
 ecalDebugger is the inbuild default debugger.
 */
 type ecalDebugger struct {
-	breakPoints         map[string]bool                     // Break points (active or not)
-	interrogationStates map[uint64]*interrogationState      // Collection of threads which are interrogated
-	callStacks          map[uint64][]*parser.ASTNode        // Call stack locations of threads
-	callStackVs         map[uint64][]map[string]interface{} // Variable scope snapshots of threads
-	sources             map[string]bool                     // All known sources
-	breakOnStart        bool                                // Flag to stop at the start of the next execution
-	globalScope         parser.Scope                        // Global variable scope which can be used to transfer data
-	lock                *sync.RWMutex                       // Lock for this debugger
+	breakPoints                map[string]bool                     // Break points (active or not)
+	interrogationStates        map[uint64]*interrogationState      // Collection of threads which are interrogated
+	callStacks                 map[uint64][]*parser.ASTNode        // Call stack locations of threads
+	callStackVsSnapshots       map[uint64][]map[string]interface{} // Call stack variable scope snapshots of threads
+	callStackGlobalVsSnapshots map[uint64][]map[string]interface{} // Call stack global variable scope snapshots of threads
+	sources                    map[string]bool                     // All known sources
+	breakOnStart               bool                                // Flag to stop at the start of the next execution
+	globalScope                parser.Scope                        // Global variable scope which can be used to transfer data
+	lock                       *sync.RWMutex                       // Lock for this debugger
 
 }
 
@@ -87,14 +88,15 @@ NewDebugger returns a new debugger object.
 */
 func NewECALDebugger(globalVS parser.Scope) util.ECALDebugger {
 	return &ecalDebugger{
-		breakPoints:         make(map[string]bool),
-		interrogationStates: make(map[uint64]*interrogationState),
-		callStacks:          make(map[uint64][]*parser.ASTNode),
-		callStackVs:         make(map[uint64][]map[string]interface{}),
-		sources:             make(map[string]bool),
-		breakOnStart:        false,
-		globalScope:         globalVS,
-		lock:                &sync.RWMutex{},
+		breakPoints:                make(map[string]bool),
+		interrogationStates:        make(map[uint64]*interrogationState),
+		callStacks:                 make(map[uint64][]*parser.ASTNode),
+		callStackVsSnapshots:       make(map[uint64][]map[string]interface{}),
+		callStackGlobalVsSnapshots: make(map[uint64][]map[string]interface{}),
+		sources:                    make(map[string]bool),
+		breakOnStart:               false,
+		globalScope:                globalVS,
+		lock:                       &sync.RWMutex{},
 	}
 }
 
@@ -146,7 +148,8 @@ func (ed *ecalDebugger) VisitState(node *parser.ASTNode, vs parser.Scope, tid ui
 
 		ed.lock.Lock()
 		ed.callStacks[tid] = make([]*parser.ASTNode, 0, 10)
-		ed.callStackVs[tid] = make([]map[string]interface{}, 0, 10)
+		ed.callStackVsSnapshots[tid] = make([]map[string]interface{}, 0, 10)
+		ed.callStackGlobalVsSnapshots[tid] = make([]map[string]interface{}, 0, 10)
 		ed.lock.Unlock()
 	}
 
@@ -222,7 +225,8 @@ func (ed *ecalDebugger) VisitStepInState(node *parser.ASTNode, vs parser.Scope, 
 	var err util.TraceableRuntimeError
 
 	threadCallStack := ed.callStacks[tid]
-	threadCallStackVs := ed.callStackVs[tid]
+	threadCallStackVs := ed.callStackVsSnapshots[tid]
+	threadCallStackGlobalVs := ed.callStackGlobalVsSnapshots[tid]
 
 	is, ok := ed.interrogationStates[tid]
 
@@ -252,7 +256,8 @@ func (ed *ecalDebugger) VisitStepInState(node *parser.ASTNode, vs parser.Scope, 
 	}
 
 	ed.callStacks[tid] = append(threadCallStack, node)
-	ed.callStackVs[tid] = append(threadCallStackVs, ed.buildVsSnapshot(vs))
+	ed.callStackVsSnapshots[tid] = append(threadCallStackVs, ed.buildVsSnapshot(vs))
+	ed.callStackGlobalVsSnapshots[tid] = append(threadCallStackGlobalVs, ed.buildGlobalVsSnapshot(vs))
 
 	return err
 }
@@ -265,7 +270,8 @@ func (ed *ecalDebugger) VisitStepOutState(node *parser.ASTNode, vs parser.Scope,
 	defer ed.lock.Unlock()
 
 	threadCallStack := ed.callStacks[tid]
-	threadCallStackVs := ed.callStackVs[tid]
+	threadCallStackVs := ed.callStackVsSnapshots[tid]
+	threadCallStackGlobalVs := ed.callStackGlobalVsSnapshots[tid]
 	lastIndex := len(threadCallStack) - 1
 
 	ok, cerr := threadCallStack[lastIndex].Equals(node, false) // Sanity check step in node must be the same as step out node
@@ -274,7 +280,8 @@ func (ed *ecalDebugger) VisitStepOutState(node *parser.ASTNode, vs parser.Scope,
 			threadCallStack, node, cerr))
 
 	ed.callStacks[tid] = threadCallStack[:lastIndex] // Remove the last item
-	ed.callStackVs[tid] = threadCallStackVs[:lastIndex]
+	ed.callStackVsSnapshots[tid] = threadCallStackVs[:lastIndex]
+	ed.callStackGlobalVsSnapshots[tid] = threadCallStackGlobalVs[:lastIndex]
 
 	is, ok := ed.interrogationStates[tid]
 
@@ -495,10 +502,11 @@ func (ed *ecalDebugger) Describe(threadId uint64) interface{} {
 		}
 
 		res = map[string]interface{}{
-			"threadRunning": is.running,
-			"callStack":     ed.prettyPrintCallStack(threadCallStack),
-			"callStackNode": callStackNode,
-			"callStackVs":   ed.callStackVs[threadId],
+			"threadRunning":             is.running,
+			"callStack":                 ed.prettyPrintCallStack(threadCallStack),
+			"callStackNode":             callStackNode,
+			"callStackVsSnapshot":       ed.callStackVsSnapshots[threadId],
+			"callStackVsSnapshotGlobal": ed.callStackGlobalVsSnapshots[threadId],
 		}
 
 		if !is.running {
@@ -507,6 +515,7 @@ func (ed *ecalDebugger) Describe(threadId uint64) interface{} {
 			res["code"] = codeString
 			res["node"] = is.node.ToJSONObject()
 			res["vs"] = ed.buildVsSnapshot(is.vs)
+			res["vsGlobal"] = ed.buildGlobalVsSnapshot(is.vs)
 		}
 	}
 
@@ -528,6 +537,22 @@ func (ed *ecalDebugger) buildVsSnapshot(vs parser.Scope) map[string]interface{} 
 	}
 
 	return ed.MergeMaps(vsValues, vs.ToJSONObject())
+}
+
+func (ed *ecalDebugger) buildGlobalVsSnapshot(vs parser.Scope) map[string]interface{} {
+	vsValues := make(map[string]interface{})
+
+	globalVs := vs
+	for globalVs != nil &&
+		globalVs.Name() != scope.GlobalScope {
+		globalVs = globalVs.Parent()
+	}
+
+	if globalVs != nil && globalVs.Name() == scope.GlobalScope {
+		vsValues = globalVs.ToJSONObject()
+	}
+
+	return vsValues
 }
 
 /*

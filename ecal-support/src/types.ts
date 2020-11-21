@@ -14,11 +14,13 @@ export interface EcalAstNode {
 export interface ThreadInspection {
   callStack: string[];
   callStackNode?: EcalAstNode[];
-  callStackVs?: Record<string, any>[];
+  callStackVsSnapshot?: Record<string, any>[];
+  callStackVsSnapshotGlobal?: Record<string, any>[];
   threadRunning: boolean;
   code?: string;
   node?: EcalAstNode;
   vs?: Record<string, any>;
+  vsGlobal?: Record<string, any>;
 }
 
 export interface ThreadStatus {
@@ -44,4 +46,11 @@ export interface LogOutputStream {
 export interface ClientBreakEvent {
   tid: number;
   inspection: ThreadInspection;
+}
+
+export enum ContType {
+  Resume = "Resume",
+  StepIn = "StepIn",
+  StepOver = "StepOver",
+  StepOut = "StepOut",
 }

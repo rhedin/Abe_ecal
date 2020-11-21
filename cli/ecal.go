@@ -26,6 +26,8 @@ TODO:
 - debug support break on start
 - debug support errors
 - pretty printer
+- local variable definition (let)
+- watch files
 */
 
 func main() {

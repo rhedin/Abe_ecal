@@ -23,7 +23,7 @@ import { DebugProtocol } from "vscode-debugprotocol";
 import { WaitGroup } from "@jpwilliams/waitgroup";
 import { ECALDebugClient } from "./ecalDebugClient";
 import * as vscode from "vscode";
-import { ClientBreakEvent, DebugStatus } from "./types";
+import { ClientBreakEvent, ContType, DebugStatus } from "./types";
 import * as path from "path";
 
 /**
@@ -69,10 +69,13 @@ export class ECALDebugSession extends LoggingDebugSession {
 
   private unconfirmedBreakpoints: DebugProtocol.Breakpoint[] = [];
 
-  public sendEvent(event: DebugProtocol.Event): void {
-    super.sendEvent(event);
-    console.error("#### Sending event:", event);
-  }
+  private bpCount: number = 1;
+  private sfCount: number = 1;
+  private vsCount: number = 1;
+
+  private bpIds: Record<string, number> = {};
+  private sfIds: Record<string, number> = {};
+  private vsIds: Record<string, number> = {};
 
   /**
    * Create a new debug adapter which is used for one debug session.
@@ -139,9 +142,6 @@ export class ECALDebugSession extends LoggingDebugSession {
 
     // The adapter implements the configurationDoneRequest.
     response.body.supportsConfigurationDoneRequest = true;
-
-    // make VS Code to send cancelRequests
-    response.body.supportsCancelRequest = true;
 
     // make VS Code send the breakpointLocations request
     response.body.supportsBreakpointLocationsRequest = true;
@@ -322,6 +322,7 @@ export class ECALDebugSession extends LoggingDebugSession {
   }
 
   private frameVariableScopes: Record<number, Record<string, any>> = {};
+  private frameVariableGlobalScopes: Record<number, Record<string, any>> = {};
 
   protected async stackTraceRequest(
     response: DebugProtocol.StackTraceResponse,
@@ -337,10 +338,6 @@ export class ECALDebugSession extends LoggingDebugSession {
       const ins = await this.client.describe(args.threadId);
 
       if (ins) {
-        // Update the global variable scope
-
-        this.frameVariableScopes[1] = ins.callStackVs![0];
-
         for (const [i, sf] of ins.callStack.entries()) {
           const sfNode = ins.callStackNode![i];
           const frameId = this.getStackFrameId(args.threadId, sf, i);
@@ -357,10 +354,17 @@ export class ECALDebugSession extends LoggingDebugSession {
               sfNode.line
             )
           );
-          this.frameVariableScopes[frameId] = ins.callStackVs![i];
+          this.frameVariableScopes[frameId] = ins.callStackVsSnapshot![i];
+          this.frameVariableGlobalScopes[
+            frameId
+          ] = ins.callStackVsSnapshotGlobal![i];
         }
 
-        const frameId = this.getStackFrameId(args.threadId, ins.code!, ins.callStack.length);
+        const frameId = this.getStackFrameId(
+          args.threadId,
+          ins.code!,
+          ins.callStack.length
+        );
         const breakpointString = `${ins.node!.source}:${ins.node!.line}`;
 
         stackFrames.unshift(
@@ -375,18 +379,15 @@ export class ECALDebugSession extends LoggingDebugSession {
           )
         );
         this.frameVariableScopes[frameId] = ins.vs!;
+        this.frameVariableGlobalScopes[frameId] = ins.vsGlobal!;
       }
     }
-
-    console.log("##### stackTraceRequest response", stackFrames);
 
     response.body = {
       stackFrames,
     };
     this.sendResponse(response);
   }
-
-  // TODO ############################
 
   protected scopesRequest(
     response: DebugProtocol.ScopesResponse,
@@ -395,7 +396,10 @@ export class ECALDebugSession extends LoggingDebugSession {
     console.error("##### scopesRequest:", args);
 
     response.body = {
-      scopes: [new Scope("Local", args.frameId), new Scope("Global", 1)],
+      scopes: [
+        new Scope("Local", this.getVariableScopeId(args.frameId, "local")),
+        new Scope("Global", this.getVariableScopeId(args.frameId, "global")),
+      ],
     };
 
     this.sendResponse(response);
@@ -407,14 +411,34 @@ export class ECALDebugSession extends LoggingDebugSession {
   ) {
     console.error("##### variablesRequest", args);
 
+    let vs: Record<string, any> = {};
     let variables: Variable[] = [];
-    const vs = this.frameVariableScopes[args.variablesReference];
+
+    const [frameId, scopeType] = this.getScopeLookupInfo(
+      args.variablesReference
+    );
+
+    if (scopeType === "local") {
+      vs = this.frameVariableScopes[frameId];
+    } else if (scopeType === "global") {
+      vs = this.frameVariableGlobalScopes[frameId];
+    }
 
     if (vs) {
       for (const [name, val] of Object.entries(vs)) {
-        variables.push(new Variable(name, String(val)));
+        let valString: string;
+
+        try {
+          valString = JSON.stringify(val);
+        } catch (e) {
+          valString = String(val);
+        }
+
+        variables.push(new Variable(name, valString));
       }
     }
+
+    console.log("##### variablesRequest response", variables);
 
     response.body = {
       variables,
@@ -422,62 +446,38 @@ export class ECALDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
 
-  protected continueRequest(
+  protected async continueRequest(
     response: DebugProtocol.ContinueResponse,
     args: DebugProtocol.ContinueArguments
-  ): void {
-    console.error("##### continueRequest", args);
-    this.sendResponse(response);
-  }
-
-  protected reverseContinueRequest(
-    response: DebugProtocol.ReverseContinueResponse,
-    args: DebugProtocol.ReverseContinueArguments
-  ): void {
-    console.error("##### reverseContinueRequest", args);
-    this.sendResponse(response);
-  }
-
-  protected nextRequest(
-    response: DebugProtocol.NextResponse,
-    args: DebugProtocol.NextArguments
-  ): void {
-    console.error("##### nextRequest", args);
-    this.sendResponse(response);
-  }
-
-  protected stepBackRequest(
-    response: DebugProtocol.StepBackResponse,
-    args: DebugProtocol.StepBackArguments
-  ): void {
-    console.error("##### stepBackRequest", args);
-    this.sendResponse(response);
-  }
-
-  protected stepInTargetsRequest(
-    response: DebugProtocol.StepInTargetsResponse,
-    args: DebugProtocol.StepInTargetsArguments
   ) {
-    console.error("##### stepInTargetsRequest", args);
+    await this.client.cont(args.threadId, ContType.Resume);
     response.body = {
-      targets: [],
+      allThreadsContinued: false,
     };
     this.sendResponse(response);
   }
 
-  protected stepInRequest(
-    response: DebugProtocol.StepInResponse,
-    args: DebugProtocol.StepInArguments
-  ): void {
-    console.error("##### stepInRequest", args);
+  protected async nextRequest(
+    response: DebugProtocol.NextResponse,
+    args: DebugProtocol.NextArguments
+  ) {
+    await this.client.cont(args.threadId, ContType.StepOver);
     this.sendResponse(response);
   }
 
-  protected stepOutRequest(
+  protected async stepInRequest(
+    response: DebugProtocol.StepInResponse,
+    args: DebugProtocol.StepInArguments
+  ) {
+    await this.client.cont(args.threadId, ContType.StepIn);
+    this.sendResponse(response);
+  }
+
+  protected async stepOutRequest(
     response: DebugProtocol.StepOutResponse,
     args: DebugProtocol.StepOutArguments
-  ): void {
-    console.error("##### stepOutRequest", args);
+  ) {
+    await this.client.cont(args.threadId, ContType.StepOut);
     this.sendResponse(response);
   }
 
@@ -505,95 +505,7 @@ export class ECALDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
 
-  protected dataBreakpointInfoRequest(
-    response: DebugProtocol.DataBreakpointInfoResponse,
-    args: DebugProtocol.DataBreakpointInfoArguments
-  ): void {
-    console.error("##### dataBreakpointInfoRequest", args);
-
-    response.body = {
-      dataId: null,
-      description: "cannot break on data access",
-      accessTypes: undefined,
-      canPersist: false,
-    };
-
-    this.sendResponse(response);
-  }
-
-  protected setDataBreakpointsRequest(
-    response: DebugProtocol.SetDataBreakpointsResponse,
-    args: DebugProtocol.SetDataBreakpointsArguments
-  ): void {
-    console.error("##### setDataBreakpointsRequest", args);
-
-    response.body = {
-      breakpoints: [],
-    };
-
-    this.sendResponse(response);
-  }
-
-  protected completionsRequest(
-    response: DebugProtocol.CompletionsResponse,
-    args: DebugProtocol.CompletionsArguments
-  ): void {
-    console.error("##### completionsRequest", args);
-
-    response.body = {
-      targets: [
-        {
-          label: "item 10",
-          sortText: "10",
-        },
-        {
-          label: "item 1",
-          sortText: "01",
-        },
-        {
-          label: "item 2",
-          sortText: "02",
-        },
-        {
-          label: "array[]",
-          selectionStart: 6,
-          sortText: "03",
-        },
-        {
-          label: "func(arg)",
-          selectionStart: 5,
-          selectionLength: 3,
-          sortText: "04",
-        },
-      ],
-    };
-    this.sendResponse(response);
-  }
-
-  protected cancelRequest(
-    response: DebugProtocol.CancelResponse,
-    args: DebugProtocol.CancelArguments
-  ) {
-    console.error("##### cancelRequest", args);
-    this.sendResponse(response);
-  }
-
-  protected customRequest(
-    command: string,
-    response: DebugProtocol.Response,
-    args: any
-  ) {
-    console.error("##### customRequest", args);
-
-    if (command === "toggleFormatting") {
-      this.sendResponse(response);
-    } else {
-      super.customRequest(command, response, args);
-    }
-  }
-
   public shutdown() {
-    console.log("#### Shutdown");
     this.client
       ?.shutdown()
       .then(() => {
@@ -609,9 +521,6 @@ export class ECALDebugSession extends LoggingDebugSession {
   // Id functions
   // ============
 
-  private bpCount: number = 1;
-  private bpIds: Record<string, number> = {};
-
   /**
    * Map a given breakpoint string to a breakpoint ID.
    */
@@ -624,16 +533,13 @@ export class ECALDebugSession extends LoggingDebugSession {
     return id;
   }
 
-  private sfCount: number = 2;
-  private sfIds: Record<string, number> = {};
-
   /**
-   * Map a given breakpoint string to a breakpoint ID.
+   * Map a given stackframe to a stackframe ID.
    */
   private getStackFrameId(
     threadId: string | number,
     frameString: string,
-    frameIndex: number,
+    frameIndex: number
   ): number {
     const storageString = `${threadId}###${frameString}###${frameIndex}`;
     let id = this.sfIds[storageString];
@@ -642,6 +548,33 @@ export class ECALDebugSession extends LoggingDebugSession {
       this.sfIds[storageString] = id;
     }
     return id;
+  }
+
+  /**
+   * Map a given variable scope to a variable scope ID.
+   */
+  private getVariableScopeId(frameId: number, scopeType: string): number {
+    const storageString = `${frameId}###${scopeType}`;
+    let id = this.vsIds[storageString];
+    if (!id) {
+      id = this.vsCount++;
+      this.vsIds[storageString] = id;
+    }
+    return id;
+  }
+
+  /**
+   * Map a given variable scope ID to a variable scope.
+   */
+  private getScopeLookupInfo(vsId: number): [number, string] {
+    for (const [k, v] of Object.entries(this.vsIds)) {
+      if (v === vsId) {
+        const s = k.split("###");
+        return [parseInt(s[0]), s[1]];
+      }
+    }
+
+    return [-1, ""];
   }
 }
 

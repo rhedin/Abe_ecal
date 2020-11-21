@@ -5,7 +5,12 @@
 import * as net from "net";
 import { EventEmitter } from "events";
 import PromiseSocket from "promise-socket";
-import { LogOutputStream, DebugStatus, ThreadInspection } from "./types";
+import {
+  LogOutputStream,
+  DebugStatus,
+  ThreadInspection,
+  ContType,
+} from "./types";
 
 interface BacklogCommand {
   cmd: string;
@@ -62,6 +67,15 @@ export class ECALDebugClient extends EventEmitter {
     } catch (e) {
       this.out.error(`Could not inspect thread ${tid}: ${e}`);
       return null;
+    }
+  }
+
+  public async cont(tid: number, type: ContType) {
+    try {
+      await this.sendCommand("cont", [String(tid), type]);
+      delete this.threadInspection[tid];
+    } catch (e) {
+      this.out.error(`Could not continue thread ${tid}: ${e}`);
     }
   }
 

@@ -96,7 +96,8 @@ log("test3")
 	if err != nil || outString != `{
   "callStack": [],
   "callStackNode": [],
-  "callStackVs": [],
+  "callStackVsSnapshot": [],
+  "callStackVsSnapshotGlobal": [],
   "code": "log(\"test2\")",
   "node": {
     "allowescapes": false,
@@ -128,7 +129,8 @@ log("test3")
     "value": "log"
   },
   "threadRunning": false,
-  "vs": {}
+  "vs": {},
+  "vsGlobal": {}
 }` {
 		t.Error("Unexpected result:", outString, err)
 		return
@@ -1092,7 +1094,13 @@ log("test3 b=", b)
       "value": "myfunc"
     }
   ],
-  "callStackVs": [
+  "callStackVsSnapshot": [
+    {
+      "b": 49,
+      "myfunc": "ecal.function: myfunc (Line 3, Pos 1)"
+    }
+  ],
+  "callStackVsSnapshotGlobal": [
     {
       "b": 49,
       "myfunc": "ecal.function: myfunc (Line 3, Pos 1)"
@@ -1142,6 +1150,10 @@ log("test3 b=", b)
   "threadRunning": false,
   "vs": {
     "a": 56
+  },
+  "vsGlobal": {
+    "b": 49,
+    "myfunc": "ecal.function: myfunc (Line 3, Pos 1)"
   }
 }` {
 		t.Error("Unexpected result:", outString, err)

@@ -15,8 +15,10 @@ package interpreter
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"devt.de/krotik/common/datautil"
 	"devt.de/krotik/common/errorutil"
@@ -38,7 +40,7 @@ type ecalDebugger struct {
 	breakOnStart               bool                                // Flag to stop at the start of the next execution
 	globalScope                parser.Scope                        // Global variable scope which can be used to transfer data
 	lock                       *sync.RWMutex                       // Lock for this debugger
-
+	lastVisit                  int64                               // Last time the debugger had a state visit
 }
 
 /*
@@ -67,6 +69,7 @@ const (
 	StepOut                          // Step out of the current function
 	StepOver                         // Step over the next function
 	Resume                           // Resume execution - do not break again on the same line
+	Kill                             // Resume execution - and kill the thread on the next state change
 )
 
 /*
@@ -97,6 +100,7 @@ func NewECALDebugger(globalVS parser.Scope) util.ECALDebugger {
 		breakOnStart:               false,
 		globalScope:                globalVS,
 		lock:                       &sync.RWMutex{},
+		lastVisit:                  0,
 	}
 }
 
@@ -125,6 +129,36 @@ func (ed *ecalDebugger) HandleInput(input string) (interface{}, error) {
 }
 
 /*
+StopThreads will continue all suspended threads and set them to be killed.
+Returns true if a waiting thread was resumed. Can wait for threads to end
+by ensuring that for at least d time no state change occured.
+*/
+func (ed *ecalDebugger) StopThreads(d time.Duration) bool {
+	var ret = false
+
+	for _, is := range ed.interrogationStates {
+		if is.running == false {
+			ret = true
+			is.cmd = Kill
+			is.running = true
+			is.cond.L.Lock()
+			is.cond.Broadcast()
+			is.cond.L.Unlock()
+		}
+	}
+
+	if ret && d > 0 {
+		var lastVisit int64 = -1
+		for lastVisit != ed.lastVisit {
+			lastVisit = ed.lastVisit
+			time.Sleep(d)
+		}
+	}
+
+	return ret
+}
+
+/*
 Break on the start of the next execution.
 */
 func (ed *ecalDebugger) BreakOnStart(flag bool) {
@@ -140,6 +174,7 @@ func (ed *ecalDebugger) VisitState(node *parser.ASTNode, vs parser.Scope, tid ui
 
 	ed.lock.RLock()
 	_, ok := ed.callStacks[tid]
+	ed.lastVisit = time.Now().UnixNano()
 	ed.lock.RUnlock()
 
 	if !ok {
@@ -170,7 +205,7 @@ func (ed *ecalDebugger) VisitState(node *parser.ASTNode, vs parser.Scope, tid ui
 			// The thread is being interrogated
 
 			switch is.cmd {
-			case Resume:
+			case Resume, Kill:
 				if is.node.Token.Lline != node.Token.Lline {
 
 					// Remove the resume command once we are on a different line
@@ -178,6 +213,10 @@ func (ed *ecalDebugger) VisitState(node *parser.ASTNode, vs parser.Scope, tid ui
 					ed.lock.Lock()
 					delete(ed.interrogationStates, tid)
 					ed.lock.Unlock()
+
+					if is.cmd == Kill {
+						runtime.Goexit()
+					}
 
 					return ed.VisitState(node, vs, tid)
 				}

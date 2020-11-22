@@ -361,4 +361,18 @@ func TestVarScopeDump(t *testing.T) {
 		t.Error("Unexpected result:", res)
 		return
 	}
+
+	sinkVs1.Clear()
+
+	if res := sinkVs1.String(); res != `global {
+    0 (int) : 0
+    global2 {
+        a (int) : 1
+        sink: 1 {
+        }
+    }
+}` {
+		t.Error("Unexpected result:", res)
+		return
+	}
 }

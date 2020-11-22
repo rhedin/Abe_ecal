@@ -22,12 +22,10 @@ import (
 /*
 TODO:
 - create executable binary (pack into single binary)
-- debug server support (vscode)
-- debug support break on start
 - debug support errors
 - pretty printer
 - local variable definition (let)
-- watch files
+- reload on start for debugger adapter
 */
 
 func main() {

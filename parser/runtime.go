@@ -60,6 +60,12 @@ type Scope interface {
 	NewChild(name string) Scope
 
 	/*
+		Clear clears this scope of all stored values. This will clear children scopes
+		but not remove parent scopes.
+	*/
+	Clear()
+
+	/*
 	   Parent returns the parent scope or nil.
 	*/
 	Parent() Scope

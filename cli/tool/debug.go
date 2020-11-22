@@ -39,13 +39,14 @@ type CLIDebugInterpreter struct {
 	RunDebugServer  *bool   // Run a debug server
 	EchoDebugServer *bool   // Echo all input and output of the debug server
 	Interactive     *bool   // Flag if the interpreter should open a console in the current tty.
+	BreakOnStart    *bool   // Flag if the debugger should stop the execution on start
 }
 
 /*
 NewCLIDebugInterpreter wraps an existing CLIInterpreter object and adds capabilities.
 */
 func NewCLIDebugInterpreter(i *CLIInterpreter) *CLIDebugInterpreter {
-	return &CLIDebugInterpreter{i, nil, nil, nil, nil}
+	return &CLIDebugInterpreter{i, nil, nil, nil, nil, nil}
 }
 
 /*
@@ -61,6 +62,7 @@ func (i *CLIDebugInterpreter) ParseArgs() bool {
 	i.RunDebugServer = flag.Bool("server", false, "Run a debug server")
 	i.EchoDebugServer = flag.Bool("echo", false, "Echo all i/o of the debug server")
 	i.Interactive = flag.Bool("interactive", true, "Run interactive console")
+	i.BreakOnStart = flag.Bool("breakonstart", false, "Stop the execution on start")
 
 	return i.CLIInterpreter.ParseArgs()
 }
@@ -90,12 +92,16 @@ func (i *CLIDebugInterpreter) Interpret() error {
 		// Set debug object on the runtime provider
 
 		i.RuntimeProvider.Debugger = interpreter.NewECALDebugger(i.GlobalVS)
+		i.RuntimeProvider.Debugger.BreakOnStart(*i.BreakOnStart)
 
 		// Set this object as a custom handler to deal with input.
 
 		i.CustomHandler = i
 
 		if *i.RunDebugServer {
+
+			// Start the debug server
+
 			debugServer := &debugTelnetServer{*i.DebugServerAddr, "ECALDebugServer: ",
 				nil, true, *i.EchoDebugServer, i, i.RuntimeProvider.Logger}
 			go debugServer.Run()
@@ -112,6 +118,15 @@ func (i *CLIDebugInterpreter) Interpret() error {
 	}
 
 	return err
+}
+
+/*
+LoadInitialFile clears the global scope and reloads the initial file.
+*/
+func (i *CLIDebugInterpreter) LoadInitialFile(tid uint64) error {
+	i.RuntimeProvider.Debugger.StopThreads(500 * time.Millisecond)
+	i.RuntimeProvider.Debugger.BreakOnStart(*i.BreakOnStart)
+	return nil
 }
 
 /*

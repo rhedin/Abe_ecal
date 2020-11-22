@@ -213,6 +213,74 @@ test3`[1:] {
 	}
 }
 
+func TestDebugReset(t *testing.T) {
+	var err error
+
+	defer func() {
+		testDebugger = nil
+	}()
+
+	testDebugger = NewECALDebugger(nil)
+
+	if _, err = testDebugger.HandleInput("break ECALEvalTest:3"); err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		_, err = UnitTestEval(`
+log("test1")
+log("test2")
+log("test3")
+`, nil)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
+
+	waitForThreadSuspension(t)
+
+	out, err := testDebugger.HandleInput(fmt.Sprintf("status"))
+
+	outBytes, _ := json.MarshalIndent(out, "", "  ")
+	outString := string(outBytes)
+
+	if err != nil || outString != `{
+  "breakonstart": false,
+  "breakpoints": {
+    "ECALEvalTest:3": true
+  },
+  "sources": [
+    "ECALEvalTest"
+  ],
+  "threads": {
+    "1": {
+      "callStack": [],
+      "threadRunning": false
+    }
+  }
+}` {
+		t.Error("Unexpected result:", outString, err)
+		return
+	}
+
+	testDebugger.StopThreads(100 * time.Millisecond)
+
+	wg.Wait()
+
+	if err != nil || testlogger.String() != `
+test1
+test2`[1:] {
+		t.Error("Unexpected result:", testlogger.String(), err)
+		return
+	}
+}
+
 func TestConcurrentDebugging(t *testing.T) {
 	var err error
 

@@ -473,6 +473,14 @@ run lets this worker run tasks.
 */
 func (w *ThreadPoolWorker) run() {
 
+	defer func() {
+		// Remove worker from workerMap
+
+		w.pool.workerMapLock.Lock()
+		delete(w.pool.workerMap, w.id)
+		w.pool.workerMapLock.Unlock()
+	}()
+
 	for true {
 
 		// Try to get the next task
@@ -508,12 +516,6 @@ func (w *ThreadPoolWorker) run() {
 			w.pool.workerMapLock.Unlock()
 		}
 	}
-
-	// Remove worker from workerMap
-
-	w.pool.workerMapLock.Lock()
-	delete(w.pool.workerMap, w.id)
-	w.pool.workerMapLock.Unlock()
 }
 
 /*
@@ -528,8 +530,8 @@ Run the idle task.
 */
 func (t *idleTask) Run(tid uint64) error {
 	t.tp.newTaskCond.L.Lock()
+	defer t.tp.newTaskCond.L.Unlock()
 	t.tp.newTaskCond.Wait()
-	t.tp.newTaskCond.L.Unlock()
 	return nil
 }
 

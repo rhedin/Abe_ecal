@@ -30,6 +30,18 @@ import (
 )
 
 /*
+CLICustomHandler is a handler for custom operations.
+*/
+type CLICustomHandler interface {
+	CLIInputHandler
+
+	/*
+	   LoadInitialFile clears the global scope and reloads the initial file.
+	*/
+	LoadInitialFile(tid uint64) error
+}
+
+/*
 CLIInterpreter is a commandline interpreter for ECAL.
 */
 type CLIInterpreter struct {
@@ -38,7 +50,7 @@ type CLIInterpreter struct {
 
 	// Customizations of output and input handling
 
-	CustomHandler        CLIInputHandler
+	CustomHandler        CLICustomHandler
 	CustomWelcomeMessage string
 	CustomHelpString     string
 
@@ -141,6 +153,33 @@ func (i *CLIInterpreter) CreateRuntimeProvider(name string) error {
 }
 
 /*
+LoadInitialFile clears the global scope and reloads the initial file.
+*/
+func (i *CLIInterpreter) LoadInitialFile(tid uint64) error {
+	var err error
+
+	i.CustomHandler.LoadInitialFile(tid)
+
+	i.GlobalVS.Clear()
+
+	if cargs := flag.Args(); len(cargs) > 0 {
+		var ast *parser.ASTNode
+		var initFile []byte
+
+		initFileName := flag.Arg(0)
+		initFile, err = ioutil.ReadFile(initFileName)
+
+		if ast, err = parser.ParseWithRuntime(initFileName, string(initFile), i.RuntimeProvider); err == nil {
+			if err = ast.Runtime.Validate(); err == nil {
+				_, err = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}), tid)
+			}
+		}
+	}
+
+	return err
+}
+
+/*
 Interpret starts the ECAL code interpreter. Starts an interactive console in
 the current tty if the interactive flag is set.
 */
@@ -178,21 +217,7 @@ func (i *CLIInterpreter) Interpret(interactive bool) error {
 
 			// Execute file if given
 
-			if cargs := flag.Args(); len(cargs) > 0 {
-				var ast *parser.ASTNode
-				var initFile []byte
-
-				initFileName := flag.Arg(0)
-				initFile, err = ioutil.ReadFile(initFileName)
-
-				if ast, err = parser.ParseWithRuntime(initFileName, string(initFile), i.RuntimeProvider); err == nil {
-					if err = ast.Runtime.Validate(); err == nil {
-						_, err = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}), tid)
-					}
-				}
-			}
-
-			if err == nil {
+			if err = i.LoadInitialFile(tid); err == nil {
 
 				if interactive {
 
@@ -255,6 +280,7 @@ func (i *CLIInterpreter) HandleInput(ot OutputTerminal, line string, tid uint64)
 		ot.WriteString(fmt.Sprint("\n"))
 		ot.WriteString(fmt.Sprint("Console supports all normal ECAL statements and the following special commands:\n"))
 		ot.WriteString(fmt.Sprint("\n"))
+		ot.WriteString(fmt.Sprint("    @reload - Clear the interpreter and reload the initial file if it was given.\n"))
 		ot.WriteString(fmt.Sprint("    @sym [glob] - List all available inbuild functions and available stdlib packages of ECAL.\n"))
 		ot.WriteString(fmt.Sprint("    @std <package> [glob] - List all available constants and functions of a stdlib package.\n"))
 		if i.CustomHelpString != "" {
@@ -262,6 +288,12 @@ func (i *CLIInterpreter) HandleInput(ot OutputTerminal, line string, tid uint64)
 		}
 		ot.WriteString(fmt.Sprint("\n"))
 		ot.WriteString(fmt.Sprint("Add an argument after a list command to do a full text search. The search string should be in glob format.\n"))
+
+	} else if strings.HasPrefix(line, "@reload") {
+
+		// Reload happens in a separate thread as it may be suspended on start
+
+		go i.LoadInitialFile(i.RuntimeProvider.NewThreadID())
 
 	} else if strings.HasPrefix(line, "@sym") {
 		i.displaySymbols(ot, strings.Split(line, " ")[1:])

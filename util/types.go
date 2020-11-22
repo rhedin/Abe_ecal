@@ -11,6 +11,8 @@
 package util
 
 import (
+	"time"
+
 	"devt.de/krotik/ecal/parser"
 )
 
@@ -98,6 +100,13 @@ type ECALDebugger interface {
 		convert the output data into a JSON string.
 	*/
 	HandleInput(input string) (interface{}, error)
+
+	/*
+	   StopThreads will continue all suspended threads and set them to be killed.
+	   Returns true if a waiting thread was resumed. Can wait for threads to end
+	   by ensuring that for at least d time no state change occured.
+	*/
+	StopThreads(d time.Duration) bool
 
 	/*
 	   Break on the start of the next execution.

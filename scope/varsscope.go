@@ -101,6 +101,15 @@ func (s *varsScope) Name() string {
 }
 
 /*
+Clear clears this scope of all stored values. This will clear children scopes
+but not remove parent scopes.
+*/
+func (s *varsScope) Clear() {
+	s.children = nil
+	s.storage = make(map[string]interface{})
+}
+
+/*
 Parent returns the parent scope or nil.
 */
 func (s *varsScope) Parent() parser.Scope {

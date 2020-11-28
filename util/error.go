@@ -14,6 +14,7 @@ Package util contains utility definitions and functions for the event condition 
 package util
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -133,10 +134,55 @@ func (re *RuntimeError) GetTraceString() []string {
 }
 
 /*
+ToJSONObject returns this RuntimeError and all its children as a JSON object.
+*/
+func (re *RuntimeError) ToJSONObject() map[string]interface{} {
+	t := ""
+	if re.Type != nil {
+		t = re.Type.Error()
+	}
+	return map[string]interface{}{
+		"Source": re.Source,
+		"Type":   t,
+		"Detail": re.Detail,
+		"Node":   re.Node,
+		"Trace":  re.Trace,
+	}
+}
+
+/*
+MarshalJSON serializes this RuntimeError into a JSON string.
+*/
+func (re *RuntimeError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(re.ToJSONObject())
+}
+
+/*
 RuntimeErrorWithDetail is a runtime error with additional environment information.
 */
 type RuntimeErrorWithDetail struct {
 	*RuntimeError
 	Environment parser.Scope
 	Data        interface{}
+}
+
+/*
+ToJSONObject returns this RuntimeErrorWithDetail and all its children as a JSON object.
+*/
+func (re *RuntimeErrorWithDetail) ToJSONObject() map[string]interface{} {
+	res := re.RuntimeError.ToJSONObject()
+	e := map[string]interface{}{}
+	if re.Environment != nil {
+		e = re.Environment.ToJSONObject()
+	}
+	res["Environment"] = e
+	res["Data"] = re.Data
+	return res
+}
+
+/*
+MarshalJSON serializes this RuntimeErrorWithDetail into a JSON string.
+*/
+func (re *RuntimeErrorWithDetail) MarshalJSON() ([]byte, error) {
+	return json.Marshal(re.ToJSONObject())
 }

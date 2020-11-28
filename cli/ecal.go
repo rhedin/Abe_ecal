@@ -22,7 +22,6 @@ import (
 /*
 TODO:
 - create executable binary (pack into single binary)
-- debug support errors
 - pretty printer
 - local variable definition (let)
 - reload on start for debugger adapter

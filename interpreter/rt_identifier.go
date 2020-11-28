@@ -205,7 +205,7 @@ func (rt *identifierRuntime) resolveFunction(astring string, vs parser.Scope, is
 						result, err = funcObj.Run(rt.instanceID, vs, is, tid, args)
 
 						if rt.erp.Debugger != nil {
-							rt.erp.Debugger.VisitStepOutState(node, vs, tid)
+							rt.erp.Debugger.VisitStepOutState(node, vs, tid, err)
 						}
 
 						_, ok1 := err.(*util.RuntimeError)

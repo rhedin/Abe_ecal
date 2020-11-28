@@ -80,6 +80,7 @@ log("test3")
   "threads": {
     "1": {
       "callStack": [],
+      "error": null,
       "threadRunning": false
     }
   }
@@ -99,6 +100,7 @@ log("test3")
   "callStackVsSnapshot": [],
   "callStackVsSnapshotGlobal": [],
   "code": "log(\"test2\")",
+  "error": null,
   "node": {
     "allowescapes": false,
     "children": [
@@ -261,6 +263,7 @@ log("test3")
   "threads": {
     "1": {
       "callStack": [],
+      "error": null,
       "threadRunning": false
     }
   }
@@ -276,6 +279,130 @@ log("test3")
 	if err != nil || testlogger.String() != `
 test1
 test2`[1:] {
+		t.Error("Unexpected result:", testlogger.String(), err)
+		return
+	}
+}
+
+func TestErrorStop(t *testing.T) {
+	var err, evalError error
+
+	defer func() {
+		testDebugger = nil
+	}()
+
+	testDebugger = NewECALDebugger(nil)
+	testDebugger.BreakOnError(true)
+
+	if _, err = testDebugger.HandleInput("break ECALEvalTest:8"); err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		_, evalError = UnitTestEval(`
+func err () {
+	raise("foo")
+}
+log("test1")
+log("test2")
+err()
+log("test3")
+`, nil)
+	}()
+
+	waitForThreadSuspension(t)
+
+	out, err := testDebugger.HandleInput(fmt.Sprintf("status"))
+
+	outBytes, _ := json.MarshalIndent(out, "", "  ")
+	outString := string(outBytes)
+
+	if err != nil || outString != `{
+  "breakonstart": false,
+  "breakpoints": {
+    "ECALEvalTest:8": true
+  },
+  "sources": [
+    "ECALEvalTest"
+  ],
+  "threads": {
+    "1": {
+      "callStack": [
+        "err() (ECALEvalTest:7)"
+      ],
+      "error": {
+        "Data": null,
+        "Detail": "",
+        "Environment": {},
+        "Node": {
+          "Name": "identifier",
+          "Token": {
+            "ID": 7,
+            "Pos": 16,
+            "Val": "raise",
+            "Identifier": true,
+            "AllowEscapes": false,
+            "Lsource": "ECALEvalTest",
+            "Lline": 3,
+            "Lpos": 2
+          },
+          "Meta": null,
+          "Children": [
+            {
+              "Name": "funccall",
+              "Token": null,
+              "Meta": null,
+              "Children": [
+                {
+                  "Name": "string",
+                  "Token": {
+                    "ID": 5,
+                    "Pos": 22,
+                    "Val": "foo",
+                    "Identifier": false,
+                    "AllowEscapes": true,
+                    "Lsource": "ECALEvalTest",
+                    "Lline": 3,
+                    "Lpos": 8
+                  },
+                  "Meta": null,
+                  "Children": [],
+                  "Runtime": {}
+                }
+              ],
+              "Runtime": {}
+            }
+          ],
+          "Runtime": {}
+        },
+        "Source": "ECALTestRuntime",
+        "Trace": null,
+        "Type": "foo"
+      },
+      "threadRunning": false
+    }
+  }
+}` {
+		t.Error("Unexpected result:", outString, err)
+		return
+	}
+
+	if _, err = testDebugger.HandleInput(fmt.Sprintf("cont 1 Resume")); err != nil {
+		t.Error("Unexpected result:", err)
+		return
+	}
+
+	wg.Wait()
+
+	if evalError == nil || testlogger.String() != `
+test1
+test2`[1:] || evalError.Error() != "ECAL error in ECALTestRuntime: foo () (Line:3 Pos:2)" {
 		t.Error("Unexpected result:", testlogger.String(), err)
 		return
 	}
@@ -359,12 +486,14 @@ log("test4")
       "callStack": [
         "test1() (ECALEvalTest:10)"
       ],
+      "error": null,
       "threadRunning": false
     },
     "2": {
       "callStack": [
         "test2() (ECALEvalTest:10)"
       ],
+      "error": null,
       "threadRunning": false
     }
   }
@@ -381,12 +510,14 @@ log("test4")
       "callStack": [
         "test2() (ECALEvalTest:10)"
       ],
+      "error": null,
       "threadRunning": false
     },
     "2": {
       "callStack": [
         "test1() (ECALEvalTest:10)"
       ],
+      "error": null,
       "threadRunning": false
     }
   }
@@ -543,6 +674,7 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -570,6 +702,7 @@ log("finish")
         "fa(1) (ECALEvalTest:21)",
         "fb(x) (ECALEvalTest:6)"
       ],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -601,6 +734,7 @@ log("finish")
         "fa(1) (ECALEvalTest:21)",
         "fb(x) (ECALEvalTest:6)"
       ],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -633,6 +767,7 @@ log("finish")
         "fa(1) (ECALEvalTest:21)",
         "fb(x) (ECALEvalTest:6)"
       ],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -666,6 +801,7 @@ log("finish")
         "fb(x) (ECALEvalTest:6)",
         "fc() (ECALEvalTest:12)"
       ],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -695,6 +831,7 @@ log("finish")
         "fa(1) (ECALEvalTest:21)",
         "fb(x) (ECALEvalTest:6)"
       ],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -728,6 +865,7 @@ log("finish")
         "fb(x) (ECALEvalTest:6)",
         "fc() (ECALEvalTest:13)"
       ],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -754,6 +892,7 @@ log("finish")
         "fa(1) (ECALEvalTest:21)",
         "fb(x) (ECALEvalTest:6)"
       ],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -784,6 +923,7 @@ log("finish")
       "callStack": [
         "fa(1) (ECALEvalTest:21)"
       ],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -819,6 +959,7 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -851,6 +992,7 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -881,6 +1023,7 @@ log("finish")
   "threads": {
     "1": {
       "callStack": [],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -983,6 +1126,7 @@ log("finish: ", a)
   "threads": {
     "1": {
       "callStack": [],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -1016,6 +1160,7 @@ log("finish: ", a)
       "callStack": [
         "myfunc(a) (ECALEvalTest:5)"
       ],
+      "error": null,
       "threadRunning": false
     }
   },
@@ -1127,6 +1272,7 @@ log("test3 b=", b)
       "callStack": [
         "myfunc() (ECALEvalTest:8)"
       ],
+      "error": null,
       "threadRunning": false
     }
   }
@@ -1175,6 +1321,7 @@ log("test3 b=", b)
     }
   ],
   "code": "log(\"test2 a=\", a)",
+  "error": null,
   "node": {
     "allowescapes": false,
     "children": [
@@ -1394,6 +1541,7 @@ log("test3")
   "threads": {
     "1": {
       "callStack": [],
+      "error": null,
       "threadRunning": false
     }
   }

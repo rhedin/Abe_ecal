@@ -109,9 +109,14 @@ type ECALDebugger interface {
 	StopThreads(d time.Duration) bool
 
 	/*
-	   Break on the start of the next execution.
+	   BreakOnStart breaks on the start of the next execution.
 	*/
 	BreakOnStart(flag bool)
+
+	/*
+	   BreakOnError breaks if an error occurs.
+	*/
+	BreakOnError(flag bool)
 
 	/*
 	   VisitState is called for every state during the execution of a program.
@@ -126,7 +131,7 @@ type ECALDebugger interface {
 	/*
 	   VisitStepOutState is called after returning from a function call.
 	*/
-	VisitStepOutState(node *parser.ASTNode, vs parser.Scope, tid uint64) TraceableRuntimeError
+	VisitStepOutState(node *parser.ASTNode, vs parser.Scope, tid uint64, soErr error) TraceableRuntimeError
 
 	/*
 	   SetBreakPoint sets a break point.

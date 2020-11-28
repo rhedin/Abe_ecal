@@ -40,13 +40,14 @@ type CLIDebugInterpreter struct {
 	EchoDebugServer *bool   // Echo all input and output of the debug server
 	Interactive     *bool   // Flag if the interpreter should open a console in the current tty.
 	BreakOnStart    *bool   // Flag if the debugger should stop the execution on start
+	BreakOnError    *bool   // Flag if the debugger should stop when encountering an error
 }
 
 /*
 NewCLIDebugInterpreter wraps an existing CLIInterpreter object and adds capabilities.
 */
 func NewCLIDebugInterpreter(i *CLIInterpreter) *CLIDebugInterpreter {
-	return &CLIDebugInterpreter{i, nil, nil, nil, nil, nil}
+	return &CLIDebugInterpreter{i, nil, nil, nil, nil, nil, nil}
 }
 
 /*
@@ -63,6 +64,7 @@ func (i *CLIDebugInterpreter) ParseArgs() bool {
 	i.EchoDebugServer = flag.Bool("echo", false, "Echo all i/o of the debug server")
 	i.Interactive = flag.Bool("interactive", true, "Run interactive console")
 	i.BreakOnStart = flag.Bool("breakonstart", false, "Stop the execution on start")
+	i.BreakOnError = flag.Bool("breakonerror", false, "Stop the execution when encountering an error")
 
 	return i.CLIInterpreter.ParseArgs()
 }
@@ -93,6 +95,7 @@ func (i *CLIDebugInterpreter) Interpret() error {
 
 		i.RuntimeProvider.Debugger = interpreter.NewECALDebugger(i.GlobalVS)
 		i.RuntimeProvider.Debugger.BreakOnStart(*i.BreakOnStart)
+		i.RuntimeProvider.Debugger.BreakOnError(*i.BreakOnError)
 
 		// Set this object as a custom handler to deal with input.
 
@@ -126,6 +129,7 @@ LoadInitialFile clears the global scope and reloads the initial file.
 func (i *CLIDebugInterpreter) LoadInitialFile(tid uint64) error {
 	i.RuntimeProvider.Debugger.StopThreads(500 * time.Millisecond)
 	i.RuntimeProvider.Debugger.BreakOnStart(*i.BreakOnStart)
+	i.RuntimeProvider.Debugger.BreakOnError(*i.BreakOnError)
 	return nil
 }
 

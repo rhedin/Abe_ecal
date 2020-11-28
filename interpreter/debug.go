@@ -38,6 +38,7 @@ type ecalDebugger struct {
 	callStackGlobalVsSnapshots map[uint64][]map[string]interface{} // Call stack global variable scope snapshots of threads
 	sources                    map[string]bool                     // All known sources
 	breakOnStart               bool                                // Flag to stop at the start of the next execution
+	breakOnError               bool                                // Flag to stop if an error occurs
 	globalScope                parser.Scope                        // Global variable scope which can be used to transfer data
 	lock                       *sync.RWMutex                       // Lock for this debugger
 	lastVisit                  int64                               // Last time the debugger had a state visit
@@ -53,6 +54,7 @@ type interrogationState struct {
 	stepOutStack []*parser.ASTNode // Target stack when doing a step out
 	node         *parser.ASTNode   // Node on which the thread was last stopped
 	vs           parser.Scope      // Variable scope of the thread when it was last stopped
+	err          error             // Error which was returned by a function call
 }
 
 /*
@@ -83,6 +85,7 @@ func newInterrogationState(node *parser.ASTNode, vs parser.Scope) *interrogation
 		nil,
 		node,
 		vs,
+		nil,
 	}
 }
 
@@ -98,6 +101,7 @@ func NewECALDebugger(globalVS parser.Scope) util.ECALDebugger {
 		callStackGlobalVsSnapshots: make(map[uint64][]map[string]interface{}),
 		sources:                    make(map[string]bool),
 		breakOnStart:               false,
+		breakOnError:               true,
 		globalScope:                globalVS,
 		lock:                       &sync.RWMutex{},
 		lastVisit:                  0,
@@ -159,12 +163,21 @@ func (ed *ecalDebugger) StopThreads(d time.Duration) bool {
 }
 
 /*
-Break on the start of the next execution.
+BreakOnStart breaks on the start of the next execution.
 */
 func (ed *ecalDebugger) BreakOnStart(flag bool) {
 	ed.lock.Lock()
 	defer ed.lock.Unlock()
 	ed.breakOnStart = flag
+}
+
+/*
+BreakOnError breaks if an error occurs.
+*/
+func (ed *ecalDebugger) BreakOnError(flag bool) {
+	ed.lock.Lock()
+	defer ed.lock.Unlock()
+	ed.breakOnError = flag
 }
 
 /*
@@ -304,7 +317,7 @@ func (ed *ecalDebugger) VisitStepInState(node *parser.ASTNode, vs parser.Scope, 
 /*
 VisitStepOutState is called after returning from a function call.
 */
-func (ed *ecalDebugger) VisitStepOutState(node *parser.ASTNode, vs parser.Scope, tid uint64) util.TraceableRuntimeError {
+func (ed *ecalDebugger) VisitStepOutState(node *parser.ASTNode, vs parser.Scope, tid uint64, soErr error) util.TraceableRuntimeError {
 	ed.lock.Lock()
 	defer ed.lock.Unlock()
 
@@ -324,7 +337,36 @@ func (ed *ecalDebugger) VisitStepOutState(node *parser.ASTNode, vs parser.Scope,
 
 	is, ok := ed.interrogationStates[tid]
 
-	if ok {
+	if ed.breakOnError && soErr != nil {
+
+		if !ok {
+			is = newInterrogationState(node, vs)
+
+			ed.breakOnStart = false
+			ed.interrogationStates[tid] = is
+
+		} else {
+			is.node = node
+			is.vs = vs
+			is.running = false
+		}
+
+		if is.err == nil {
+
+			// Only stop if the error is being set
+
+			is.err = soErr
+
+			ed.lock.Unlock()
+			is.cond.L.Lock()
+			is.cond.Wait()
+			is.cond.L.Unlock()
+			ed.lock.Lock()
+		}
+
+	} else if ok {
+
+		is.err = soErr
 
 		// The thread is being interrogated
 
@@ -514,6 +556,7 @@ func (ed *ecalDebugger) Status() interface{} {
 
 		if is, ok := ed.interrogationStates[k]; ok {
 			s["threadRunning"] = is.running
+			s["error"] = is.err
 		}
 
 		threadStates[fmt.Sprint(k)] = s
@@ -542,6 +585,7 @@ func (ed *ecalDebugger) Describe(threadId uint64) interface{} {
 
 		res = map[string]interface{}{
 			"threadRunning":             is.running,
+			"error":                     is.err,
 			"callStack":                 ed.prettyPrintCallStack(threadCallStack),
 			"callStackNode":             callStackNode,
 			"callStackVsSnapshot":       ed.callStackVsSnapshots[threadId],

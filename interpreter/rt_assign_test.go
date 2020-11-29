@@ -21,10 +21,11 @@ func TestSimpleAssignments(t *testing.T) {
 	vs := scope.NewScope(scope.GlobalScope)
 
 	res, err := UnitTestEvalAndAST(
-		`a := 42`, vs,
+		`let a := 42`, vs,
 		`
 :=
-  identifier: a
+  let
+    identifier: a
   number: 42
 `[1:])
 
@@ -146,12 +147,13 @@ func TestComplexAssignments(t *testing.T) {
 	vs := scope.NewScope(scope.GlobalScope)
 
 	res, err := UnitTestEvalAndAST(
-		`[a, b] := ["test", [1,2,3]]`, vs,
+		`let [a, b] := ["test", [1,2,3]]`, vs,
 		`
 :=
-  list
-    identifier: a
-    identifier: b
+  let
+    list
+      identifier: a
+      identifier: b
   list
     string: 'test'
     list
@@ -255,4 +257,61 @@ statements
 		return
 	}
 
+}
+
+func TestScopedDeclaration(t *testing.T) {
+
+	vs := scope.NewScope(scope.GlobalScope)
+
+	res, err := UnitTestEval(`
+a := 5
+func foo() {
+	let a := 2
+}
+foo()`, vs)
+
+	if vsRes := vs.String(); err != nil || res != nil || vsRes != `GlobalScope {
+    a (float64) : 5
+    foo (*interpreter.function) : ecal.function: foo (Line 3, Pos 1)
+}` {
+		t.Error("Unexpected result: ", vsRes, res, err)
+		return
+	}
+
+	res, err = UnitTestEval(`
+a := 5
+func foo() {
+	let [a, b, c]
+	a := 2
+}
+foo()`, vs)
+
+	if vsRes := vs.String(); err != nil || res != nil || vsRes != `GlobalScope {
+    a (float64) : 5
+    foo (*interpreter.function) : ecal.function: foo (Line 3, Pos 1)
+}` {
+		t.Error("Unexpected result: ", vsRes, res, err)
+		return
+	}
+
+	res, err = UnitTestEval(`let [1]`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid construct (Let can only declare variables within a list) (Line:1 Pos:1)" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(`let 1`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid construct (Let must declare a variable or list of variables) (Line:1 Pos:1)" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEval(`let a.b`, vs)
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime: Invalid construct (Let can only declare simple variables) (Line:1 Pos:1)" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
 }

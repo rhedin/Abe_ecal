@@ -158,7 +158,9 @@ LoadInitialFile clears the global scope and reloads the initial file.
 func (i *CLIInterpreter) LoadInitialFile(tid uint64) error {
 	var err error
 
-	i.CustomHandler.LoadInitialFile(tid)
+	if i.CustomHandler != nil {
+		i.CustomHandler.LoadInitialFile(tid)
+	}
 
 	i.GlobalVS.Clear()
 

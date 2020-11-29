@@ -74,6 +74,7 @@ var providerMap = map[string]ecalRuntimeNew{
 	// Assignment statement
 
 	parser.NodeASSIGN: assignmentRuntimeInst,
+	parser.NodeLET:    letRuntimeInst,
 
 	// Import statement
 

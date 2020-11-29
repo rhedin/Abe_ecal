@@ -76,6 +76,11 @@ type Scope interface {
 	SetValue(varName string, varValue interface{}) error
 
 	/*
+	   SetLocalValue sets a new value for a local variable.
+	*/
+	SetLocalValue(varName string, varValue interface{}) error
+
+	/*
 	   GetValue gets the current value of a variable.
 	*/
 	GetValue(varName string) (interface{}, bool, error)

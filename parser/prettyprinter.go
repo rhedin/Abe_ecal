@@ -75,6 +75,7 @@ func init() {
 		// Assignment statement
 
 		NodeASSIGN + "_2": template.Must(template.New(NodeASSIGN).Parse("{{.c1}} := {{.c2}}")),
+		NodeLET + "_1":    template.Must(template.New(NodeASSIGN).Parse("let {{.c1}}")),
 
 		// Import statement
 

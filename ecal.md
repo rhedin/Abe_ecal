@@ -96,7 +96,7 @@ The order of execution of sinks can be controlled via their priority. All sinks 
 
 Functions
 --
-Functions define reusable pieces of code dedicated to perform a particular task based on a set of given input values. In ECAL functions are first-class citizens in that they can be assigned to variables, passed as arguments, immediately invoked or deferred for last execution. Each parameter can have a default value which is by default NULL.
+Functions define reusable pieces of code dedicated to perform a particular task based on a set of given input values. In ECAL functions are first-class citizens in that they can be assigned to variables and  passed as arguments. Each parameter can have a default value which is by default NULL.
 
 Example:
 ```
@@ -105,7 +105,15 @@ func myfunc(a, b, c=1) {
 }
 ```
 
-Primitive values are passed by value, composition structures like maps and lists are passed by reference.
+Primitive values are passed by value, composition structures like maps and lists are passed by reference. Local variables should be defined using the `let` statement.
+
+Example:
+```
+a := 1
+func myfunc(a, b, c=1) {
+  let a := 2 # Local to myfunc
+}
+```
 
 Comments
 --

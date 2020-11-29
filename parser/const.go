@@ -125,6 +125,7 @@ const (
 	// Assignment statement
 
 	TokenASSIGN
+	TokenLET
 
 	TOKENodeKEYWORDS // Used to separate keywords from other tokens in this list
 
@@ -241,6 +242,7 @@ const (
 	// Assignment statement
 
 	NodeASSIGN = ":="
+	NodeLET    = "let"
 
 	// Import statement
 

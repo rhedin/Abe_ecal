@@ -81,6 +81,7 @@ func init() {
 		// Assignment statement
 
 		TokenASSIGN: {NodeASSIGN, nil, nil, nil, nil, 10, nil, ldInfix},
+		TokenLET:    {NodeLET, nil, nil, nil, nil, 0, ndPrefix, nil},
 
 		// Import statement
 

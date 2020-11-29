@@ -179,6 +179,10 @@ KeywordMap is a map of keywords - these require spaces between them
 */
 var KeywordMap = map[string]LexTokenID{
 
+	// Assign statement
+
+	"let": TokenLET,
+
 	// Import statement
 
 	"import": TokenIMPORT,

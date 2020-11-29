@@ -18,15 +18,17 @@ import (
 func TestImportParsing(t *testing.T) {
 
 	input := `import "foo/bar.ecal" as fooBar
-	i := fooBar`
+	let i := let fooBar`
 	expectedOutput := `
 statements
   import
     string: 'foo/bar.ecal'
     identifier: fooBar
   :=
-    identifier: i
-    identifier: fooBar
+    let
+      identifier: i
+    let
+      identifier: fooBar
 `[1:]
 
 	if res, err := UnitTestParse("mytest", input); err != nil || fmt.Sprint(res) != expectedOutput {

@@ -127,6 +127,21 @@ func (s *varsScope) SetValue(varName string, varValue interface{}) error {
 }
 
 /*
+SetLocalValue sets a new value for a local variable.
+*/
+func (s *varsScope) SetLocalValue(varName string, varValue interface{}) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	// Ensure the variable exists in the local scope
+
+	localVarName := strings.Split(varName, ".")[0]
+	s.storage[localVarName] = nil
+
+	return s.setValue(varName, varValue)
+}
+
+/*
 setValue sets a new value for a variable.
 */
 func (s *varsScope) setValue(varName string, varValue interface{}) error {

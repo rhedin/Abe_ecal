@@ -23,7 +23,6 @@ import (
 TODO:
 - create executable binary (pack into single binary)
 - pretty printer
-- local variable definition (let)
 - reload on start for debugger adapter
 */
 

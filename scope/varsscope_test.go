@@ -294,6 +294,8 @@ func TestVarScopeDump(t *testing.T) {
 	for211Vs.SetValue("x", ToObject(for211Vs))
 	sinkVs2.SetValue("g", 2)
 
+	sinkVs1.SetLocalValue("a", 5)
+
 	// Dump the sinkVs1 scope
 
 	if res := sinkVs1.String(); res != `global {
@@ -301,6 +303,7 @@ func TestVarScopeDump(t *testing.T) {
     global2 {
         a (int) : 1
         sink: 1 {
+            a (int) : 5
             b (int) : 2
             block: for1 {
                 c (int) : 3
@@ -323,7 +326,7 @@ func TestVarScopeDump(t *testing.T) {
 	}
 
 	bytes, _ := json.Marshal(sinkVs1.ToJSONObject())
-	if res := string(bytes); res != `{"b":2}` {
+	if res := string(bytes); res != `{"a":5,"b":2}` {
 		t.Error("Unexpected result:", res)
 		return
 	}

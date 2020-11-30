@@ -75,7 +75,7 @@ func (p *CLIPacker) ParseArgs() bool {
 
 	flag.Usage = func() {
 		fmt.Println()
-		fmt.Println(fmt.Sprintf("Usage of %s run [options] [entry file]", os.Args[0]))
+		fmt.Println(fmt.Sprintf("Usage of %s pack [options] [entry file]", os.Args[0]))
 		fmt.Println()
 		flag.PrintDefaults()
 		fmt.Println()
@@ -89,6 +89,8 @@ func (p *CLIPacker) ParseArgs() bool {
 
 		if cargs := flag.Args(); len(cargs) > 0 {
 			p.EntryFile = flag.Arg(0)
+		} else {
+			*showHelp = true
 		}
 
 		if *showHelp {

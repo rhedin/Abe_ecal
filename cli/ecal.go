@@ -46,9 +46,10 @@ func main() {
 		fmt.Println("Available commands:")
 		fmt.Println()
 		fmt.Println("    console   Interactive console (default)")
-		fmt.Println("    run       Execute ECAL code")
 		fmt.Println("    debug     Run in debug mode")
+		fmt.Println("    format    Format all ECAL files in a directory structure")
 		fmt.Println("    pack      Create a single executable from ECAL code")
+		fmt.Println("    run       Execute ECAL code")
 		fmt.Println()
 		fmt.Println(fmt.Sprintf("Use %s <command> -help for more information about a given command.", os.Args[0]))
 		fmt.Println()
@@ -73,6 +74,8 @@ func main() {
 			} else if arg == "pack" {
 				packer := tool.NewCLIPacker()
 				err = packer.Pack()
+			} else if arg == "format" {
+				err = tool.Format()
 			} else {
 				flag.Usage()
 			}

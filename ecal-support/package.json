@@ -129,8 +129,7 @@
             "host": "localhost",
             "port": 33274,
             "dir": "${workspaceFolder}",
-            "executeOnEntry": true,
-            "trace": false
+            "executeOnEntry": true
           }
         ]
       }

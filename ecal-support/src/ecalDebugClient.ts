@@ -118,8 +118,6 @@ export class ECALDebugClient extends EventEmitter {
         const tid = parseInt(tidString);
 
         if (thread.threadRunning === false && !this.threadInspection[tid]) {
-          console.log("#### Thread was stopped!!");
-
           // A thread was stopped inspect it
 
           let inspection: ThreadInspection = {

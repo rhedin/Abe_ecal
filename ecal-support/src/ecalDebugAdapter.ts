@@ -68,6 +68,8 @@ export class ECALDebugSession extends LoggingDebugSession {
   private config: ECALDebugArguments = {} as ECALDebugArguments;
 
   private unconfirmedBreakpoints: DebugProtocol.Breakpoint[] = [];
+  private frameVariableScopes: Record<number, Record<string, any>> = {};
+  private frameVariableGlobalScopes: Record<number, Record<string, any>> = {};
 
   private bpCount: number = 1;
   private sfCount: number = 1;
@@ -89,7 +91,6 @@ export class ECALDebugSession extends LoggingDebugSession {
     // Add event handlers
 
     this.client.on("pauseOnBreakpoint", (e: ClientBreakEvent) => {
-      console.log("#### send StoppedEvent event:", e.tid, typeof e.tid);
       this.sendEvent(new StoppedEvent("breakpoint", e.tid));
     });
 
@@ -106,7 +107,6 @@ export class ECALDebugSession extends LoggingDebugSession {
                   toConfirm.line === line &&
                   toConfirm.source?.name === breakpointString
                 ) {
-                  console.log("Confirmed breakpoint:", breakpointString);
                   toConfirm.verified = true;
                   this.sendEvent(new BreakpointEvent("changed", toConfirm));
                 }
@@ -133,11 +133,8 @@ export class ECALDebugSession extends LoggingDebugSession {
    * interrogates the debug adapter on the features which it provides.
    */
   protected initializeRequest(
-    response: DebugProtocol.InitializeResponse,
-    args: DebugProtocol.InitializeRequestArguments
+    response: DebugProtocol.InitializeResponse
   ): void {
-    console.log("##### initializeRequest:", args);
-
     response.body = response.body || {};
 
     // The adapter implements the configurationDoneRequest.
@@ -162,8 +159,6 @@ export class ECALDebugSession extends LoggingDebugSession {
     response: DebugProtocol.ConfigurationDoneResponse,
     args: DebugProtocol.ConfigurationDoneArguments
   ): void {
-    console.log("##### configurationDoneRequest");
-
     super.configurationDoneRequest(response, args);
     this.wgConfig.done();
   }
@@ -175,8 +170,6 @@ export class ECALDebugSession extends LoggingDebugSession {
     response: DebugProtocol.LaunchResponse,
     args: ECALDebugArguments
   ) {
-    console.log("##### launchRequest:", args);
-
     this.config = args; // Store the configuration
 
     // Setup logging either verbose or just on errors
@@ -196,8 +189,6 @@ export class ECALDebugSession extends LoggingDebugSession {
       this.client.reload();
     }
 
-    console.log("##### launchRequest result:", response.body);
-
     this.sendResponse(response);
   }
 
@@ -205,8 +196,6 @@ export class ECALDebugSession extends LoggingDebugSession {
     response: DebugProtocol.SetBreakpointsResponse,
     args: DebugProtocol.SetBreakpointsArguments
   ): Promise<void> {
-    console.log("##### setBreakPointsRequest:", args);
-
     let breakpoints: DebugProtocol.Breakpoint[] = [];
 
     if (args.source.path?.indexOf(this.config.dir) === 0) {
@@ -263,8 +252,6 @@ export class ECALDebugSession extends LoggingDebugSession {
       breakpoints,
     };
 
-    console.error("##### setBreakPointsRequest result:", response.body);
-
     this.sendResponse(response);
   }
 
@@ -303,8 +290,6 @@ export class ECALDebugSession extends LoggingDebugSession {
   protected async threadsRequest(
     response: DebugProtocol.ThreadsResponse
   ): Promise<void> {
-    console.log("##### threadsRequest");
-
     const status = await this.client.status();
     const threads = [];
 
@@ -320,21 +305,14 @@ export class ECALDebugSession extends LoggingDebugSession {
       threads,
     };
 
-    console.log("##### threadsRequest result:", response.body);
-
     this.sendResponse(response);
   }
-
-  private frameVariableScopes: Record<number, Record<string, any>> = {};
-  private frameVariableGlobalScopes: Record<number, Record<string, any>> = {};
 
   protected async stackTraceRequest(
     response: DebugProtocol.StackTraceResponse,
     args: DebugProtocol.StackTraceArguments
   ) {
     const stackFrames: StackFrame[] = [];
-    console.log("##### stackTraceRequest:", args);
-
     const status = await this.client.status();
     const threadStatus = status?.threads[String(args.threadId)];
 
@@ -397,8 +375,6 @@ export class ECALDebugSession extends LoggingDebugSession {
     response: DebugProtocol.ScopesResponse,
     args: DebugProtocol.ScopesArguments
   ): void {
-    console.error("##### scopesRequest:", args);
-
     response.body = {
       scopes: [
         new Scope("Local", this.getVariableScopeId(args.frameId, "local")),
@@ -413,8 +389,6 @@ export class ECALDebugSession extends LoggingDebugSession {
     response: DebugProtocol.VariablesResponse,
     args: DebugProtocol.VariablesArguments
   ) {
-    console.error("##### variablesRequest", args);
-
     let vs: Record<string, any> = {};
     let variables: Variable[] = [];
 
@@ -441,8 +415,6 @@ export class ECALDebugSession extends LoggingDebugSession {
         variables.push(new Variable(name, valString));
       }
     }
-
-    console.log("##### variablesRequest response", variables);
 
     response.body = {
       variables,

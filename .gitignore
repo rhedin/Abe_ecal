@@ -7,6 +7,7 @@ ecal
 /coverage.html
 /dist
 /build
+/examples/embedding/embedding
 /ecal-support/node_modules
 /ecal-support/out
 /ecal-support/*.vsix

@@ -17,7 +17,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"net"
+	"os"
 	"strings"
 	"time"
 
@@ -41,13 +43,17 @@ type CLIDebugInterpreter struct {
 	Interactive     *bool   // Flag if the interpreter should open a console in the current tty.
 	BreakOnStart    *bool   // Flag if the debugger should stop the execution on start
 	BreakOnError    *bool   // Flag if the debugger should stop when encountering an error
+
+	// Log output
+
+	LogOut io.Writer
 }
 
 /*
 NewCLIDebugInterpreter wraps an existing CLIInterpreter object and adds capabilities.
 */
 func NewCLIDebugInterpreter(i *CLIInterpreter) *CLIDebugInterpreter {
-	return &CLIDebugInterpreter{i, nil, nil, nil, nil, nil, nil}
+	return &CLIDebugInterpreter{i, nil, nil, nil, nil, nil, nil, os.Stdout}
 }
 
 /*
@@ -241,13 +247,14 @@ HandleConnection handles an incoming connection.
 func (s *debugTelnetServer) HandleConnection(conn net.Conn) {
 	tid := s.interpreter.RuntimeProvider.NewThreadID()
 	inputReader := bufio.NewReader(conn)
-	outputTerminal := OutputTerminal(&bufioWriterShim{fmt.Sprint(conn.RemoteAddr()), bufio.NewWriter(conn), s.echo})
+	outputTerminal := OutputTerminal(&bufioWriterShim{fmt.Sprint(conn.RemoteAddr()),
+		bufio.NewWriter(conn), s.echo, s.interpreter.LogOut})
 
 	line := ""
 
 	s.logger.LogDebug(s.logPrefix, "Connect ", conn.RemoteAddr())
 	if s.echo {
-		fmt.Println(fmt.Sprintf("%v : Connected", conn.RemoteAddr()))
+		fmt.Fprintln(s.interpreter.LogOut, fmt.Sprintf("%v : Connected", conn.RemoteAddr()))
 	}
 
 	for {
@@ -258,7 +265,7 @@ func (s *debugTelnetServer) HandleConnection(conn net.Conn) {
 			line = strings.TrimSpace(line)
 
 			if s.echo {
-				fmt.Println(fmt.Sprintf("%v > %v", conn.RemoteAddr(), line))
+				fmt.Fprintln(s.interpreter.LogOut, fmt.Sprintf("%v > %v", conn.RemoteAddr(), line))
 			}
 
 			if line == "exit" || line == "q" || line == "quit" || line == "bye" || line == "\x04" {
@@ -270,7 +277,8 @@ func (s *debugTelnetServer) HandleConnection(conn net.Conn) {
 			if !s.interpreter.CanHandle(line) || isHelpTable {
 				buffer := bytes.NewBuffer(nil)
 
-				s.interpreter.HandleInput(&bufioWriterShim{"tmpbuffer", bufio.NewWriter(buffer), false}, line, tid)
+				s.interpreter.HandleInput(&bufioWriterShim{"tmpbuffer",
+					bufio.NewWriter(buffer), false, s.interpreter.LogOut}, line, tid)
 
 				if isHelpTable {
 
@@ -300,7 +308,7 @@ func (s *debugTelnetServer) HandleConnection(conn net.Conn) {
 
 		if err != nil {
 			if s.echo {
-				fmt.Println(fmt.Sprintf("%v : Disconnected", conn.RemoteAddr()))
+				fmt.Fprintln(s.interpreter.LogOut, fmt.Sprintf("%v : Disconnected", conn.RemoteAddr()))
 			}
 			s.logger.LogDebug(s.logPrefix, "Disconnect ", conn.RemoteAddr(), " - ", err)
 			break
@@ -317,6 +325,7 @@ type bufioWriterShim struct {
 	id     string
 	writer *bufio.Writer
 	echo   bool
+	logOut io.Writer
 }
 
 /*
@@ -324,7 +333,7 @@ WriteString write a string to the writer.
 */
 func (shim *bufioWriterShim) WriteString(s string) {
 	if shim.echo {
-		fmt.Println(fmt.Sprintf("%v < %v", shim.id, s))
+		fmt.Fprintln(shim.logOut, fmt.Sprintf("%v < %v", shim.id, s))
 	}
 	shim.writer.WriteString(s)
 	shim.writer.Flush()

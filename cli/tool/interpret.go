@@ -61,13 +61,17 @@ type CLIInterpreter struct {
 	Dir      *string // Root dir for interpreter
 	LogFile  *string // Logfile (blank for stdout)
 	LogLevel *string // Log level string (Debug, Info, Error)
+
+	// Log output
+
+	LogOut io.Writer
 }
 
 /*
 NewCLIInterpreter creates a new commandline interpreter for ECAL.
 */
 func NewCLIInterpreter() *CLIInterpreter {
-	return &CLIInterpreter{scope.NewScope(scope.GlobalScope), nil, nil, "", "", "", nil, nil, nil}
+	return &CLIInterpreter{scope.NewScope(scope.GlobalScope), nil, nil, "", "", "", nil, nil, nil, os.Stdout}
 }
 
 /*
@@ -199,7 +203,7 @@ func (i *CLIInterpreter) Interpret(interactive bool) error {
 	clt, err := termutil.NewConsoleLineTerminal(os.Stdout)
 
 	if interactive {
-		fmt.Println(fmt.Sprintf("ECAL %v", config.ProductVersion))
+		fmt.Fprintln(i.LogOut, fmt.Sprintf("ECAL %v", config.ProductVersion))
 	}
 
 	// Create Runtime Provider
@@ -212,13 +216,13 @@ func (i *CLIInterpreter) Interpret(interactive bool) error {
 
 			if interactive {
 				if lll, ok := i.RuntimeProvider.Logger.(*util.LogLevelLogger); ok {
-					fmt.Print(fmt.Sprintf("Log level: %v - ", lll.Level()))
+					fmt.Fprint(i.LogOut, fmt.Sprintf("Log level: %v - ", lll.Level()))
 				}
 
-				fmt.Println(fmt.Sprintf("Root directory: %v", *i.Dir))
+				fmt.Fprintln(i.LogOut, fmt.Sprintf("Root directory: %v", *i.Dir))
 
 				if i.CustomWelcomeMessage != "" {
-					fmt.Println(fmt.Sprintf(i.CustomWelcomeMessage))
+					fmt.Fprintln(i.LogOut, fmt.Sprintf(i.CustomWelcomeMessage))
 				}
 			}
 
@@ -249,7 +253,7 @@ func (i *CLIInterpreter) Interpret(interactive bool) error {
 
 								defer clt.StopTerm()
 
-								fmt.Println("Type 'q' or 'quit' to exit the shell and '?' to get help")
+								fmt.Fprintln(i.LogOut, "Type 'q' or 'quit' to exit the shell and '?' to get help")
 
 								line, err = clt.NextLine()
 								for err == nil && !isExitLine(line) {

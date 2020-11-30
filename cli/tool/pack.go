@@ -41,13 +41,17 @@ type CLIPacker struct {
 	Dir          *string // Root dir for interpreter (all files will be collected)
 	SourceBinary *string // Binary which is used by the packer
 	TargetBinary *string // Binary which will be build by the packer
+
+	// Log output
+
+	LogOut io.Writer
 }
 
 /*
 NewCLIPacker creates a new commandline packer.
 */
 func NewCLIPacker() *CLIPacker {
-	return &CLIPacker{"", nil, nil, nil}
+	return &CLIPacker{"", nil, nil, nil, os.Stdout}
 }
 
 /*
@@ -103,7 +107,7 @@ func (p *CLIPacker) Pack() error {
 		return nil
 	}
 
-	fmt.Println(fmt.Sprintf("Packing %v -> %v from %v with entry: %v", *p.Dir,
+	fmt.Fprintln(p.LogOut, fmt.Sprintf("Packing %v -> %v from %v with entry: %v", *p.Dir,
 		*p.TargetBinary, *p.SourceBinary, p.EntryFile))
 
 	source, err := os.Open(*p.SourceBinary)
@@ -119,7 +123,7 @@ func (p *CLIPacker) Pack() error {
 			// First copy the binary
 
 			if bytes, err = io.Copy(dest, source); err == nil {
-				fmt.Println(fmt.Sprintf("Copied %v bytes for interpreter.", bytes))
+				fmt.Fprintln(p.LogOut, fmt.Sprintf("Copied %v bytes for interpreter.", bytes))
 				var bytes int
 
 				end := "####"
@@ -127,7 +131,7 @@ func (p *CLIPacker) Pack() error {
 
 				if bytes, err = dest.WriteString(marker); err == nil {
 					var data []byte
-					fmt.Println(fmt.Sprintf("Writing marker %v bytes for source archive.", bytes))
+					fmt.Fprintln(p.LogOut, fmt.Sprintf("Writing marker %v bytes for source archive.", bytes))
 
 					// Create a new zip archive.
 
@@ -137,7 +141,7 @@ func (p *CLIPacker) Pack() error {
 						var f io.Writer
 						if f, err = w.Create(".ecalsrc-entry"); err == nil {
 							if bytes, err = f.Write(data); err == nil {
-								fmt.Println(fmt.Sprintf("Writing %v bytes for intro", bytes))
+								fmt.Fprintln(p.LogOut, fmt.Sprintf("Writing %v bytes for intro", bytes))
 
 								// Add files to the archive
 
@@ -172,7 +176,7 @@ func (p *CLIPacker) packFiles(w *zip.Writer, filePath string, zipPath string) er
 					var f io.Writer
 					if f, err = w.Create(filepath.Join(zipPath, file.Name())); err == nil {
 						if bytes, err = f.Write(data); err == nil {
-							fmt.Println(fmt.Sprintf("Writing %v bytes for %v",
+							fmt.Fprintln(p.LogOut, fmt.Sprintf("Writing %v bytes for %v",
 								bytes, filepath.Join(filePath, file.Name())))
 						}
 					}

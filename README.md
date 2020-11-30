@@ -1,13 +1,18 @@
 ECAL
 ====
+
+<p align="center">
+  <img height="150px" style="height:150px;" src="ecal-support/images/logo.png">
+</p>
+
 ECAL is an ECA (Event Condition Action) language for concurrent event processing. ECAL can define event-based systems using rules which are triggered by events. ECAL is intended to be embedded into other software to provide an easy to use scripting language which can react to external events.
 
 Features
 --------
 - Simple intuitive syntax
-- Minimalistic base language
+- Minimalistic base language (by default only writing to a log is supported)
 - Language can be easily extended either by auto generating bridge adapters to Go functions or by adding custom function into the stdlib
-- External events can be easily pushed into the interpreter and scripts written in ECAL can react to the events.
+- External events can be easily pushed into the interpreter and scripts written in ECAL can react to these events.
 - Simple but powerful concurrent event-based processing supporting priorities and scoping for control flow.
 - Handling event rules can match on event state and rules can suppress each other.
 
@@ -66,10 +71,13 @@ $ sh run.sh
 2000/01/01 12:12:02 fib(20) = 6765
 ```
 
+The interpreter can be run in debug mode which adds debug commands to the console. Run the ECAL program in debug mode with: `sh debug.sh` - this will also start a debug server which external development environments can connect to. There is a [VSCode integration](ecal-support/README.md) available which allows debugging via a graphical interface.
+
 ### Further Reading:
 
 - [ECA Language](ecal.md)
 - [ECA Engine](engine.md)
+- [VSCode integration](ecal-support/README.md)
 
 License
 -------

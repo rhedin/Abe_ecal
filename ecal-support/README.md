@@ -20,7 +20,7 @@ The extention can be installed using a precompiled VSIX file which can be downlo
 
 https://devt.de/krotik/ecal/releases
 
-Alternatively you can build the extension yourself. To build the extension you need `npm` installed. Download the source code from the [repository](https://devt.de/krotik/ecal). First install all required dependencies with `npm -i`. Then compile and package the extension with `npm run compile` and `npm run package`. The folder should now contain a VSIX file.
+Alternatively you can build the extension yourself. To build the extension you need `npm` installed. Download the source code from the [repository](https://devt.de/krotik/ecal). First install all required dependencies with `npm i`. Then compile and package the extension with `npm run compile` and `npm run package`. The folder should now contain a VSIX file.
 
 ## Using the extension
 

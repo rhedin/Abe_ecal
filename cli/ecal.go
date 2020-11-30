@@ -21,12 +21,13 @@ import (
 
 /*
 TODO:
-- create executable binary (pack into single binary)
 - pretty printer
 - reload on start for debugger adapter
 */
 
 func main() {
+
+	tool.RunPackedBinary() // See if we try to run a standalone binary
 
 	// Initialize the default command line parser
 
@@ -69,6 +70,9 @@ func main() {
 			} else if arg == "debug" {
 				debugInterpreter := tool.NewCLIDebugInterpreter(interpreter)
 				err = debugInterpreter.Interpret()
+			} else if arg == "pack" {
+				packer := tool.NewCLIPacker()
+				err = packer.Pack()
 			} else {
 				flag.Usage()
 			}
@@ -82,7 +86,5 @@ func main() {
 			fmt.Println(fmt.Sprintf("Error: %v", err))
 		}
 
-	} else {
-		flag.Usage()
 	}
 }

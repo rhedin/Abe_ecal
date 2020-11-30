@@ -54,6 +54,8 @@ type CLIInterpreter struct {
 	CustomWelcomeMessage string
 	CustomHelpString     string
 
+	EntryFile string // Entry file for the program
+
 	// Parameter these can either be set programmatically or via CLI args
 
 	Dir      *string // Root dir for interpreter
@@ -65,7 +67,7 @@ type CLIInterpreter struct {
 NewCLIInterpreter creates a new commandline interpreter for ECAL.
 */
 func NewCLIInterpreter() *CLIInterpreter {
-	return &CLIInterpreter{scope.NewScope(scope.GlobalScope), nil, nil, "", "", nil, nil, nil}
+	return &CLIInterpreter{scope.NewScope(scope.GlobalScope), nil, nil, "", "", "", nil, nil, nil}
 }
 
 /*
@@ -95,6 +97,10 @@ func (i *CLIInterpreter) ParseArgs() bool {
 
 	if len(os.Args) >= 2 {
 		flag.CommandLine.Parse(os.Args[2:])
+
+		if cargs := flag.Args(); len(cargs) > 0 {
+			i.EntryFile = flag.Arg(0)
+		}
 
 		if *showHelp {
 			flag.Usage()
@@ -164,14 +170,13 @@ func (i *CLIInterpreter) LoadInitialFile(tid uint64) error {
 
 	i.GlobalVS.Clear()
 
-	if cargs := flag.Args(); len(cargs) > 0 {
+	if i.EntryFile != "" {
 		var ast *parser.ASTNode
 		var initFile []byte
 
-		initFileName := flag.Arg(0)
-		initFile, err = ioutil.ReadFile(initFileName)
+		initFile, err = ioutil.ReadFile(i.EntryFile)
 
-		if ast, err = parser.ParseWithRuntime(initFileName, string(initFile), i.RuntimeProvider); err == nil {
+		if ast, err = parser.ParseWithRuntime(i.EntryFile, string(initFile), i.RuntimeProvider); err == nil {
 			if err = ast.Runtime.Validate(); err == nil {
 				_, err = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}), tid)
 			}

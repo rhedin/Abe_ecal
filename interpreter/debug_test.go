@@ -49,6 +49,8 @@ func TestSimpleDebugging(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 
+	var tid uint64
+
 	go func() {
 		_, err = UnitTestEval(`
 log("test1")
@@ -58,10 +60,13 @@ log("test3")
 		if err != nil {
 			t.Error(err)
 		}
+
+		testDebugger.RecordThreadFinished(tid)
+
 		wg.Done()
 	}()
 
-	tid := waitForThreadSuspension(t)
+	tid = waitForThreadSuspension(t)
 
 	out, err := testDebugger.HandleInput(fmt.Sprintf("status"))
 
@@ -173,11 +178,7 @@ test3`[1:] {
   "sources": [
     "ECALEvalTest"
   ],
-  "threads": {
-    "1": {
-      "callStack": []
-    }
-  }
+  "threads": {}
 }` {
 		t.Error("Unexpected result:", outString, err)
 		return
@@ -204,11 +205,7 @@ test3`[1:] {
   "sources": [
     "ECALEvalTest"
   ],
-  "threads": {
-    "1": {
-      "callStack": []
-    }
-  }
+  "threads": {}
 }` {
 		t.Error("Unexpected result:", outString, err)
 		return

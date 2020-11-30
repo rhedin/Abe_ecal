@@ -392,6 +392,21 @@ func (ed *ecalDebugger) RecordSource(source string) {
 }
 
 /*
+RecordThreadFinished lets the debugger know that a thread has finished.
+*/
+func (ed *ecalDebugger) RecordThreadFinished(tid uint64) {
+	ed.lock.Lock()
+	defer ed.lock.Unlock()
+
+	if is, ok := ed.interrogationStates[tid]; !ok || !is.running {
+		delete(ed.interrogationStates, tid)
+		delete(ed.callStacks, tid)
+		delete(ed.callStackVsSnapshots, tid)
+		delete(ed.callStackGlobalVsSnapshots, tid)
+	}
+}
+
+/*
 SetBreakPoint sets a break point.
 */
 func (ed *ecalDebugger) SetBreakPoint(source string, line int) {

@@ -19,12 +19,6 @@ import (
 	"devt.de/krotik/ecal/config"
 )
 
-/*
-TODO:
-- pretty printer
-- reload on start for debugger adapter
-*/
-
 func main() {
 
 	tool.RunPackedBinary() // See if we try to run a standalone binary

@@ -1,2 +1,2 @@
 #!/bin/sh
-../../ecal debug -server -echo fib.ecal
+../../ecal debug -server fib.ecal

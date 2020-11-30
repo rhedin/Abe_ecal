@@ -134,6 +134,11 @@ type ECALDebugger interface {
 	VisitStepOutState(node *parser.ASTNode, vs parser.Scope, tid uint64, soErr error) TraceableRuntimeError
 
 	/*
+	   RecordThreadFinished lets the debugger know that a thread has finished.
+	*/
+	RecordThreadFinished(tid uint64)
+
+	/*
 	   SetBreakPoint sets a break point.
 	*/
 	SetBreakPoint(source string, line int)

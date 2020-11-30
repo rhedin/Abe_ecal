@@ -184,6 +184,11 @@ func (i *CLIInterpreter) LoadInitialFile(tid uint64) error {
 			if err = ast.Runtime.Validate(); err == nil {
 				_, err = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}), tid)
 			}
+			defer func() {
+				if i.RuntimeProvider.Debugger != nil {
+					i.RuntimeProvider.Debugger.RecordThreadFinished(tid)
+				}
+			}()
 		}
 	}
 
@@ -305,6 +310,7 @@ func (i *CLIInterpreter) HandleInput(ot OutputTerminal, line string, tid uint64)
 		// Reload happens in a separate thread as it may be suspended on start
 
 		go i.LoadInitialFile(i.RuntimeProvider.NewThreadID())
+		ot.WriteString(fmt.Sprintln(fmt.Sprintln("Reloading interpreter state")))
 
 	} else if strings.HasPrefix(line, "@sym") {
 		i.displaySymbols(ot, strings.Split(line, " ")[1:])
@@ -320,18 +326,25 @@ func (i *CLIInterpreter) HandleInput(ot OutputTerminal, line string, tid uint64)
 		var ast *parser.ASTNode
 		var res interface{}
 
-		if ast, ierr = parser.ParseWithRuntime("console input", line, i.RuntimeProvider); ierr == nil {
+		if line != "" {
+			if ast, ierr = parser.ParseWithRuntime("console input", line, i.RuntimeProvider); ierr == nil {
 
-			if ierr = ast.Runtime.Validate(); ierr == nil {
+				if ierr = ast.Runtime.Validate(); ierr == nil {
 
-				if res, ierr = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}), tid); ierr == nil && res != nil {
-					ot.WriteString(fmt.Sprintln(stringutil.ConvertToString(res)))
+					if res, ierr = ast.Runtime.Eval(i.GlobalVS, make(map[string]interface{}), tid); ierr == nil && res != nil {
+						ot.WriteString(fmt.Sprintln(stringutil.ConvertToString(res)))
+					}
+					defer func() {
+						if i.RuntimeProvider.Debugger != nil {
+							i.RuntimeProvider.Debugger.RecordThreadFinished(tid)
+						}
+					}()
 				}
 			}
-		}
 
-		if ierr != nil {
-			ot.WriteString(fmt.Sprintln(ierr.Error()))
+			if ierr != nil {
+				ot.WriteString(fmt.Sprintln(ierr.Error()))
+			}
 		}
 	}
 }

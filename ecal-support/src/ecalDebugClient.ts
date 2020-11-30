@@ -26,6 +26,7 @@ export class ECALDebugClient extends EventEmitter {
   private connected: boolean = false;
   private backlog: BacklogCommand[] = [];
   private threadInspection: Record<number, ThreadInspection> = {};
+  private doReload: boolean = false;
 
   /**
    * Create a new debug client.
@@ -38,11 +39,10 @@ export class ECALDebugClient extends EventEmitter {
     this.socketLock = new AsyncLock();
   }
 
-  public async conect(host: string, port: number) {
+  public async connect(host: string, port: number) {
     try {
       this.out.log(`Connecting to: ${host}:${port}`);
       await this.socket.connect({ port, host });
-      // this.socket.setTimeout(2000);
       this.connected = true;
       this.pollEvents(); // Start emitting events
     } catch (e) {
@@ -57,6 +57,10 @@ export class ECALDebugClient extends EventEmitter {
       this.out.error(`Could not query for status: ${e}`);
       return null;
     }
+  }
+
+  public reload() {
+    this.doReload = true;
   }
 
   public async describe(tid: number): Promise<ThreadInspection | null> {
@@ -136,6 +140,16 @@ export class ECALDebugClient extends EventEmitter {
           this.emit("pauseOnBreakpoint", { tid, inspection });
         }
       }
+
+      if (this.doReload) {
+        this.doReload = false;
+        this.out.log(`Reloading interpreter state`);
+        try {
+          await this.sendCommandString("@reload\r\n");
+        } catch (e) {
+          this.out.error(`Could not reload the interpreter state: ${e}`);
+        }
+      }
     } catch (e) {
       this.out.error(`Error during event loop: ${e}`);
       nextLoop = 5000;
@@ -180,11 +194,13 @@ export class ECALDebugClient extends EventEmitter {
       await this.socket.write(cmdString, "utf8");
 
       let text = "";
+
       while (!text.endsWith("\n\n")) {
         text += await this.socket.read(1);
       }
 
       let res: any = {};
+
       try {
         res = JSON.parse(text);
       } catch (e) {

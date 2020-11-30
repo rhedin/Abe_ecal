@@ -1,7 +1,7 @@
 /**
  * Debug Adapter for VS Code to support the ECAL debugger.
  *
- * See the debugger extension guide:
+ * Based on the debugger extension guide:
  * https://code.visualstudio.com/api/extension-guides/debugger-extension
  */
 
@@ -190,7 +190,11 @@ export class ECALDebugSession extends LoggingDebugSession {
 
     this.extout.appendLine(`Configuration loaded: ${JSON.stringify(args)}`);
 
-    await this.client.conect(args.host, args.port);
+    await this.client.connect(args.host, args.port);
+
+    if (args.executeOnEntry) {
+      this.client.reload();
+    }
 
     console.log("##### launchRequest result:", response.body);
 

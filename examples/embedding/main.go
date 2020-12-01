@@ -108,7 +108,11 @@ mystuff.add(compute(5), 1)
 		log.Fatal(err)
 	}
 
+	// All errors can be found on the returned monitor object
+
 	fmt.Println("Event result:", monitor.RootMonitor().AllErrors())
+
+	// The log messages of a program can be collected
 
 	fmt.Println("Log:", logger.String())
 }

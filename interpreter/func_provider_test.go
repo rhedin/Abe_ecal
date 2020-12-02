@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"devt.de/krotik/common/errorutil"
 	"devt.de/krotik/ecal/stdlib"
 )
 
@@ -90,8 +91,9 @@ identifier: len
       number: 2
       number: 3
 `[1:])
+	errorutil.AssertOk(err)
 
-	if err != nil || res != 3. {
+	if res != 3. {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -109,8 +111,9 @@ identifier: len
         number: 2
         string: 'b'
 `[1:])
+	errorutil.AssertOk(err)
 
-	if err != nil || res != 2. {
+	if res != 2. {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -126,8 +129,9 @@ identifier: del
       number: 3
     number: 1
 `[1:])
+	errorutil.AssertOk(err)
 
-	if err != nil || fmt.Sprint(res) != "[1 3]" {
+	if fmt.Sprint(res) != "[1 3]" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -153,8 +157,9 @@ identifier: del
         number: 3
     string: 'b'
 `[1:])
+	errorutil.AssertOk(err)
 
-	if err != nil || fmt.Sprint(res) != "map[a:1 c:3]" {
+	if fmt.Sprint(res) != "map[a:1 c:3]" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -188,8 +193,9 @@ identifier: add
     number: 4
     number: 0
 `[1:])
+	errorutil.AssertOk(err)
 
-	if err != nil || fmt.Sprint(res) != "[4 1 2 3]" {
+	if fmt.Sprint(res) != "[4 1 2 3]" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -206,13 +212,17 @@ identifier: add
     number: 4
     number: 1
 `[1:])
+	errorutil.AssertOk(err)
 
-	if err != nil || fmt.Sprint(res) != "[1 4 2 3]" {
+	if fmt.Sprint(res) != "[1 4 2 3]" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
+}
 
-	res, err = UnitTestEvalAndAST(
+func TestSimpleFunctions2(t *testing.T) {
+
+	res, err := UnitTestEvalAndAST(
 		`concat([1,2,3], [4,5,6], [7,8,9])`, nil,
 		`
 identifier: concat
@@ -230,8 +240,9 @@ identifier: concat
       number: 8
       number: 9
 `[1:])
+	errorutil.AssertOk(err)
 
-	if err != nil || fmt.Sprint(res) != "[1 2 3 4 5 6 7 8 9]" {
+	if fmt.Sprint(res) != "[1 2 3 4 5 6 7 8 9]" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -242,8 +253,9 @@ identifier: concat
 identifier: dumpenv
   funccall
 `[1:])
+	errorutil.AssertOk(err)
 
-	if err != nil || fmt.Sprint(res) != `GlobalScope {
+	if fmt.Sprint(res) != `GlobalScope {
 }` {
 		t.Error("Unexpected result: ", res, err)
 		return
@@ -255,16 +267,18 @@ func foo() {
 	log("hello")
 }
 doc(foo)`, nil)
+	errorutil.AssertOk(err)
 
-	if err != nil || fmt.Sprint(res) != `Declared function: foo (Line 2, Pos 1)` {
+	if fmt.Sprint(res) != `Declared function: foo (Line 2, Pos 1)` {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
 
 	res, err = UnitTestEval(
 		`doc(len)`, nil)
+	errorutil.AssertOk(err)
 
-	if err != nil || fmt.Sprint(res) != `Len returns the size of a list or map.` {
+	if fmt.Sprint(res) != `Len returns the size of a list or map.` {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -275,8 +289,9 @@ doc(foo)`, nil)
 
 	res, err = UnitTestEval(
 		`doc(fmt.Println)`, nil)
+	errorutil.AssertOk(err)
 
-	if err != nil || res != "foo" {
+	if res != "foo" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -335,7 +350,7 @@ func TestCronTrigger(t *testing.T) {
 		return
 	}
 
-	res, err = UnitTestEval(
+	_, err = UnitTestEval(
 		`
 sink test
   kindmatch [ "foo.*" ],
@@ -399,7 +414,7 @@ func TestPulseTrigger(t *testing.T) {
 		return
 	}
 
-	res, err = UnitTestEval(
+	_, err = UnitTestEval(
 		`
 sink test
   kindmatch [ "foo.*" ],

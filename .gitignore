@@ -9,6 +9,7 @@
 /dist
 /build
 /examples/embedding/embedding
+/examples/plugin/*.so
 /ecal-support/node_modules
 /ecal-support/out
 /ecal-support/*.vsix

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"devt.de/krotik/common/errorutil"
+	"devt.de/krotik/common/timeutil"
 	"devt.de/krotik/ecal/stdlib"
 )
 
@@ -367,7 +368,7 @@ log("Cron:", setCronTrigger("1 1 *%10 * * *", "cronevent", "foo.bar"))
 	}
 
 	testcron.Start()
-	time.Sleep(200 * time.Millisecond)
+	timeutil.WaitTestingCron(testcron)
 
 	if testlogger.String() != `
 Cron:at second 1 of minute 1 of every 10th hour every day

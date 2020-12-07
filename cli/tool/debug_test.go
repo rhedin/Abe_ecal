@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"devt.de/krotik/common/errorutil"
-	"devt.de/krotik/ecal/config"
 	"devt.de/krotik/ecal/interpreter"
 	"devt.de/krotik/ecal/stdlib"
 	"devt.de/krotik/ecal/util"
@@ -120,11 +119,8 @@ func TestDebugInterpret(t *testing.T) {
 		return
 	}
 
-	if testLogOut.String() != `ECAL `+config.ProductVersion+`
-Log level: info - Root directory: /home/ml/data/krotik/ecal/cli/tool
-Running in debug mode - with debug server on localhost:33274 - prefix debug commands with ##
-Type 'q' or 'quit' to exit the shell and '?' to get help
-` {
+	if !strings.Contains(testLogOut.String(),
+		"Running in debug mode - with debug server on localhost:33274 - prefix debug commands with ##") {
 		t.Error("Unexpected result:", testLogOut.String())
 		return
 	}

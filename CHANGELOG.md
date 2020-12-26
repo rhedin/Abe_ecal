@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://devt.de///compare/v1.1.0...v1.2.0) (2020-12-26)
+
+
+### Features
+
+* Adding conversion helper for JSON objects ([0454de3](https://devt.de///commit/0454de30f32b70cb936675c86bf6bdafd4e4bc3b))
+
 ## [1.1.0](https://devt.de///compare/v1.0.4...v1.1.0) (2020-12-13)
 
 

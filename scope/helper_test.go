@@ -59,4 +59,12 @@ func TestConvertJSONToECALObject(t *testing.T) {
 		return
 	}
 
+	res = ConvertECALToJSONObject(res)
+
+	if typeString := fmt.Sprintf("%#v", res); typeString !=
+		`map[string]interface {}{"foo":[]interface {}{map[string]interface {}{"bar":"123"}}}` {
+		t.Error("Unexpected result:", typeString)
+		return
+	}
+
 }

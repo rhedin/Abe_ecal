@@ -92,3 +92,32 @@ func ConvertJSONToECALObject(v interface{}) interface{} {
 
 	return res
 }
+
+/*
+ConvertECALToJSONbject converts an ECAL container structure into an object which
+can be marshalled into a JSON string.
+*/
+func ConvertECALToJSONObject(v interface{}) interface{} {
+	res := v
+
+	if mapContainer, ok := v.(map[interface{}]interface{}); ok {
+		newRes := make(map[string]interface{})
+
+		for mk, mv := range mapContainer {
+			newRes[fmt.Sprint(mk)] = ConvertECALToJSONObject(mv)
+		}
+
+		res = newRes
+
+	} else if mapList, ok := v.([]interface{}); ok {
+		newRes := make([]interface{}, len(mapList))
+
+		for i, lv := range mapList {
+			newRes[i] = ConvertECALToJSONObject(lv)
+		}
+
+		res = newRes
+	}
+
+	return res
+}

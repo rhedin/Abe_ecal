@@ -94,7 +94,7 @@ func ConvertJSONToECALObject(v interface{}) interface{} {
 }
 
 /*
-ConvertECALToJSONbject converts an ECAL container structure into an object which
+ConvertECALToJSONObject converts an ECAL container structure into an object which
 can be marshalled into a JSON string.
 */
 func ConvertECALToJSONObject(v interface{}) interface{} {

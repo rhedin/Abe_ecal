@@ -381,7 +381,10 @@ func (i *CLIInterpreter) HandleInput(ot OutputTerminal, line string, tid uint64)
 
 		// Reload happens in a separate thread as it may be suspended on start
 
-		go i.LoadInitialFile(i.RuntimeProvider.NewThreadID())
+		go func() {
+			err := i.LoadInitialFile(i.RuntimeProvider.NewThreadID())
+			ot.WriteString(fmt.Sprintln(fmt.Sprintln("Interpreter reloaded:", err)))
+		}()
 		ot.WriteString(fmt.Sprintln(fmt.Sprintln("Reloading interpreter state")))
 
 	} else if strings.HasPrefix(line, "@sym") {

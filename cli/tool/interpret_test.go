@@ -346,7 +346,7 @@ func TestHandleInput(t *testing.T) {
 		return
 	}
 
-	if testTerm.out.String() != `╒═════════════════╤═══════════════════════════════╕
+	if strings.HasSuffix(testTerm.out.String(), `╒═════════════════╤═══════════════════════════════╕
 │Inbuild function │Description                    │
 ╞═════════════════╪═══════════════════════════════╡
 │raise            │Raise returns an error object. │
@@ -364,7 +364,8 @@ func TestHandleInput(t *testing.T) {
 │foo.Println │xxx         │
 │            │            │
 ╘════════════╧════════════╛
-` {
+
+`) {
 		t.Error("Unexpected result:", testTerm.out.String())
 		return
 	}

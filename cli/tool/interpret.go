@@ -177,6 +177,9 @@ LoadInitialFile clears the global scope and reloads the initial file.
 func (i *CLIInterpreter) LoadInitialFile(tid uint64) error {
 	var err error
 
+	i.RuntimeProvider.Processor.Finish()
+	i.RuntimeProvider.Processor.Reset()
+
 	if i.CustomHandler != nil {
 		i.CustomHandler.LoadInitialFile(tid)
 	}
@@ -202,6 +205,8 @@ func (i *CLIInterpreter) LoadInitialFile(tid uint64) error {
 			}
 		}
 	}
+
+	i.RuntimeProvider.Processor.Start()
 
 	return err
 }

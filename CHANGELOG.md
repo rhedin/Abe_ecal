@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.2](https://devt.de///compare/v1.3.1...v1.3.2) (2020-12-30)
+
+
+### Bug Fixes
+
+* Adding error display when reloading interpreter state ([f5cc392](https://devt.de///commit/f5cc392a9cd4dd2a1d743fd9f1bc54bb71f1484a))
+
 ### [1.3.1](https://devt.de///compare/v1.3.0...v1.3.1) (2020-12-30)
 
 

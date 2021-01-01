@@ -83,7 +83,7 @@ The interpreter can be run in debug mode which adds debug commands to the consol
 
 It is possible to package your ECAL project into an executable that can be run without a separate ECAL interpreter. Run the `sh pack.sh` and see the script for details.
 
-### Embedding ECAL
+### Embedding ECAL and using event processing
 
 The primary purpose of ECAL is to be a simple multi-purpose language which can be embedded into other software:
 - It has a minimal (quite generic) syntax.
@@ -115,9 +115,11 @@ If events are to be used then the processor of the runtime provider needs to be 
 ```
 rtp.Processor.Start()
 ```
+The processor must be started *after* all sinks have been declared and *before* events are thrown.
+
 Events can then be injected into the interpreter.
 ```
-monitor, err := rtp.Processor.AddEventAndWait(engine.NewEvent("MyEvent", []string{"foo", "bar"}, map[interface{}]interface{}{
+monitor, err := rtp.Processor.AddEventAndWait(engine.NewEvent("MyEvent", []string{"foo", "bar", "myevent"}, map[interface{}]interface{}{
   "data1": 123,
   "data2": "123",
 }), nil)
@@ -125,6 +127,20 @@ monitor, err := rtp.Processor.AddEventAndWait(engine.NewEvent("MyEvent", []strin
 All errors are collected in the returned monitor.
 ```
 monitor.RootMonitor().AllErrors()
+```
+The above event could be handled in ECAL with the following sinks:
+```
+sink mysink
+  kindmatch [ "foo.bar.myevent" ],
+{
+  log("Got event: ", event)
+}
+
+sink mysink2
+  kindmatch [ "foo.*.*" ],
+{
+  log("Got event: ", event)
+}
 ```
 
 ### Using Go plugins in ECAL

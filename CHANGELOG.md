@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.3](https://devt.de///compare/v1.3.2...v1.3.3) (2021-01-01)
+
+
+### Bug Fixes
+
+* Not stopping debug server if not running in interactive mode ([4d62c35](https://devt.de///commit/4d62c353384d5cc718b891540abf0e5e344d9326))
+
 ### [1.3.2](https://devt.de///compare/v1.3.1...v1.3.2) (2020-12-30)
 
 

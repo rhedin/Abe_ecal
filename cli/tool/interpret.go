@@ -368,25 +368,18 @@ func (i *CLIInterpreter) HandleInput(ot OutputTerminal, line string, tid uint64)
 		ot.WriteString(fmt.Sprint("\n"))
 		ot.WriteString(fmt.Sprint("Console supports all normal ECAL statements and the following special commands:\n"))
 		ot.WriteString(fmt.Sprint("\n"))
+		ot.WriteString(fmt.Sprint("    @format - Format all .ecal files in the current root directory.\n"))
 		ot.WriteString(fmt.Sprint("    @reload - Clear the interpreter and reload the initial file if it was given.\n"))
-		ot.WriteString(fmt.Sprint("    @sym [glob] - List all available inbuild functions and available stdlib packages of ECAL.\n"))
 		ot.WriteString(fmt.Sprint("    @std <package> [glob] - List all available constants and functions of a stdlib package.\n"))
+		ot.WriteString(fmt.Sprint("    @sym [glob] - List all available inbuild functions and available stdlib packages of ECAL.\n"))
 		if i.CustomHelpString != "" {
 			ot.WriteString(i.CustomHelpString)
 		}
 		ot.WriteString(fmt.Sprint("\n"))
 		ot.WriteString(fmt.Sprint("Add an argument after a list command to do a full text search. The search string should be in glob format.\n"))
 
-	} else if strings.HasPrefix(line, "@reload") {
-
-		// Reload happens in a separate thread as it may be suspended on start
-
-		go func() {
-			err := i.LoadInitialFile(i.RuntimeProvider.NewThreadID())
-			ot.WriteString(fmt.Sprintln(fmt.Sprintln("Interpreter reloaded:", err)))
-		}()
-		ot.WriteString(fmt.Sprintln(fmt.Sprintln("Reloading interpreter state")))
-
+	} else if i.handleSpecialStatements(ot, line) {
+		return
 	} else if strings.HasPrefix(line, "@sym") {
 		i.displaySymbols(ot, strings.Split(line, " ")[1:])
 
@@ -422,6 +415,33 @@ func (i *CLIInterpreter) HandleInput(ot OutputTerminal, line string, tid uint64)
 			}
 		}
 	}
+}
+
+/*
+handleSpecialStatements handles inbuild special statements.
+*/
+func (i *CLIInterpreter) handleSpecialStatements(ot OutputTerminal, line string) bool {
+
+	if strings.HasPrefix(line, "@format") {
+		err := FormatFiles(*i.Dir, ".ecal")
+		ot.WriteString(fmt.Sprintln(fmt.Sprintln("Files formatted:", err)))
+
+		return true
+
+	} else if strings.HasPrefix(line, "@reload") {
+
+		// Reload happens in a separate thread as it may be suspended on start
+
+		go func() {
+			err := i.LoadInitialFile(i.RuntimeProvider.NewThreadID())
+			ot.WriteString(fmt.Sprintln(fmt.Sprintln("Interpreter reloaded:", err)))
+		}()
+		ot.WriteString(fmt.Sprintln(fmt.Sprintln("Reloading interpreter state")))
+
+		return true
+	}
+
+	return false
 }
 
 /*

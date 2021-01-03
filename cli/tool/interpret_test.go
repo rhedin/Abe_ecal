@@ -323,7 +323,7 @@ func TestHandleInput(t *testing.T) {
 	l2 := ""
 	tin.LogLevel = &l2
 
-	testTerm.in = []string{"?", "@reload", "@sym", "@std", "@cus", "q"}
+	testTerm.in = []string{"?", "@format", "@reload", "@sym", "@std", "@cus", "q"}
 
 	if err := tin.Interpret(true); err != nil {
 		t.Error("Unexpected result:", err)

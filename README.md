@@ -7,13 +7,10 @@ ECAL
 
 ECAL is an ECA (Event Condition Action) language for concurrent event processing. ECAL can define event-based systems using rules which are triggered by events. ECAL is intended to be embedded into other software to provide an easy to use scripting language which can react to external events.
 
-<p>
-<a href="https://void.devt.de/pub/ecal/coverage.txt"><img src="https://void.devt.de/pub/ecal/test_result.svg" alt="Code coverage"></a>
-<a href="https://goreportcard.com/report/devt.de/krotik/ecal">
-<img src="https://goreportcard.com/badge/devt.de/krotik/ecal?style=flat-square" alt="Go Report Card"></a>
-<a href="https://godoc.org/devt.de/krotik/ecal">
-<img src="https://godoc.org/devt.de/krotik/ecal?status.svg" alt="Go Doc"></a>
-</p>
+[![Code coverage](https://void.devt.de/pub/ecal/test_result.svg)](https://void.devt.de/pub/ecal/coverage.txt)
+[![Go Report Card](https://goreportcard.com/badge/devt.de/krotik/ecal?style=flat-square)](https://goreportcard.com/report/devt.de/krotik/ecal)
+[![Go Reference](https://pkg.go.dev/badge/krotik/ecal.svg)](https://pkg.go.dev/devt.de/krotik/ecal)
+[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge-flat.svg)](https://github.com/avelino/awesome-go)
 
 Features
 --------

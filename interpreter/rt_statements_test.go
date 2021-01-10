@@ -1053,6 +1053,50 @@ error: This did not work`[1:] {
 		t.Error("Unexpected result:", testlogger.String())
 		return
 	}
+
+	_, err = UnitTestEval(
+		`
+try {
+	try {
+		x := 1 + "a"
+	} except e {
+		raise("usererror", "This did not work", e)
+	}
+} except e {
+	error(e)
+}
+`, vs)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if testlogger.String() != `
+error: {
+  "data": {
+    "detail": "a",
+    "error": "ECAL error in ECALTestRuntime: Operand is not a number (a) (Line:4 Pos:12)",
+    "line": 4,
+    "pos": 12,
+    "source": "ECALTestRuntime",
+    "trace": [],
+    "type": "Operand is not a number"
+  },
+  "detail": "This did not work",
+  "error": "ECAL error in ECALTestRuntime: usererror (This did not work) (Line:6 Pos:3)",
+  "line": 6,
+  "pos": 3,
+  "source": "ECALTestRuntime",
+  "trace": [
+    "raise(\"usererror\", \"This did not work\", e) (ECALEvalTest:6)"
+  ],
+  "type": "usererror"
+}`[1:] {
+		t.Error("Unexpected result:", testlogger.String())
+		return
+	}
+
 }
 
 func TestMutexStatements(t *testing.T) {

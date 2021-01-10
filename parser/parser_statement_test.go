@@ -131,6 +131,8 @@ try
 	input = `
 try {
 	raise("test", [1,2,3])
+} else {
+	
 } finally {
 }
 `

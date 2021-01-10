@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.2](https://devt.de///compare/v1.4.1...v1.4.2) (2021-01-10)
+
+
+### Bug Fixes
+
+* except can now raise new errors / signals ([1550304](https://devt.de///commit/1550304c4c53916badbb005c400ac58517a82fc9))
+* Try supports now otherwise blocks ([4a29d46](https://devt.de///commit/4a29d46f3ab4ef655131194f0a60e3e8fb62fafa))
+
 ### [1.4.1](https://devt.de///compare/v1.4.0...v1.4.1) (2021-01-10)
 
 

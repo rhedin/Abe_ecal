@@ -331,6 +331,7 @@ log("test3")
             "Val": "raise",
             "Identifier": true,
             "AllowEscapes": false,
+            "PrefixNewlines": 1,
             "Lsource": "ECALEvalTest",
             "Lline": 3,
             "Lpos": 2
@@ -350,6 +351,7 @@ log("test3")
                     "Val": "foo",
                     "Identifier": false,
                     "AllowEscapes": true,
+                    "PrefixNewlines": 0,
                     "Lsource": "ECALEvalTest",
                     "Lline": 3,
                     "Lpos": 8

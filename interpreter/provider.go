@@ -128,9 +128,10 @@ var providerMap = map[string]ecalRuntimeNew{
 
 	// Try statement
 
-	parser.NodeTRY:     tryRuntimeInst,
-	parser.NodeEXCEPT:  voidRuntimeInst,
-	parser.NodeFINALLY: voidRuntimeInst,
+	parser.NodeTRY:       tryRuntimeInst,
+	parser.NodeEXCEPT:    voidRuntimeInst,
+	parser.NodeOTHERWISE: voidRuntimeInst,
+	parser.NodeFINALLY:   voidRuntimeInst,
 
 	// Mutex block
 

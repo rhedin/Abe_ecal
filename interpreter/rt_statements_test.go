@@ -1097,6 +1097,27 @@ error: {
 		return
 	}
 
+	_, err = UnitTestEval(
+		`
+try {
+  x := 1
+} except e {
+  raise("usererror", "This did not work", e)
+} otherwise {
+  log("all good")
+}
+`, vs)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	if testlogger.String() != `
+all good`[1:] {
+		t.Error("Unexpected result:", testlogger.String())
+		return
+	}
 }
 
 func TestMutexStatements(t *testing.T) {

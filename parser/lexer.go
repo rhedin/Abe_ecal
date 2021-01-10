@@ -248,9 +248,10 @@ var KeywordMap = map[string]LexTokenID{
 
 	// Try block
 
-	"try":     TokenTRY,
-	"except":  TokenEXCEPT,
-	"finally": TokenFINALLY,
+	"try":       TokenTRY,
+	"except":    TokenEXCEPT,
+	"otherwise": TokenOTHERWISE,
+	"finally":   TokenFINALLY,
 
 	// Mutex block
 

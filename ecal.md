@@ -345,12 +345,16 @@ if a == 1 {
 
 Try-except blocks
 --
-ECAL uses try-except blocks to handle error states. Errors can either happen while executing statements or explicitly by using the `raise` function:
+ECAL uses try-except blocks to handle error states. Errors can either happen while executing statements or explicitly by using the `raise` function. Code which should only be executed if no errors happened can be put into an `otherwise` block. Code which should be executed regardless can be put into a `finally` block.
 ```
 try {
     raise("MyError", "My error message", [1,2,3])
 } except "MyError" as e {
     log(e)
+} otherwise {
+    log("No error happened")
+} finally {
+    log("Try block was left")
 }
 ```
 The variable `e` has the following structure:

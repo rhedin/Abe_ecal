@@ -142,7 +142,8 @@ func init() {
 
 		// TokenTRY - Special case (handled in code)
 		// TokenEXCEPT - Special case (handled in code)
-		NodeFINALLY + "_1": template.Must(template.New(NodeFINALLY).Parse(" finally {\n{{.c1}}}\n")),
+		NodeOTHERWISE + "_1": template.Must(template.New(NodeOTHERWISE).Parse(" otherwise {\n{{.c1}}}")),
+		NodeFINALLY + "_1":   template.Must(template.New(NodeFINALLY).Parse(" finally {\n{{.c1}}}")),
 
 		// Mutex block
 

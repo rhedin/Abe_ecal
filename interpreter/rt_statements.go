@@ -567,6 +567,18 @@ func (rt *tryRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint6
 					}
 				}
 			}
+
+		} else {
+
+			// Evaluate otherwise clause
+
+			for i := 1; i < len(rt.node.Children); i++ {
+				if child := rt.node.Children[i]; child.Name == parser.NodeOTHERWISE {
+					ovs := vs.NewChild(scope.NameFromASTNode(child))
+					_, err = child.Children[0].Runtime.Eval(ovs, is, tid)
+					break
+				}
+			}
 		}
 	}
 

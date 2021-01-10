@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.1](https://devt.de///compare/v1.4.0...v1.4.1) (2021-01-10)
+
+
+### Bug Fixes
+
+* Pretty printer preserves some newlines to structure code. ([3320074](https://devt.de///commit/33200745a8331249e6edc05ef93a94fed398c7ee))
+
 ## [1.4.0](https://devt.de///compare/v1.3.3...v1.4.0) (2021-01-09)
 
 

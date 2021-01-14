@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.3](https://devt.de///compare/v1.4.2...v1.4.3) (2021-01-14)
+
+
+### Bug Fixes
+
+* Adding timestamp functions ([7ca66c5](https://devt.de///commit/7ca66c528a71f7a315c7d4cb914c2386f9adf5f5))
+
 ### [1.4.2](https://devt.de///compare/v1.4.1...v1.4.2) (2021-01-10)
 
 

@@ -262,6 +262,22 @@ identifier: dumpenv
 		return
 	}
 
+	res, err = UnitTestEvalAndAST(
+		`timestamp(now(), "GMT")`, nil,
+		`
+identifier: timestamp
+  funccall
+    identifier: now
+      funccall
+    string: 'GMT'
+`[1:])
+	errorutil.AssertOk(err)
+
+	if !strings.HasSuffix(fmt.Sprint(res), "GMT") {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
 	res, err = UnitTestEval(
 		`
 func foo() {

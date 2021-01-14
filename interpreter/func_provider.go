@@ -35,6 +35,8 @@ var InbuildFuncMap = map[string]util.ECALFunction{
 	"del":             &delFunc{&inbuildBaseFunc{}},
 	"add":             &addFunc{&inbuildBaseFunc{}},
 	"concat":          &concatFunc{&inbuildBaseFunc{}},
+	"now":             &nowFunc{&inbuildBaseFunc{}},
+	"timestamp":       &timestampFunc{&inbuildBaseFunc{}},
 	"dumpenv":         &dumpenvFunc{&inbuildBaseFunc{}},
 	"doc":             &docFunc{&inbuildBaseFunc{}},
 	"sleep":           &sleepFunc{&inbuildBaseFunc{}},
@@ -483,6 +485,79 @@ DocString returns a descriptive string.
 */
 func (rf *dumpenvFunc) DocString() (string, error) {
 	return "Dumpenv returns the current variable environment as a string.", nil
+}
+
+// now
+// ===
+
+/*
+nowFunc returns the current time in microseconds from 1st of January 1970 UTC.
+*/
+type nowFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *nowFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
+	t := time.Now().UnixNano() / int64(time.Microsecond)
+	return float64(t), nil
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *nowFunc) DocString() (string, error) {
+	return "Now returns the current time in microseconds from 1st of January 1970 UTC.", nil
+}
+
+// timestamp
+// ===
+
+/*
+timestampFunc returns a human readable time stamp string from a given number of microseconds since posix epoch time.
+*/
+type timestampFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *timestampFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
+	var ret string
+	var err error
+
+	micros := float64(time.Now().UnixNano() / int64(time.Microsecond))
+	loc := "UTC"
+
+	if len(args) > 0 {
+		micros, err = rf.AssertNumParam(1, args[0])
+
+		if len(args) > 1 {
+			loc = fmt.Sprint(args[1])
+		}
+	}
+
+	if err == nil {
+		var l *time.Location
+
+		tsTime := time.Unix(0, int64(micros*1000))
+
+		if l, err = time.LoadLocation(loc); err == nil {
+			ret = tsTime.In(l).Format("2006-01-02T15:04:05.999999Z07:MST")
+		}
+	}
+
+	return ret, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *timestampFunc) DocString() (string, error) {
+	return "Timestamp returns a human readable time stamp string from a given number of microseconds since posix epoch time.", nil
 }
 
 // doc

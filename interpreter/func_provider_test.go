@@ -74,7 +74,7 @@ identifier: a
 `[1:])
 
 	if err == nil ||
-		err.Error() != "ECAL error in ECALTestRuntime: Unknown construct (Unknown function: fmtSprint) (Line:1 Pos:3)" {
+		err.Error() != "ECAL error in ECALTestRuntime (ECALEvalTest): Unknown construct (Unknown function: fmtSprint) (Line:1 Pos:3)" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -363,7 +363,7 @@ identifier: a
 `[1:])
 
 	if err == nil ||
-		err.Error() != "ECAL error in ECALTestRuntime: Unknown construct (Unknown function: len) (Line:1 Pos:3)" {
+		err.Error() != "ECAL error in ECALTestRuntime (ECALEvalTest): Unknown construct (Unknown function: len) (Line:1 Pos:3)" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -382,7 +382,7 @@ func TestCronTrigger(t *testing.T) {
 		`setCronTrigger("1 * * * *", "foo", "bar")`, nil)
 
 	if err == nil ||
-		err.Error() != "ECAL error in ECALTestRuntime: Runtime error (Cron spec must have 6 entries separated by space) (Line:1 Pos:1)" {
+		err.Error() != "ECAL error in ECALTestRuntime (ECALEvalTest): Runtime error (Cron spec must have 6 entries separated by space) (Line:1 Pos:1)" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}
@@ -446,7 +446,7 @@ func TestPulseTrigger(t *testing.T) {
 		`setPulseTrigger("test", "foo", "bar")`, nil)
 
 	if err == nil ||
-		err.Error() != "ECAL error in ECALTestRuntime: Runtime error (Parameter 1 should be a number) (Line:1 Pos:1)" {
+		err.Error() != "ECAL error in ECALTestRuntime (ECALEvalTest): Runtime error (Parameter 1 should be a number) (Line:1 Pos:1)" {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}

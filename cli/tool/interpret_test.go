@@ -380,7 +380,7 @@ func TestHandleInput(t *testing.T) {
 	}
 
 	if testTerm.out.String() != `1
-ECAL error in foo: 123 () (Line:1 Pos:1)
+ECAL error in foo (console input): 123 () (Line:1 Pos:1)
 ` {
 		t.Error("Unexpected result:", testTerm.out.String())
 		return

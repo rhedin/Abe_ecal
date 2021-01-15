@@ -11,6 +11,7 @@
 package interpreter
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -200,7 +201,11 @@ func (erp *ECALRuntimeProvider) Runtime(node *parser.ASTNode) parser.Runtime {
 NewRuntimeError creates a new RuntimeError object.
 */
 func (erp *ECALRuntimeProvider) NewRuntimeError(t error, d string, node *parser.ASTNode) error {
-	return util.NewRuntimeError(erp.Name, t, d, node)
+	source := erp.Name
+	if node.Token != nil {
+		source = fmt.Sprintf("%v (%v)", source, node.Token.Lsource)
+	}
+	return util.NewRuntimeError(source, t, d, node)
 }
 
 /*

@@ -366,7 +366,7 @@ log("test3")
           ],
           "Runtime": {}
         },
-        "Source": "ECALTestRuntime",
+        "Source": "ECALTestRuntime (ECALEvalTest)",
         "Trace": null,
         "Type": "foo"
       },
@@ -387,8 +387,8 @@ log("test3")
 
 	if evalError == nil || testlogger.String() != `
 test1
-test2`[1:] || evalError.Error() != "ECAL error in ECALTestRuntime: foo () (Line:3 Pos:2)" {
-		t.Error("Unexpected result:", testlogger.String(), err)
+test2`[1:] || evalError.Error() != "ECAL error in ECALTestRuntime (ECALEvalTest): foo () (Line:3 Pos:2)" {
+		t.Error("Unexpected result:", testlogger.String(), evalError, err)
 		return
 	}
 }
@@ -1401,7 +1401,7 @@ a()
 	ss := err.(util.TraceableRuntimeError)
 
 	if out := fmt.Sprintf("%v\n  %v", err.Error(), strings.Join(ss.GetTraceString(), "\n  ")); out != `
-ECAL error in ECALTestRuntime: testerror () (Line:9 Pos:2)
+ECAL error in ECALTestRuntime (ECALEvalTest): testerror () (Line:9 Pos:2)
   raise("testerror") (ECALEvalTest:9)
   c() (ECALEvalTest:6)
   b() (ECALEvalTest:3)

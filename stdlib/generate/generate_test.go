@@ -96,14 +96,14 @@ var fmtConstMap = map[interface{}]interface{}{
 fmtFuncDocMap contains the documentation of stdlib fmt functions.
 */
 var fmtFuncDocMap = map[interface{}]interface{}{
-	"Println": "Function: Println",
+	"println": "Function: println",
 }
 
 /*
 fmtFuncMap contains the mapping of stdlib fmt functions.
 */
 var fmtFuncMap = map[interface{}]interface{}{
-	"Println": &ECALFunctionAdapter{reflect.ValueOf(fmt.Println), fmt.Sprint(fmtFuncDocMap["Println"])},
+	"println": &ECALFunctionAdapter{reflect.ValueOf(fmt.Println), fmt.Sprint(fmtFuncDocMap["println"])},
 }
 
 /*

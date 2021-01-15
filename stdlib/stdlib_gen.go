@@ -30,12 +30,20 @@ var mathConstMap = map[interface{}]interface{}{
 /*
 mathFuncDocMap contains the documentation of stdlib math functions.
 */
-var mathFuncDocMap = map[interface{}]interface{}{}
+var mathFuncDocMap = map[interface{}]interface{}{
+	"Inf":   "Function: Inf",
+	"IsInf": "Function: IsInf",
+	"IsNaN": "Function: IsNaN",
+}
 
 /*
 mathFuncMap contains the mapping of stdlib math functions.
 */
-var mathFuncMap = map[interface{}]interface{}{}
+var mathFuncMap = map[interface{}]interface{}{
+	"Inf":   &ECALFunctionAdapter{reflect.ValueOf(math.Inf), fmt.Sprint(mathFuncDocMap["Inf"])},
+	"IsInf": &ECALFunctionAdapter{reflect.ValueOf(math.IsInf), fmt.Sprint(mathFuncDocMap["IsInf"])},
+	"IsNaN": &ECALFunctionAdapter{reflect.ValueOf(math.IsNaN), fmt.Sprint(mathFuncDocMap["IsNaN"])},
+}
 
 // Dummy statement to prevent declared and not used errors
 var Dummy = fmt.Sprint(reflect.ValueOf(fmt.Sprint))

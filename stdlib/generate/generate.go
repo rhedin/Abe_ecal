@@ -49,7 +49,7 @@ go list std | grep -v internal | grep -v '\.' | grep -v unsafe | grep -v syscall
 // =============EDIT HERE START=============
 
 var pkgNames = map[string][]string{
-	//	"math": {"Pi", "E", "Phi", "Pow"},
+	//	"math": {"Pi", "E", "Phi", "Inf", "IsInf", "IsNaN"},
 	//	"fmt":  {"Println", "Sprint"},
 }
 
@@ -74,7 +74,7 @@ func main() {
 	// Make sure we have at least an empty pkgName
 
 	if len(pkgNames) == 0 {
-		pkgNames["math"] = []string{"Pi", "E", "Phi"}
+		pkgNames["math"] = []string{"Pi", "E", "Phi", "Inf", "IsInf", "IsNaN"}
 	}
 
 	// Make sure pkgNames is sorted

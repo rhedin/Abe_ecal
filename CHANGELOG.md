@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.4](https://devt.de///compare/v1.4.3...v1.4.4) (2021-01-15)
+
+
+### Bug Fixes
+
+* Better output for runtime errors ([6d8aea2](https://devt.de///commit/6d8aea29084102d267eb7e132b5d83d69c27a356))
+* Better type conversion of nested structures and a new type function to inspect objects ([585ba90](https://devt.de///commit/585ba9018e1c3a36d237f1f40e3602240149c41f))
+* First character of generated stdlib functions should be lower case. ([0f25d80](https://devt.de///commit/0f25d80738dbef6a681c0a6a36aba3e3fbf4c8d3))
+* Including NaN and Inf functions in stdlib by default ([6f56203](https://devt.de///commit/6f56203e580ff8f22678748721efdbcb2a5549d9))
+* More math functions and constants ([cc92319](https://devt.de///commit/cc923195bd67a5da93b1c7576c25d1b5ff2d0cba))
+
 ### [1.4.3](https://devt.de///compare/v1.4.2...v1.4.3) (2021-01-14)
 
 

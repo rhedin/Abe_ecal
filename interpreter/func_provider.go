@@ -31,6 +31,7 @@ InbuildFuncMap contains the mapping of inbuild functions.
 var InbuildFuncMap = map[string]util.ECALFunction{
 	"range":           &rangeFunc{&inbuildBaseFunc{}},
 	"new":             &newFunc{&inbuildBaseFunc{}},
+	"type":            &typeFunc{&inbuildBaseFunc{}},
 	"len":             &lenFunc{&inbuildBaseFunc{}},
 	"del":             &delFunc{&inbuildBaseFunc{}},
 	"add":             &addFunc{&inbuildBaseFunc{}},
@@ -279,6 +280,39 @@ DocString returns a descriptive string.
 */
 func (rf *newFunc) DocString() (string, error) {
 	return "New creates a new object instance.", nil
+}
+
+// Type
+// =====
+
+/*
+typeFunc returns the underlying types and values of an object.
+*/
+type typeFunc struct {
+	*inbuildBaseFunc
+}
+
+/*
+Run executes this function.
+*/
+func (rf *typeFunc) Run(instanceID string, vs parser.Scope, is map[string]interface{}, tid uint64, args []interface{}) (interface{}, error) {
+	var res interface{}
+
+	err := fmt.Errorf("Need a value as first parameter")
+
+	if len(args) > 0 {
+		res = fmt.Sprintf("%#v", args[0])
+		err = nil
+	}
+
+	return res, err
+}
+
+/*
+DocString returns a descriptive string.
+*/
+func (rf *typeFunc) DocString() (string, error) {
+	return "Type returns the underlying types and values of an object.", nil
 }
 
 // Len

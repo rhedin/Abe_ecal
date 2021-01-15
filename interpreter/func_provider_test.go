@@ -100,6 +100,26 @@ identifier: len
 	}
 
 	res, err = UnitTestEvalAndAST(
+		`type({a: [1,2,3]})`, nil,
+		`
+identifier: type
+  funccall
+    map
+      kvp
+        identifier: a
+        list
+          number: 1
+          number: 2
+          number: 3
+`[1:])
+	errorutil.AssertOk(err)
+
+	if res != "map[interface {}]interface {}{interface {}(nil):[]interface {}{1, 2, 3}}" {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
+	res, err = UnitTestEvalAndAST(
 		`len({"a":1, 2:"b"})`, nil,
 		`
 identifier: len

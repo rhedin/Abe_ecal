@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.6](https://devt.de///compare/v1.4.5...v1.4.6) (2021-01-31)
+
+
+### Bug Fixes
+
+* addEventAndWait can also now trigger rules not defined in ECAL ([64e8369](https://devt.de///commit/64e83693a8fe114ac0414ad631e671edc84876cd))
+
 ### [1.4.5](https://devt.de///compare/v1.4.4...v1.4.5) (2021-01-31)
 
 

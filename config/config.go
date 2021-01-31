@@ -36,7 +36,13 @@ const (
 DefaultConfig is the defaut configuration
 */
 var DefaultConfig = map[string]interface{}{
-	WorkerCount: 1,
+
+	/*
+		Number of worker threads in ECAL's ECA engine. This number is also the maximum
+		number of concurrent operations - e.g. how often addEventAndWait can be called
+		in a single event chain.
+	*/
+	WorkerCount: 4,
 }
 
 /*

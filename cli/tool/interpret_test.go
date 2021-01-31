@@ -25,6 +25,7 @@ import (
 	"devt.de/krotik/common/errorutil"
 	"devt.de/krotik/common/fileutil"
 	"devt.de/krotik/ecal/config"
+	"devt.de/krotik/ecal/engine"
 	"devt.de/krotik/ecal/interpreter"
 	"devt.de/krotik/ecal/stdlib"
 	"devt.de/krotik/ecal/util"
@@ -66,6 +67,13 @@ func newTestInterpreterWithConfig() *CLIInterpreter {
 	tin.Dir = &l
 
 	tin.CustomWelcomeMessage = "123"
+	tin.CustomRules = []*engine.Rule{
+		{
+			Name:       "myrule",
+			ScopeMatch: []string{},
+			KindMatch:  []string{"my.custom.rule"},
+		},
+	}
 
 	return tin
 }

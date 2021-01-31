@@ -20,10 +20,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"devt.de/krotik/common/errorutil"
 	"devt.de/krotik/common/fileutil"
 	"devt.de/krotik/common/stringutil"
 	"devt.de/krotik/common/termutil"
 	"devt.de/krotik/ecal/config"
+	"devt.de/krotik/ecal/engine"
 	"devt.de/krotik/ecal/interpreter"
 	"devt.de/krotik/ecal/parser"
 	"devt.de/krotik/ecal/scope"
@@ -55,6 +57,7 @@ type CLIInterpreter struct {
 	CustomHandler        CLICustomHandler
 	CustomWelcomeMessage string
 	CustomHelpString     string
+	CustomRules          []*engine.Rule
 
 	EntryFile   string // Entry file for the program
 	LoadPlugins bool   // Flag if stdlib plugins should be loaded
@@ -78,8 +81,8 @@ type CLIInterpreter struct {
 NewCLIInterpreter creates a new commandline interpreter for ECAL.
 */
 func NewCLIInterpreter() *CLIInterpreter {
-	return &CLIInterpreter{scope.NewScope(scope.GlobalScope), nil, nil, "", "", "",
-		true, nil, nil, nil, nil, os.Stdout}
+	return &CLIInterpreter{scope.NewScope(scope.GlobalScope), nil, nil, "", "",
+		[]*engine.Rule{}, "", true, nil, nil, nil, nil, os.Stdout}
 }
 
 /*
@@ -179,6 +182,12 @@ func (i *CLIInterpreter) LoadInitialFile(tid uint64) error {
 
 	i.RuntimeProvider.Processor.Finish()
 	i.RuntimeProvider.Processor.Reset()
+
+	// Add custom rules
+
+	for _, r := range i.CustomRules {
+		errorutil.AssertOk(i.RuntimeProvider.Processor.AddRule(r))
+	}
 
 	if i.CustomHandler != nil {
 		i.CustomHandler.LoadInitialFile(tid)

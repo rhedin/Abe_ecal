@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.5](https://devt.de///compare/v1.4.4...v1.4.5) (2021-01-31)
+
+
+### Bug Fixes
+
+* Allow adding fixed custom rules for CLI interpreter ([ea62e5a](https://devt.de///commit/ea62e5aaa92bf53ed4e95152f77f2ee7e699fac1))
+
 ### [1.4.4](https://devt.de///compare/v1.4.3...v1.4.4) (2021-01-15)
 
 

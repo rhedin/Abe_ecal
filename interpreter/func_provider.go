@@ -857,18 +857,22 @@ func (rf *addeventandwait) Run(instanceID string, vs parser.Scope, is map[string
 
 				errors := map[interface{}]interface{}{}
 				for k, v := range e.ErrorMap {
-					se := v.(*util.RuntimeErrorWithDetail)
 
 					// Note: The variable scope of the sink (se.environment)
 					// was also captured - for now it is not exposed to the
 					// language environment
 
-					errors[k] = map[interface{}]interface{}{
-						"error":  se.Error(),
-						"type":   se.Type.Error(),
-						"detail": se.Detail,
-						"data":   se.Data,
+					errorItem := map[interface{}]interface{}{
+						"error": v.Error(),
 					}
+
+					if se, ok := v.(*util.RuntimeErrorWithDetail); ok {
+						errorItem["type"] = se.Type.Error()
+						errorItem["detail"] = se.Detail
+						errorItem["data"] = se.Data
+					}
+
+					errors[k] = errorItem
 				}
 
 				item := map[interface{}]interface{}{

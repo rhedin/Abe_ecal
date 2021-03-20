@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"devt.de/krotik/common/datautil"
 	"devt.de/krotik/common/timeutil"
 	"devt.de/krotik/ecal/config"
 	"devt.de/krotik/ecal/engine"
@@ -148,6 +149,9 @@ type ECALRuntimeProvider struct {
 	Logger        util.Logger            // Logger object for log messages
 	Processor     engine.Processor       // Processor of the ECA engine
 	Mutexes       map[string]*sync.Mutex // Map of named mutexes
+	MutexLog      *datautil.RingBuffer   // Ringbuffer to track locking events
+	MutexeOwners  map[string]uint64      // Map of mutex owners
+	MutexesMutex  *sync.Mutex            // Mutex for mutexes map
 	Cron          *timeutil.Cron         // Cron object for scheduled execution
 	Debugger      util.ECALDebugger      // Optional: ECAL Debugger object
 }
@@ -182,7 +186,7 @@ func NewECALRuntimeProvider(name string, importLocator util.ECALImportLocator, l
 	cron.Start()
 
 	return &ECALRuntimeProvider{name, importLocator, logger, proc,
-		make(map[string]*sync.Mutex), cron, nil}
+		make(map[string]*sync.Mutex), datautil.NewRingBuffer(1024), make(map[string]uint64), &sync.Mutex{}, cron, nil}
 }
 
 /*

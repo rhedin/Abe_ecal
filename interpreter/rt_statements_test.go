@@ -1126,30 +1126,89 @@ func TestMutexStatements(t *testing.T) {
 
 	_, err := UnitTestEvalAndAST(
 		`
+a := 2
 mutex foo {
 	a := 1
     raise("test 12", null, [1,2,3])
 }
 `, vs,
 		`
-mutex
-  identifier: foo
-  statements
-    :=
-      identifier: a
-      number: 1
-    identifier: raise
-      funccall
-        string: 'test 12'
-        null
-        list
-          number: 1
-          number: 2
-          number: 3
+statements
+  :=
+    identifier: a
+    number: 2
+  mutex
+    identifier: foo
+    statements
+      :=
+        identifier: a
+        number: 1
+      identifier: raise
+        funccall
+          string: 'test 12'
+          null
+          list
+            number: 1
+            number: 2
+            number: 3
+`[1:])
+
+	if err == nil || err.Error() != "ECAL error in ECALTestRuntime (ECALEvalTest): test 12 () (Line:5 Pos:5)" {
+		t.Error(err)
+		return
+	}
+
+	if vs.String() != `GlobalScope {
+    a (float64) : 1
+    block: mutex (Line:3 Pos:1) {
+    }
+}` {
+		t.Error("Unexpected variable scope:", vs)
+	}
+
+	// Can take mutex twice
+
+	_, err = UnitTestEvalAndAST(
+		`
+a := 2
+mutex foo {
+	a := 1
+	mutex foo {
+		a := 3
+	}
+}
+`, vs,
+		`
+statements
+  :=
+    identifier: a
+    number: 2
+  mutex
+    identifier: foo
+    statements
+      :=
+        identifier: a
+        number: 1
+      mutex
+        identifier: foo
+        statements
+          :=
+            identifier: a
+            number: 3
 `[1:])
 
 	if err != nil {
 		t.Error(err)
 		return
+	}
+
+	if vs.String() != `GlobalScope {
+    a (float64) : 3
+    block: mutex (Line:3 Pos:1) {
+        block: mutex (Line:5 Pos:2) {
+        }
+    }
+}` {
+		t.Error("Unexpected variable scope:", vs)
 	}
 }

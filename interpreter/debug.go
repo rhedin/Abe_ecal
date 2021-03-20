@@ -42,6 +42,8 @@ type ecalDebugger struct {
 	globalScope                parser.Scope                        // Global variable scope which can be used to transfer data
 	lock                       *sync.RWMutex                       // Lock for this debugger
 	lastVisit                  int64                               // Last time the debugger had a state visit
+	mutexeOwners               map[string]uint64                   // A map of current mutex owners
+	mutexLog                   *datautil.RingBuffer                // A log of taken mutexes
 }
 
 /*
@@ -105,6 +107,8 @@ func NewECALDebugger(globalVS parser.Scope) util.ECALDebugger {
 		globalScope:                globalVS,
 		lock:                       &sync.RWMutex{},
 		lastVisit:                  0,
+		mutexeOwners:               nil,
+		mutexLog:                   nil,
 	}
 }
 
@@ -178,6 +182,16 @@ func (ed *ecalDebugger) BreakOnError(flag bool) {
 	ed.lock.Lock()
 	defer ed.lock.Unlock()
 	ed.breakOnError = flag
+}
+
+/*
+SetLockingState sets locking status information.
+*/
+func (ed *ecalDebugger) SetLockingState(mutexeOwners map[string]uint64, mutexLog *datautil.RingBuffer) {
+	if ed.mutexeOwners == nil {
+		ed.mutexeOwners = mutexeOwners
+		ed.mutexLog = mutexLog
+	}
 }
 
 /*
@@ -578,6 +592,16 @@ func (ed *ecalDebugger) Status() interface{} {
 	}
 
 	return res
+}
+
+/*
+LockState returns the current locking state.
+*/
+func (ed *ecalDebugger) LockState() interface{} {
+	return map[string]interface{}{
+		"log":    ed.mutexLog.StringSlice(),
+		"owners": ed.mutexeOwners,
+	}
 }
 
 /*

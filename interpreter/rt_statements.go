@@ -675,18 +675,60 @@ func (rt *mutexRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uin
 
 		name := rt.node.Children[0].Token.Val
 
+		// Take mutex to modify the mutex map
+
+		rt.erp.MutexesMutex.Lock()
+
+		// Lookup the mutex
+
 		mutex, ok := rt.erp.Mutexes[name]
 		if !ok {
 			mutex = &sync.Mutex{}
 			rt.erp.Mutexes[name] = mutex
 		}
 
+		// Try to take the mutex if this thread does not already own it
+
+		owner, ok := rt.erp.MutexeOwners[name]
+
+		rt.erp.MutexesMutex.Unlock()
+
+		if !ok || owner != tid {
+
+			rt.erp.MutexLog.Add(fmt.Sprintf("Thread: %v - attempting to take lock %v with owner %v at %v:%v",
+				tid, name, owner, rt.node.Token.Lsource, rt.node.Token.Lline))
+
+			mutex.Lock()
+
+			rt.erp.MutexLog.Add(fmt.Sprintf("Thread: %v - took lock %v with owner %v", tid, name, owner))
+
+			// Register ownership on mutex
+
+			rt.erp.MutexesMutex.Lock()
+			rt.erp.MutexeOwners[name] = tid
+			rt.erp.MutexesMutex.Unlock()
+
+			defer func() {
+				rt.erp.MutexLog.Add(fmt.Sprintf("Thread: %v - releasing lock %v", tid, name))
+
+				// Unregister ownership on mutex
+
+				rt.erp.MutexesMutex.Lock()
+				rt.erp.MutexeOwners[name] = 0
+				rt.erp.MutexesMutex.Unlock()
+
+				mutex.Unlock()
+			}()
+
+		} else if owner == tid {
+
+			rt.erp.MutexLog.Add(fmt.Sprintf("Thread: %v - attempted to take lock %v twice", tid, name))
+		}
+
+		rt.erp.MutexLog.Add(fmt.Sprintf("Thread: %v - execute critical section %v", tid, name))
+
 		tvs := vs.NewChild(scope.NameFromASTNode(rt.node))
-
-		mutex.Lock()
-		defer mutex.Unlock()
-
-		res, err = rt.node.Children[0].Runtime.Eval(tvs, is, tid)
+		res, err = rt.node.Children[1].Runtime.Eval(tvs, is, tid)
 	}
 
 	return res, err

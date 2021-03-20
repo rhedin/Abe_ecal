@@ -444,6 +444,7 @@ log("test1")
 log("test2")
 test2()
 log("test4")
+mutex a { mutex a { log("test5") } }
 `, vs, erp)
 		if err != nil {
 			t.Error(err)
@@ -511,6 +512,19 @@ log("test4")
 		return
 	}
 
+	ls, err := testDebugger.HandleInput(fmt.Sprintf("lockstate"))
+
+	lsBytes, _ := json.MarshalIndent(ls, "", "  ")
+	lsString := string(lsBytes)
+
+	if lsString != `{
+  "log": [],
+  "owners": {}
+}` {
+		t.Error("Unexpected result:", lsString)
+		return
+	}
+
 	// Continue until the end
 
 	if _, err := testDebugger.HandleInput(fmt.Sprintf("cont 1 Resume")); err != nil {
@@ -531,8 +545,22 @@ log("test4")
     c (float64) : 2
     test1 (*interpreter.function) : ecal.function: test1 (Line 4, Pos 1)
     test2 (*interpreter.function) : ecal.function: test2 (Line 4, Pos 1)
+    block: mutex (Line:12 Pos:1) {
+        block: mutex (Line:12 Pos:11) {
+        }
+    }
 }` {
 		t.Error("Unexpected result:", vs)
+		return
+	}
+
+	ls, err = testDebugger.HandleInput(fmt.Sprintf("lockstate"))
+
+	lsBytes, _ = json.MarshalIndent(ls, "", "  ")
+	lsString = string(lsBytes)
+
+	if !strings.Contains(lsString, "took lock a with owner") || !strings.Contains(lsString, "attempted to take lock a twice") {
+		t.Error("Unexpected result:", lsString)
 		return
 	}
 }

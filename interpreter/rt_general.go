@@ -61,6 +61,7 @@ func (rt *baseRuntime) Eval(vs parser.Scope, is map[string]interface{}, tid uint
 
 	if rt.erp.Debugger != nil {
 		err = rt.erp.Debugger.VisitState(rt.node, vs, tid)
+		rt.erp.Debugger.SetLockingState(rt.erp.MutexeOwners, rt.erp.MutexLog)
 	}
 
 	return nil, err

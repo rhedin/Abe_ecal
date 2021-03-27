@@ -11,6 +11,7 @@
 package tool
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"strings"
 
 	"devt.de/krotik/common/errorutil"
@@ -378,6 +380,7 @@ func (i *CLIInterpreter) HandleInput(ot OutputTerminal, line string, tid uint64)
 		ot.WriteString(fmt.Sprint("Console supports all normal ECAL statements and the following special commands:\n"))
 		ot.WriteString(fmt.Sprint("\n"))
 		ot.WriteString(fmt.Sprint("    @format - Format all .ecal files in the current root directory.\n"))
+		ot.WriteString(fmt.Sprint("    @prof [profile] - Output profiling information (supports any of Go's pprof profiles).\n"))
 		ot.WriteString(fmt.Sprint("    @reload - Clear the interpreter and reload the initial file if it was given.\n"))
 		ot.WriteString(fmt.Sprint("    @std <package> [glob] - List all available constants and functions of a stdlib package.\n"))
 		ot.WriteString(fmt.Sprint("    @sym [glob] - List all available inbuild functions and available stdlib packages of ECAL.\n"))
@@ -431,7 +434,22 @@ handleSpecialStatements handles inbuild special statements.
 */
 func (i *CLIInterpreter) handleSpecialStatements(ot OutputTerminal, line string) bool {
 
-	if strings.HasPrefix(line, "@format") {
+	if strings.HasPrefix(line, "@prof") {
+		args := strings.Split(line, " ")[1:]
+
+		profile := "goroutine"
+
+		if len(args) > 0 {
+			profile = args[0]
+		}
+
+		var buf bytes.Buffer
+		pprof.Lookup(profile).WriteTo(&buf, 1)
+		ot.WriteString(buf.String())
+
+		return true
+
+	} else if strings.HasPrefix(line, "@format") {
 		err := FormatFiles(*i.Dir, ".ecal")
 		ot.WriteString(fmt.Sprintln(fmt.Sprintln("Files formatted:", err)))
 

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.1](https://devt.de///compare/v1.5.0...v1.5.1) (2021-03-27)
+
+
+### Bug Fixes
+
+* Exposing threadpool a bit more ([79a2d93](https://devt.de///commit/79a2d932589b02b6d8d229374340d8772c313593))
+
 ## [1.5.0](https://devt.de///compare/v1.4.6...v1.5.0) (2021-03-27)
 
 

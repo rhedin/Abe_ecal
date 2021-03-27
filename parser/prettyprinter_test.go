@@ -630,4 +630,20 @@ sink SomeSink
 		return
 	}
 
+	input = `
+
+	for [a,b,c] in foo {
+a := 1
+a := 2
+
+}
+`
+	if err := UnitTestPrettyPrinting(input, "",
+		`for [a, b, c] in foo {
+    a := 1
+    a := 2
+}`); err != nil {
+		t.Error(err)
+		return
+	}
 }

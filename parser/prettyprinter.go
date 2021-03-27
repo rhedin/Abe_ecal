@@ -266,6 +266,7 @@ func ppPostProcessing(ast *ASTNode, path []*ASTNode, ppString string) string {
 			// Add initial indent only if we are inside a block statement
 
 			if stringutil.IndexOf(parent.Name, []string{
+				NodeIN,
 				NodeASSIGN,
 				NodePRESET,
 				NodeKVP,

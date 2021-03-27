@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"devt.de/krotik/common/datautil"
+	"devt.de/krotik/ecal/engine/pool"
 	"devt.de/krotik/ecal/parser"
 )
 
@@ -139,6 +140,11 @@ type ECALDebugger interface {
 	   SetLockingState sets locking status information.
 	*/
 	SetLockingState(mutexeOwners map[string]uint64, mutexLog *datautil.RingBuffer)
+
+	/*
+	   SetThreadPool sets the reference to the current used thread pool.
+	*/
+	SetThreadPool(tp *pool.ThreadPool)
 
 	/*
 	   VisitState is called for every state during the execution of a program.

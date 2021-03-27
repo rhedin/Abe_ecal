@@ -519,7 +519,12 @@ mutex a { mutex a { log("test5") } }
 
 	if lsString != `{
   "log": [],
-  "owners": {}
+  "owners": {},
+  "threads": {
+    "IdleWorkerThreads": null,
+    "TaskQueueSize": 0,
+    "TotalWorkerThreads": null
+  }
 }` {
 		t.Error("Unexpected result:", lsString)
 		return

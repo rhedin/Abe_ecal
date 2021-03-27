@@ -1019,7 +1019,7 @@ func (pt *setPulseTrigger) Run(instanceID string, vs parser.Scope, is map[string
 					lastmicros = micros
 
 					monitor := proc.NewRootMonitor(nil, nil)
-					_, err := proc.AddEvent(event, monitor)
+					_, err := proc.AddEventAndWait(event, monitor)
 
 					if status := proc.Status(); status == "Stopped" || status == "Stopping" {
 						break

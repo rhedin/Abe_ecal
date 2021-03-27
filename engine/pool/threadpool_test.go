@@ -12,6 +12,7 @@ package pool
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -411,5 +412,10 @@ func TestThreadPoolErrorHandling(t *testing.T) {
 
 	if buf.String() != "testerror" {
 		t.Error("Unexpected result:", buf.String())
+	}
+
+	if state := fmt.Sprint(tp.State()); state == `` {
+		t.Error("Unexpected state:", state)
+		return
 	}
 }

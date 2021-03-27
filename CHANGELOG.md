@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.2](https://devt.de///compare/v1.5.1...v1.5.2) (2021-03-27)
+
+
+### Bug Fixes
+
+* Pretty printer fix for loop statements using an in operator ([643790e](https://devt.de///commit/643790ec49cde2db5a37fde329ef438a805e85e7))
+
 ### [1.5.1](https://devt.de///compare/v1.5.0...v1.5.1) (2021-03-27)
 
 

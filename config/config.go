@@ -23,7 +23,7 @@ import (
 /*
 ProductVersion is the current version of ECAL
 */
-const ProductVersion = "1.5.1"
+const ProductVersion = "1.5.2"
 
 /*
 Known configuration options for ECAL

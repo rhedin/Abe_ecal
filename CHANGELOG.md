@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://devt.de///compare/v1.4.6...v1.5.0) (2021-03-27)
+
+
+### Features
+
+* Adding profiling command ([972b895](https://devt.de///commit/972b895abc2369e7cf9429d35f6642952a1f1df8))
+
+
+### Bug Fixes
+
+* Better mutex management ([80efb81](https://devt.de///commit/80efb818410aef03d5313bbfd16b305230ce958c))
+
 ### [1.4.6](https://devt.de///compare/v1.4.5...v1.4.6) (2021-01-31)
 
 

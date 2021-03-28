@@ -344,6 +344,11 @@ func TestThreadPoolThresholds(t *testing.T) {
 
 	tp.WaitAll()
 
+	if state := fmt.Sprint(tp.State()); state == `` {
+		t.Error("Unexpected state:", state)
+		return
+	}
+
 	if wc := tp.WorkerCount(); wc != 10 {
 		t.Error("Unexpected result:", wc)
 		return

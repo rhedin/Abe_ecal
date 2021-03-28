@@ -340,7 +340,7 @@ func TestHandleInput(t *testing.T) {
 
 	// Just check for a simple string no need for the whole thing
 
-	if !strings.Contains(testTerm.out.String(), "New creates a new object instance.") {
+	if !strings.Contains(testTerm.out.String(), "Creates a new object instance.") {
 		t.Error("Unexpected result:", testTerm.out.String())
 		return
 	}

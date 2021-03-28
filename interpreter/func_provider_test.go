@@ -298,6 +298,19 @@ identifier: timestamp
 		return
 	}
 
+	res, err = UnitTestEvalAndAST(
+		`rand()`, nil,
+		`
+identifier: rand
+  funccall
+`[1:])
+	errorutil.AssertOk(err)
+
+	if !strings.Contains(fmt.Sprint(res), ".") {
+		t.Error("Unexpected result: ", res, err)
+		return
+	}
+
 	res, err = UnitTestEval(
 		`
 func foo() {
@@ -315,7 +328,7 @@ doc(foo)`, nil)
 		`doc(len)`, nil)
 	errorutil.AssertOk(err)
 
-	if fmt.Sprint(res) != `Len returns the size of a list or map.` {
+	if fmt.Sprint(res) != `Returns the size of a list or map.` {
 		t.Error("Unexpected result: ", res, err)
 		return
 	}

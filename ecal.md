@@ -423,7 +423,7 @@ len([1,2,3])
 ```
 
 #### `del(listormap, indexorkey) : listormap`
-Del removes an item from a list or map.
+Del removes an item from a list or map. Only the returned value should be used further.
 
 Parameter | Description
 -|-
@@ -437,7 +437,7 @@ del([1,2,3], 1)
 
 
 #### `add(list, value, [index]) : list`
-Add adds an item to a list. The item is added at the optionally given index or at the end if no index is specified.
+Add adds an item to a list. The item is added at the optionally given index or at the end if no index is specified. Only the returned value should be used further.
 
 Parameter | Description
 -|-

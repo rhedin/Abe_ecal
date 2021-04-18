@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0](https://devt.de///compare/v1.5.2...v1.6.0) (2021-04-18)
+
+
+### Features
+
+* Adding rand function ([6f8b42c](https://devt.de///commit/6f8b42c21fa28526f91ff0b0eac449688052bf93))
+
+
+### Bug Fixes
+
+* Minor pretty printer changes and addition to the documentation ([cbaba21](https://devt.de///commit/cbaba21419ea8d24393574aeda2f8394e92e60ba))
+
 ### [1.5.2](https://devt.de///compare/v1.5.1...v1.5.2) (2021-03-27)
 
 

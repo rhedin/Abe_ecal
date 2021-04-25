@@ -19,7 +19,7 @@ import (
 	"testing"
 )
 
-const InvalidFileName = "**" + string(0x0)
+const InvalidFileName = "**\x00"
 
 func TestGenerate(t *testing.T) {
 	filename = InvalidFileName
@@ -36,7 +36,7 @@ func TestGenerate(t *testing.T) {
 
 	main()
 
-	if buf.String() != "Error:open **"+string(0)+": invalid argument" {
+	if buf.String() != "Error:open **\x00: invalid argument" {
 		t.Error("Unexpected output:", buf.String())
 		return
 	}

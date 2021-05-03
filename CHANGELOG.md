@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.1](https://devt.de///compare/v1.6.0...v1.6.1) (2021-05-03)
+
+
+### Bug Fixes
+
+* Adding locking for ThreadPool.State() ([71c8b6d](https://devt.de///commit/71c8b6df3d56b0a15dcb601d7a9f8dd96f936d79))
+
 ## [1.6.0](https://devt.de///compare/v1.5.2...v1.6.0) (2021-04-18)
 
 

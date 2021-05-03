@@ -160,6 +160,9 @@ func (tp *ThreadPool) State() map[string]interface{} {
 		return ret
 	}
 
+	tp.workerMapLock.Lock()
+	defer tp.workerMapLock.Unlock()
+
 	return map[string]interface{}{
 		"TaskQueueSize":      tp.queue.Size(),
 		"TotalWorkerThreads": getIdsFromWorkerMap(tp.workerMap),

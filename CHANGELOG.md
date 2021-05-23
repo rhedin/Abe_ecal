@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.6.2](https://devt.de///compare/v1.6.1...v1.6.2) (2021-05-23)
+
+
+### Bug Fixes
+
+* Return statements can return nothing ([c54bd16](https://devt.de///commit/c54bd1664766ef3c5ee6f5e03cec5ec3ff0e835c))
+
 ### [1.6.1](https://devt.de///compare/v1.6.0...v1.6.1) (2021-05-03)
 
 

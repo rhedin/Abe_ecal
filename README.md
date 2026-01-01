@@ -10,11 +10,6 @@ ECAL is an ECA (Event Condition Action) language for concurrent event processing
 <!--
 test_result.svg is created by the Jenkinsfile.  We don't run the Jenkins file.  We don't want to 
 point to test coverage that is stale and refers to another code base. 
-
-* * I'll change the Go Report Card and Go Reference lines after I've gotten the code base mentioned 
-    in the index of Go packages, and after I've gotten the Go report card folks to generate me 
-    a pretty little svg image. * * 
-
 Awesome Go in fact mentions ecal.  Kudos to Matthias!  Leaving it in place, referring 
 to the other code base. 
 -->

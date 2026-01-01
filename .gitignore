@@ -14,3 +14,4 @@
 /ecal-support/out
 /ecal-support/*.vsix
 /ecal-support/package-lock.json
+.DS_Store

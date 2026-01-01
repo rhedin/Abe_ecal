@@ -1,4 +1,4 @@
-devt.de/krotik/common v1.3.9 h1:/DdNkkaaplUXHeA+6juY3f+WMUOkc5zycar2TdPXHB0=
-devt.de/krotik/common v1.3.9/go.mod h1:X4nsS85DAxyHkwSg/Tc6+XC2zfmGeaVz+37F61+eSaI=
-devt.de/krotik/ecal v1.0.1 h1:V+CqMpT9xAG2+YPfd9CH6DH+MGxELcFXyhBZcN1k44E=
-devt.de/krotik/ecal v1.0.1/go.mod h1:eZrJYQRIcWLUwNy6s8f+5N+PEduCu7XUABa8ZD0nBKA=
+github.com/rhedin/Abe_common v1.5.2 h1:H8iqVjsnUqH487Xhw+2HQPocHehpu639WqEhjmRovQI=
+github.com/rhedin/Abe_common v1.5.2/go.mod h1:OaCYODmDUGrJbsd3iC247nl0AG0BaDnhG4r1GVBemhQ=
+github.com/rhedin/Abe_ecal v1.6.3 h1:1mkGp+l7vNkG4S8/jtm6w5mgh5WN7BfoK3QUtmkDdUA=
+github.com/rhedin/Abe_ecal v1.6.3/go.mod h1:c768ui2JY/t2/umdtBkOLltSuNg74FgeENvY97RNR+M=

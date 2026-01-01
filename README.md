@@ -20,8 +20,8 @@ to the other code base.
 -->
 
 <!-- [![Code coverage](https://void.devt.de/pub/ecal/test_result.svg)](https://void.devt.de/pub/ecal/coverage.txt) -->
-[![Go Report Card](https://goreportcard.com/badge/devt.de/krotik/ecal?style=flat-square)](https://goreportcard.com/report/devt.de/krotik/ecal)
-[![Go Reference](https://pkg.go.dev/badge/krotik/ecal.svg)](https://pkg.go.dev/devt.de/krotik/ecal)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rhedin/Abe_ecal?style=flat-square)](https://goreportcard.com/report/github.com/rhedin/Abe_ecal)
+[![Go Reference](https://pkg.go.dev/badge/github.com/rhedin/Abe_ecal.svg)](https://pkg.go.dev/github.com/rhedin/Abe_ecal)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge-flat.svg)](https://github.com/avelino/awesome-go)
 
 Features

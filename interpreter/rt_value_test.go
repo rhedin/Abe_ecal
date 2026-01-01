@@ -13,7 +13,7 @@ package interpreter
 import (
 	"testing"
 
-	"devt.de/krotik/ecal/scope"
+	"github.com/rhedin/Abe_ecal/scope"
 )
 
 func TestSimpleValues(t *testing.T) {

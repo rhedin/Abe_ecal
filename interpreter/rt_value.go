@@ -15,8 +15,8 @@ import (
 	"strconv"
 	"strings"
 
-	"devt.de/krotik/ecal/parser"
-	"devt.de/krotik/ecal/scope"
+	"github.com/rhedin/Abe_ecal/parser"
+	"github.com/rhedin/Abe_ecal/scope"
 )
 
 /*

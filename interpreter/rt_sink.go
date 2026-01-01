@@ -15,10 +15,10 @@ import (
 	"math"
 	"strings"
 
-	"devt.de/krotik/ecal/engine"
-	"devt.de/krotik/ecal/parser"
-	"devt.de/krotik/ecal/scope"
-	"devt.de/krotik/ecal/util"
+	"github.com/rhedin/Abe_ecal/engine"
+	"github.com/rhedin/Abe_ecal/parser"
+	"github.com/rhedin/Abe_ecal/scope"
+	"github.com/rhedin/Abe_ecal/util"
 )
 
 /*

@@ -10,7 +10,7 @@
 
 package interpreter
 
-import "devt.de/krotik/ecal/parser"
+import "github.com/rhedin/Abe_ecal/parser"
 
 /*
 trueRuntime is the runtime component for the true constant.

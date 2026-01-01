@@ -3,7 +3,7 @@
 The extension adds support for the Event Condition Action Language (ECAL) to VS Code. The extension requires VSCode 1.50 or higher.
 
 <p align="center">
-  <img height="600px" style="height:600px;" src="https://devt.de/krotik/ecal/raw/master/ecal-support/images/screenshot.png">
+  <img height="600px" style="height:600px;" src="https://github.com/rhedin/Abe_ecal/raw/master/ecal-support/images/screenshot.png">
 </p>
 
 The extension supports the following features:
@@ -20,7 +20,7 @@ The extension can be installed using a precompiled VSIX file which can be downlo
 
 https://devt.de/krotik/ecal/releases
 
-Alternatively you can build the extension yourself. To build the extension you need `npm` installed. Download the source code from the [repository](https://devt.de/krotik/ecal). First install all required dependencies with `npm i`. Then compile and package the extension with `npm run compile` and `npm run package`. The folder should now contain a VSIX file.
+Alternatively you can build the extension yourself. To build the extension you need `npm` installed. Download the source code from the [repository](https://github.com/rhedin/Abe_ecal). First install all required dependencies with `npm i`. Then compile and package the extension with `npm run compile` and `npm run package`. The folder should now contain a VSIX file.
 
 ## Using the extension
 

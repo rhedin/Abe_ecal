@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"os"
 
-	"devt.de/krotik/ecal/cli/tool"
-	"devt.de/krotik/ecal/config"
+	"github.com/rhedin/Abe_ecal/cli/tool"
+	"github.com/rhedin/Abe_ecal/config"
 )
 
 func main() {

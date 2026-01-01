@@ -14,11 +14,11 @@ import (
 	"fmt"
 	"sync"
 
-	"devt.de/krotik/common/errorutil"
-	"devt.de/krotik/common/sortutil"
-	"devt.de/krotik/ecal/parser"
-	"devt.de/krotik/ecal/scope"
-	"devt.de/krotik/ecal/util"
+	"github.com/rhedin/Abe_common/errorutil"
+	"github.com/rhedin/Abe_common/sortutil"
+	"github.com/rhedin/Abe_ecal/parser"
+	"github.com/rhedin/Abe_ecal/scope"
+	"github.com/rhedin/Abe_ecal/util"
 )
 
 // Statements Runtime

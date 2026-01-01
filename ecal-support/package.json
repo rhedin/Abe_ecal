@@ -18,7 +18,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://devt.de/krotik/ecal.git"
+    "url": "https://github.com/rhedin/Abe_ecal.git"
   },
   "scripts": {
     "compile": "tsc",

@@ -19,8 +19,8 @@ import (
 	"strings"
 	"sync"
 
-	"devt.de/krotik/common/errorutil"
-	"devt.de/krotik/common/sortutil"
+	"github.com/rhedin/Abe_common/errorutil"
+	"github.com/rhedin/Abe_common/sortutil"
 )
 
 /*
@@ -159,7 +159,7 @@ type ruleIndexRoot struct {
 }
 
 /*
-   AddRule adds a new rule to the index.
+AddRule adds a new rule to the index.
 */
 func (r *ruleIndexRoot) AddRule(rule *Rule) error {
 

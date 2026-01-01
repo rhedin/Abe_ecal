@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"devt.de/krotik/ecal/parser"
+	"github.com/rhedin/Abe_ecal/parser"
 )
 
 /*

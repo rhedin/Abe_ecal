@@ -15,8 +15,8 @@ import (
 	"os"
 	"sync"
 
-	"devt.de/krotik/ecal/engine/pool"
-	"devt.de/krotik/ecal/engine/pubsub"
+	"github.com/rhedin/Abe_ecal/engine/pool"
+	"github.com/rhedin/Abe_ecal/engine/pubsub"
 )
 
 /*
@@ -134,7 +134,6 @@ eventProcessor main implementation of the Processor interface.
 Event cycle:
 
 Process -> Triggering -> Matching -> Fire Rule
-
 */
 type eventProcessor struct {
 	id                  uint64                // Processor ID

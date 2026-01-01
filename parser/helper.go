@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"devt.de/krotik/common/datautil"
-	"devt.de/krotik/common/stringutil"
+	"github.com/rhedin/Abe_common/datautil"
+	"github.com/rhedin/Abe_common/stringutil"
 )
 
 // AST Nodes

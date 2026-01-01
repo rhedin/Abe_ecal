@@ -15,8 +15,8 @@ import (
 	"regexp"
 	"strings"
 
-	"devt.de/krotik/common/errorutil"
-	"devt.de/krotik/ecal/parser"
+	"github.com/rhedin/Abe_common/errorutil"
+	"github.com/rhedin/Abe_ecal/parser"
 )
 
 // Basic Boolean Operator Runtimes

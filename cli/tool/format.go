@@ -18,7 +18,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"devt.de/krotik/ecal/parser"
+	"github.com/rhedin/Abe_ecal/parser"
 )
 
 /*

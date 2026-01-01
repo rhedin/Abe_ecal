@@ -7,7 +7,19 @@ ECAL
 
 ECAL is an ECA (Event Condition Action) language for concurrent event processing. ECAL can define event-based systems using rules which are triggered by events. ECAL is intended to be embedded into other software to provide an easy to use scripting language which can react to external events.
 
-[![Code coverage](https://void.devt.de/pub/ecal/test_result.svg)](https://void.devt.de/pub/ecal/coverage.txt)
+<!--
+test_result.svg is created by the Jenkinsfile.  We don't run the Jenkins file.  We don't want to 
+point to test coverage that is stale and refers to another code base. 
+
+* * I'll change the Go Report Card and Go Reference lines after I've gotten the code base mentioned 
+    in the index of Go packages, and after I've gotten the Go report card folks to generate me 
+    a pretty little svg image. * * 
+
+Awesome Go in fact mentions ecal.  Kudos to Matthias!  Leaving it in place, referring 
+to the other code base. 
+-->
+
+<!-- [![Code coverage](https://void.devt.de/pub/ecal/test_result.svg)](https://void.devt.de/pub/ecal/coverage.txt) -->
 [![Go Report Card](https://goreportcard.com/badge/devt.de/krotik/ecal?style=flat-square)](https://goreportcard.com/report/devt.de/krotik/ecal)
 [![Go Reference](https://pkg.go.dev/badge/krotik/ecal.svg)](https://pkg.go.dev/devt.de/krotik/ecal)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge-flat.svg)](https://github.com/avelino/awesome-go)

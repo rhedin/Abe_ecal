@@ -1,5 +1,5 @@
-module devt.de/krotik/ecal
+module github.com/rhedin/Abe_ecal
 
 go 1.12
 
-require devt.de/krotik/common v1.4.0
+require github.com/rhedin/Abe_common v1.5.2

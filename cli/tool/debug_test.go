@@ -24,10 +24,10 @@ import (
 	"testing"
 	"time"
 
-	"devt.de/krotik/common/errorutil"
-	"devt.de/krotik/ecal/interpreter"
-	"devt.de/krotik/ecal/stdlib"
-	"devt.de/krotik/ecal/util"
+	"github.com/rhedin/Abe_common/errorutil"
+	"github.com/rhedin/Abe_ecal/interpreter"
+	"github.com/rhedin/Abe_ecal/stdlib"
+	"github.com/rhedin/Abe_ecal/util"
 )
 
 var testDebugLogOut *bytes.Buffer

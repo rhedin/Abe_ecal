@@ -18,8 +18,8 @@ import (
 	"strconv"
 	"strings"
 
-	"devt.de/krotik/ecal/parser"
-	"devt.de/krotik/ecal/util"
+	"github.com/rhedin/Abe_ecal/parser"
+	"github.com/rhedin/Abe_ecal/util"
 )
 
 /*

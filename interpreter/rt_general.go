@@ -13,10 +13,10 @@ package interpreter
 import (
 	"fmt"
 
-	"devt.de/krotik/common/errorutil"
-	"devt.de/krotik/ecal/parser"
-	"devt.de/krotik/ecal/scope"
-	"devt.de/krotik/ecal/util"
+	"github.com/rhedin/Abe_common/errorutil"
+	"github.com/rhedin/Abe_ecal/parser"
+	"github.com/rhedin/Abe_ecal/scope"
+	"github.com/rhedin/Abe_ecal/util"
 )
 
 // Base Runtime

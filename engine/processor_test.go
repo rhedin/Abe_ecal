@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"devt.de/krotik/common/errorutil"
-	"devt.de/krotik/ecal/engine/pool"
+	"github.com/rhedin/Abe_common/errorutil"
+	"github.com/rhedin/Abe_ecal/engine/pool"
 )
 
 func TestProcessorSimpleCascade(t *testing.T) {

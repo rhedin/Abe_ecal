@@ -32,7 +32,17 @@ import (
 )
 
 //go:generate echo Generating ECAL stdlib from Go functions ...
-//go:generate go run github.com/rhedin/Abe_ecal/stdlib/generate $PWD/stdlib
+//go:generate echo Working directory is $PWD
+/* This yielded:  Working directory is /Users/rickhedin/work/260102/Abe_ecal/stdlib/generate */
+/* //go:generate go run github.com/rhedin/Abe_ecal/stdlib/generate $PWD/stdlib */
+/* //go:generate go run github.com/rhedin/Abe_ecal/stdlib/generate /Users/rickhedin/work/260102/Abe_ecal/stdlib */
+/* The original code, $PWD/stdlib, didn't find the /Users/rickhedin/work/260102/Abe_ecal/stdlib/stdlib_gen.go file.
+   The explicit file path worked, but seemed so fragile.
+   I tried a number of ways to find the Abe_ecal piece in the pwd path and build something from that, but I
+   didn't really succeed.
+   I don't really like the relative directory, but at least I can move the tree somewhere else,
+   and it will still work. */
+//go:generate go run github.com/rhedin/Abe_ecal/stdlib/generate ..
 
 /*
 Stdlib candidates modules:
@@ -64,6 +74,11 @@ var stdoutPrint = fmt.Println
 func main() {
 	var err error
 	var outbuf bytes.Buffer
+
+	stdoutPrint("Am in function main of stdlib/generate.go")
+	stdoutPrint("os.Args[1]", os.Args[1])
+	stdoutPrint("filename", filename)
+	stdoutPrint("os.Args", os.Args)
 
 	synopsis := make(map[string]string)
 	pkgDocs := make(map[string]*doc.Package)
@@ -155,6 +170,9 @@ func main() {
 
 	var importList []string
 	for pkgName, names := range pkgNames {
+		stdoutPrint("First for")
+		stdoutPrint("pkgName", pkgName)
+		stdoutPrint("names", names)
 		sort.Strings(names)
 		importList = append(importList, pkgName)
 		synopsis["math"] = "Mathematics-related constants and functions"
@@ -170,6 +188,8 @@ package stdlib
 
 	outbuf.WriteString("import (\n")
 	for _, pkgName := range importList {
+		stdoutPrint("Second for")
+		stdoutPrint("pkgName", pkgName)
 
 		if generateDoc {
 			syn, pkgDoc, err := getPackageDocs(pkgName)
@@ -201,6 +221,8 @@ genStdlib contains all generated stdlib constructs.
 `)
 	outbuf.WriteString("var genStdlib = map[interface{}]interface{}{\n")
 	for _, pkgName := range importList {
+		stdoutPrint("Third for")
+		stdoutPrint("pkgName", pkgName)
 		if s, ok := synopsis[pkgName]; ok {
 			outbuf.WriteString(fmt.Sprintf("\t\"%v-synopsis\" : %#v,\n", pkgName, s))
 		}
@@ -211,6 +233,8 @@ genStdlib contains all generated stdlib constructs.
 	outbuf.WriteString("}\n\n")
 
 	for _, pkgName := range importList {
+		stdoutPrint("Fourth for")
+		stdoutPrint("pkgName", pkgName)
 		var pkg *types.Package
 
 		pkgSymbols := pkgNames[pkgName]
@@ -222,19 +246,29 @@ genStdlib contains all generated stdlib constructs.
 			if err == nil {
 				stdoutPrint("Generating adapter functions for", pkg)
 
+				stdoutPrint("About to assign scope")
+
 				scope := pkg.Scope()
 
 				// Write constants
+
+				stdoutPrint("About to call writeConstants")
 
 				writeConstants(&outbuf, pkgName, pkgSymbols, scope)
 
 				// Write function documentation
 
+				stdoutPrint("About to call writeFuncDoc")
+
 				writeFuncDoc(&outbuf, pkgName, pkgDocs, pkgSymbols, scope)
 
 				// Write functions
 
+				stdoutPrint("About to call writeFuncs")
+
 				writeFuncs(&outbuf, pkgName, pkgSymbols, scope)
+
+				stdoutPrint("Finished calling writeFuncs")
 			}
 		}
 	}
@@ -250,6 +284,7 @@ genStdlib contains all generated stdlib constructs.
 	if err != nil {
 		stderrPrint("Error:", err)
 	}
+	stdoutPrint("About to leave the main function")
 }
 
 var (

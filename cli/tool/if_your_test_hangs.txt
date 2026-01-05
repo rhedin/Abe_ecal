@@ -1,0 +1,190 @@
+This document may not be arranged in a thesis, examples, conclusion fashion. 
+But all the information should be here. 
+
+The point is, I had trouble running the tests.  They seemed to hang.  The item 
+that enabled me to solve the problem was that if I included -timeout=5s 
+in the command line, the test mechanism finished cleanly, and gave me 
+my output.  If I didn't, my writes to standard output would never 
+appear on the screen. 
+
+
+
+
+Here's what it looks like when you don't include a timeout. 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % go test -v -count=1             ./cli/...
+?   	github.com/rhedin/Abe_ecal/cli	[no test files]
+^C=== RUN   TestDebugBasicFunctions
+--- PASS: TestDebugBasicFunctions (0.00s)
+=== RUN   TestDebugInterpret
+Entered Run function
+Run func - after   if err == nil { ... }
+s.listen = true, err = listen tcp 127.0.0.1:33274: bind: address already in use
+Hey!  It must print 'Could not start debug server' but where does it print it?
+If the error message is something like 'err = listen tcp 127.0.0.1:33274: bind: address already in use',
+then find out the id of the process that has the port by saying   lsof -i :33274   Output is like
+COMMAND    PID      USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME
+___go_run 6237 rickhedin    6u  IPv4 0x22fa125d5bc8fcc      0t0  TCP localhost:33274 (LISTEN)
+Issue the command   kill 6237   to kill the process.  If that doesn't work, be more rude   kill -9 6237
+--- PASS: TestDebugInterpret (0.00s)
+=== RUN   TestDebugHandleInput
+--- PASS: TestDebugHandleInput (1.00s)
+=== RUN   TestDebugTelnetServer_ifHangsUseTimeout
+Entered TestDebugTelnetServer function
+Entered Run function
+Run func - after   if err == nil { ... }
+s.listen = true, err = listen tcp 127.0.0.1:33274: bind: address already in use
+Hey!  It must print 'Could not start debug server' but where does it print it?
+If the error message is something like 'err = listen tcp 127.0.0.1:33274: bind: address already in use',
+then find out the id of the process that has the port by saying   lsof -i :33274   Output is like
+COMMAND    PID      USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME
+___go_run 6237 rickhedin    6u  IPv4 0x22fa125d5bc8fcc      0t0  TCP localhost:33274 (LISTEN)
+Issue the command   kill 6237   to kill the process.  If that doesn't work, be more rude   kill -9 6237
+signal: interrupt
+FAIL	github.com/rhedin/Abe_ecal/cli/tool	12.077s
+FAIL
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+(Hey, it gave output.  I'm surprised.)
+
+
+
+
+Here's what it looks like when you include a timeout. 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % go test -v -count=1 -timeout=5s ./cli/...
+?   	github.com/rhedin/Abe_ecal/cli	[no test files]
+=== RUN   TestDebugBasicFunctions
+--- PASS: TestDebugBasicFunctions (0.00s)
+=== RUN   TestDebugInterpret
+Entered Run function
+Run func - after   if err == nil { ... }
+s.listen = true, err = listen tcp 127.0.0.1:33274: bind: address already in use
+Hey!  It must print 'Could not start debug server' but where does it print it?
+If the error message is something like 'err = listen tcp 127.0.0.1:33274: bind: address already in use',
+then find out the id of the process that has the port by saying   lsof -i :33274   Output is like
+COMMAND    PID      USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME
+___go_run 6237 rickhedin    6u  IPv4 0x22fa125d5bc8fcc      0t0  TCP localhost:33274 (LISTEN)
+Issue the command   kill 6237   to kill the process.  If that doesn't work, be more rude   kill -9 6237
+--- PASS: TestDebugInterpret (0.00s)
+=== RUN   TestDebugHandleInput
+--- PASS: TestDebugHandleInput (1.00s)
+=== RUN   TestDebugTelnetServer_ifHangsUseTimeout
+Entered TestDebugTelnetServer function
+Entered Run function
+Run func - after   if err == nil { ... }
+s.listen = true, err = listen tcp 127.0.0.1:33274: bind: address already in use
+Hey!  It must print 'Could not start debug server' but where does it print it?
+If the error message is something like 'err = listen tcp 127.0.0.1:33274: bind: address already in use',
+then find out the id of the process that has the port by saying   lsof -i :33274   Output is like
+COMMAND    PID      USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME
+___go_run 6237 rickhedin    6u  IPv4 0x22fa125d5bc8fcc      0t0  TCP localhost:33274 (LISTEN)
+Issue the command   kill 6237   to kill the process.  If that doesn't work, be more rude   kill -9 6237
+panic: test timed out after 5s
+	running tests:
+		TestDebugTelnetServer_ifHangsUseTimeout (4s)
+
+goroutine 103 [running]:
+testing.(*M).startAlarm.func1()
+	/Users/rickhedin/.goenv/versions/1.25.4/src/testing/testing.go:2682 +0x2b0
+created by time.goFunc
+	/Users/rickhedin/.goenv/versions/1.25.4/src/time/sleep.go:215 +0x38
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0x14000488c40, {0x104d1904c?, 0x140000b5b38?}, 0x104ed7bc0)
+	/Users/rickhedin/.goenv/versions/1.25.4/src/testing/testing.go:2005 +0x378
+testing.runTests.func1(0x14000488c40)
+	/Users/rickhedin/.goenv/versions/1.25.4/src/testing/testing.go:2477 +0x38
+testing.tRunner(0x14000488c40, 0x140000b5c68)
+	/Users/rickhedin/.goenv/versions/1.25.4/src/testing/testing.go:1934 +0xc8
+testing.runTests(0x14000122498, {0x1051c9920, 0xe, 0xe}, {0x14000129140?, 0x7?, 0x1051d00a0?})
+	/Users/rickhedin/.goenv/versions/1.25.4/src/testing/testing.go:2475 +0x3b8
+testing.(*M).Run(0x140000cf040)
+	/Users/rickhedin/.goenv/versions/1.25.4/src/testing/testing.go:2337 +0x530
+main.main()
+	_testmain.go:71 +0x80
+
+         :       : 
+
+goroutine 89 [sync.Cond.Wait]:
+sync.runtime_notifyListWait(0x140000df6d0, 0xb)
+	/Users/rickhedin/.goenv/versions/1.25.4/src/runtime/sema.go:606 +0x140
+sync.(*Cond).Wait(0x140000df6c0)
+	/Users/rickhedin/.goenv/versions/1.25.4/src/sync/cond.go:71 +0xa4
+github.com/rhedin/Abe_ecal/engine/pool.(*idleTask).Run(0x1400011e6d0, 0x140000e1dd0?)
+	/Users/rickhedin/work/260102/Abe_ecal/engine/pool/threadpool.go:558 +0x80
+github.com/rhedin/Abe_ecal/engine/pool.(*ThreadPoolWorker).run(0x140003024f0)
+	/Users/rickhedin/work/260102/Abe_ecal/engine/pool/threadpool.go:533 +0x17c
+created by github.com/rhedin/Abe_ecal/engine/pool.(*ThreadPool).SetWorkerCount in goroutine 16
+	/Users/rickhedin/work/260102/Abe_ecal/engine/pool/threadpool.go:326 +0x430
+
+goroutine 93 [select]:
+github.com/rhedin/Abe_common/timeutil.(*Cron).run(0x1400031a240)
+	/Users/rickhedin/go/1.25.4/pkg/mod/github.com/rhedin/!abe_common@v1.5.2/timeutil/cron.go:88 +0x84
+created by github.com/rhedin/Abe_common/timeutil.(*Cron).Start in goroutine 92
+	/Users/rickhedin/go/1.25.4/pkg/mod/github.com/rhedin/!abe_common@v1.5.2/timeutil/cron.go:139 +0x11c
+FAIL	github.com/rhedin/Abe_ecal/cli/tool	5.490s
+FAIL
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+
+
+
+That's strange.  I feel like in the past, I've pressed control-C and there's 
+no output at all.  I'll try several more times. 
+Look at that.  Two successive runs have two different results. 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % go test -v -count=1             ./cli/...
+?   	github.com/rhedin/Abe_ecal/cli	[no test files]
+^C=== RUN   TestDebugBasicFunctions
+--- PASS: TestDebugBasicFunctions (0.00s)
+=== RUN   TestDebugInterpret
+Entered Run function
+Run func - after   if err == nil { ... }
+s.listen = true, err = listen tcp 127.0.0.1:33274: bind: address already in use
+Hey!  It must print 'Could not start debug server' but where does it print it?
+If the error message is something like 'err = listen tcp 127.0.0.1:33274: bind: address already in use',
+then find out the id of the process that has the port by saying   lsof -i :33274   Output is like
+COMMAND    PID      USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME
+___go_run 6237 rickhedin    6u  IPv4 0x22fa125d5bc8fcc      0t0  TCP localhost:33274 (LISTEN)
+Issue the command   kill 6237   to kill the process.  If that doesn't work, be more rude   kill -9 6237
+--- PASS: TestDebugInterpret (0.00s)
+=== RUN   TestDebugHandleInput
+signal: interrupt
+FAIL	github.com/rhedin/Abe_ecal/cli/tool	1.138s
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % go test -v -count=1             ./cli/...
+?   	github.com/rhedin/Abe_ecal/cli	[no test files]
+^C%                                                                                                                                                                                                                                    rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+
+
+
+I don't know why sometimes a control-C with no timeout gives output, and sometimes 
+it doesn't.  But I know that if you include a timeout, it consistently does. 
+
+
+
+
+If you include the -count=1 argument, it will not use any cached value.  Instead, 
+it will run the test again. 
+
+If you include the -timeout=5s argument, it will end the test cleanly when the 
+time expires.  The testing mechanism controls stdout and stderr.  Nothing that 
+you write to those streams in your program gets to the outside world until 
+the testing mechanism says so.  Thus, you have to cooperate with the testing 
+mechanism to see your output. 
+
+If you include -v each individual test is introduced, and the result 
+of running the test is given. 
+
+
+
+
+I tried all kinds of ways to get my output to appear on the screen.  Grok and I 
+wrestled with it for a long time.  Using bufio, using (os.File).Sync, 
+using (bufio.Writer).Flush. 
+
+
+
+
+Also, if the test ends because the allocated time elapsed, the testing mechanism 
+gives you a stack trace, showing where you were when the test ended. 
+In our case, we were waiting on a read, and the writing process never wrote 
+anything, so our test never finished. 

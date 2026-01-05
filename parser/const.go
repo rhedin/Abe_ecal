@@ -11,7 +11,7 @@
 /*
 Package parser contains a ECAL parser.
 
-Lexer for Source Text
+# Lexer for Source Text
 
 Lex() is a lexer function to convert a given search query into a list of tokens.
 
@@ -23,7 +23,7 @@ The lexer's output is pushed into a channel which is consumed by the parser.
 This design enables the concurrent processing of the input text by lexer and
 parser.
 
-Parser
+# Parser
 
 Parse() is a parser which produces a parse tree from a given set of lexer tokens.
 

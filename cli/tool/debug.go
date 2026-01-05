@@ -226,11 +226,15 @@ Run runs the debug server.
 func (s *debugTelnetServer) Run(wg *sync.WaitGroup) {
 	tcpaddr, err := net.ResolveTCPAddr("tcp", s.address)
 
+	fmt.Printf("Entered Run function\n")
+
 	if err == nil {
 
 		s.listener, err = net.ListenTCP("tcp", tcpaddr)
 
 		if err == nil {
+
+			fmt.Printf("Run func - ListenTCP did not return an error\n")
 
 			wg.Done()
 
@@ -239,6 +243,8 @@ func (s *debugTelnetServer) Run(wg *sync.WaitGroup) {
 
 			for s.listen {
 				var conn net.Conn
+
+				fmt.Printf("Run func - at top of s.listen loop\n")
 
 				if conn, err = s.listener.Accept(); err == nil {
 					go s.HandleConnection(conn)
@@ -251,7 +257,17 @@ func (s *debugTelnetServer) Run(wg *sync.WaitGroup) {
 		}
 	}
 
+	fmt.Printf("Run func - after   if err == nil { ... }\n")
+	fmt.Printf("s.listen = %v, err = %v\n", s.listen, err)
+
 	if s.listen && err != nil {
+		// An example of what the fmt.Printf("s.listen = ... line above prints:
+		// s.listen = true, err = listen tcp 127.0.0.1:33274: bind: address already in use
+		fmt.Printf("If the error message is something like 'err = listen tcp 127.0.0.1:33274: bind: address already in use',\n")
+		fmt.Printf("then find out the id of the process that has the port by saying   lsof -i :33274   Output is like\n")
+		fmt.Printf("COMMAND    PID      USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME\n")
+		fmt.Printf("___go_run 6237 rickhedin    6u  IPv4 0x22fa125d5bc8fcc      0t0  TCP localhost:33274 (LISTEN)\n")
+		fmt.Printf("Issue the command   kill 6237   to kill the process.  If that doesn't work, be more rude   kill -9 6237\n")
 		s.logger.LogError(s.logPrefix, "Could not start debug server - ", err)
 		wg.Done()
 	}
@@ -261,6 +277,7 @@ func (s *debugTelnetServer) Run(wg *sync.WaitGroup) {
 HandleConnection handles an incoming connection.
 */
 func (s *debugTelnetServer) HandleConnection(conn net.Conn) {
+	fmt.Printf("Entered HandleConnection function\n")
 	tid := s.interpreter.RuntimeProvider.NewThreadID()
 	inputReader := bufio.NewReader(conn)
 	outputTerminal := OutputTerminal(&bufioWriterShim{fmt.Sprint(conn.RemoteAddr()),

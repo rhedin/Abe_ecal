@@ -229,6 +229,8 @@ func TestDebugTelnetServer(t *testing.T) {
 	tdin := newTestDebugWithConfig()
 	defer tearDown()
 
+	fmt.Printf("Entered TestDebugTelnetServer function\n")
+
 	if err := tdin.CreateRuntimeProvider("foo"); err != nil {
 		t.Error("Unexpected result:", err)
 		return
@@ -268,7 +270,7 @@ func TestDebugTelnetServer(t *testing.T) {
 
 	fmt.Fprintf(conn, "a:= 1; a\n")
 
-	line, err := reader.ReadString('}')
+	line, err := reader.ReadString('}') // test hanged here.  Port occupied?
 	errorutil.AssertOk(err)
 
 	if line != `{

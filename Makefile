@@ -4,7 +4,7 @@ export TAG=`git describe --abbrev=0 --tags`
 # CGO_ENABLED is enabled here to support Go plugins
 # if Go plugins are not used this can be disabled.
 export CGO_ENABLED=1
-export GOOS=linux
+# export GOOS=linux  Stop setting a specific operating system! 
 
 all: build
 clean:

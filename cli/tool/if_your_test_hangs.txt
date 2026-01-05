@@ -188,3 +188,84 @@ Also, if the test ends because the allocated time elapsed, the testing mechanism
 gives you a stack trace, showing where you were when the test ended. 
 In our case, we were waiting on a read, and the writing process never wrote 
 anything, so our test never finished. 
+
+
+
+Ha!  It's Jet Brains' fault. 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % lsof -i :33274    
+COMMAND    PID      USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME
+___go_run 6237 rickhedin    6u  IPv4 0x22fa125d5bc8fcc      0t0  TCP localhost:33274 (LISTEN)
+rickhedin@Ricks-MacBook-Pro Abe_ecal % ps -ef | grep 6237
+  501  6237  6236   0  2Dec25 ??         0:00.21 /Users/rickhedin/Library/Caches/JetBrains/GoLand2025.2/tmp/GoLand/___go_run_ecal_debug__server debug -server
+  501 33729 43693   0  3:18PM ttys001    0:00.01 grep 6237
+rickhedin@Ricks-MacBook-Pro Abe_ecal % date              
+Mon Jan  5 15:18:41 CST 2026
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+Note the dates.  Over a month ago! 
+
+
+
+
+Interesting.  If you leave the -v off, all of our standard output messages -- this is happening, 
+not this is happening -- are silenced.  I guess the test framework really does feel it controls 
+the output. 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % go test -v -count=1 ./cli/... 
+?   	github.com/rhedin/Abe_ecal/cli	[no test files]
+=== RUN   TestDebugBasicFunctions
+--- PASS: TestDebugBasicFunctions (0.00s)
+=== RUN   TestDebugInterpret
+Entered Run function
+Run func - ListenTCP did not return an error
+Run func - after   if err == nil { ... }
+s.listen = false, err = accept tcp 127.0.0.1:33274: use of closed network connection
+--- PASS: TestDebugInterpret (0.00s)
+=== RUN   TestDebugHandleInput
+--- PASS: TestDebugHandleInput (1.00s)
+=== RUN   TestDebugTelnetServer
+Entered TestDebugTelnetServer function
+Entered Run function
+Run func - ListenTCP did not return an error
+Entered HandleConnection function
+Entered HandleConnection function
+Entered Run function
+Run func - after   if err == nil { ... }
+s.listen = true, err = listen tcp 127.0.0.1:33274: bind: address already in use
+If the error message is something like 'err = listen tcp 127.0.0.1:33274: bind: address already in use',
+then find out the id of the process that has the port by saying   lsof -i :33274   Output is like
+COMMAND    PID      USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME
+___go_run 6237 rickhedin    6u  IPv4 0x22fa125d5bc8fcc      0t0  TCP localhost:33274 (LISTEN)
+Issue the command   kill 6237   to kill the process.  If that doesn't work, be more rude   kill -9 6237
+Run func - after   if err == nil { ... }
+s.listen = false, err = <nil>
+--- PASS: TestDebugTelnetServer (0.02s)
+=== RUN   TestFormat
+--- PASS: TestFormat (0.00s)
+=== RUN   TestMatchesFulltextSearch
+--- PASS: TestMatchesFulltextSearch (0.00s)
+=== RUN   TestFillTableRow
+--- PASS: TestFillTableRow (0.00s)
+=== RUN   TestInterpretBasicFunctions
+--- PASS: TestInterpretBasicFunctions (0.00s)
+=== RUN   TestCreateRuntimeProvider
+--- PASS: TestCreateRuntimeProvider (0.00s)
+=== RUN   TestLoadInitialFile
+--- PASS: TestLoadInitialFile (0.00s)
+=== RUN   TestInterpret
+--- PASS: TestInterpret (0.00s)
+=== RUN   TestHandleInput
+--- PASS: TestHandleInput (0.00s)
+=== RUN   TestPackParseArgs
+--- PASS: TestPackParseArgs (0.00s)
+=== RUN   TestPackPacking
+--- PASS: TestPackPacking (0.00s)
+PASS
+ok  	github.com/rhedin/Abe_ecal/cli/tool	1.390s
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % go test -count=1 ./cli/... 
+?   	github.com/rhedin/Abe_ecal/cli	[no test files]
+ok  	github.com/rhedin/Abe_ecal/cli/tool	1.260s
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 
+rickhedin@Ricks-MacBook-Pro Abe_ecal % 

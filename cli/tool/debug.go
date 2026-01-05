@@ -244,7 +244,9 @@ func (s *debugTelnetServer) Run(wg *sync.WaitGroup) {
 			for s.listen {
 				var conn net.Conn
 
-				fmt.Printf("Run func - at top of s.listen loop\n")
+				// fmt.Printf("Run func - at top of s.listen loop\n")
+				// When the test was working correctly, this print was
+				// extremely talkative.  So I killed it.
 
 				if conn, err = s.listener.Accept(); err == nil {
 					go s.HandleConnection(conn)

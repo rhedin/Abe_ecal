@@ -209,7 +209,7 @@ Note the dates.  Over a month ago!
 
 
 Interesting.  If you leave the -v off, all of our standard output messages -- this is happening, 
-not this is happening -- are silenced.  I guess the test framework really does feel it controls 
+now this is happening -- are silenced.  I guess the test framework really does feel it controls 
 the output. 
 rickhedin@Ricks-MacBook-Pro Abe_ecal % go test -v -count=1 ./cli/... 
 ?   	github.com/rhedin/Abe_ecal/cli	[no test files]

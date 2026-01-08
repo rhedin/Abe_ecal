@@ -31,6 +31,9 @@ generate:
 build: clean mod generate fmt vet
 	go build -ldflags "-s -w" -o $(NAME) cli/*.go
 
+build-with-logging-for-understanding: clean mod generate fmt vet
+	go build -ldflags "-s -w" -tags=underlog -o $(NAME) cli/*.go
+
 build-mac: clean mod generate fmt vet
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(NAME).mac cli/*.go
 

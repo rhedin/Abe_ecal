@@ -270,7 +270,7 @@ func (i *CLIInterpreter) Interpret(interactive bool) error {
 					fmt.Fprintln(i.LogOut, fmt.Sprintf("Root directory: %v", *i.Dir))
 
 					if i.CustomWelcomeMessage != "" {
-						fmt.Fprintln(i.LogOut, fmt.Sprintf(i.CustomWelcomeMessage))
+						fmt.Fprintln(i.LogOut, i.CustomWelcomeMessage)
 					}
 				}
 
